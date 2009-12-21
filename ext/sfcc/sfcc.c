@@ -1,16 +1,18 @@
 
 #include "sfcc.h"
 
+#include "cimc_environment.h"
+#include "cimc_client.h"
+#include "cimc_object_path.h"
+
 VALUE mSfcc;
-VALUE mSfccCmci;
-VALUE mSfccCmpi;
+VALUE mSfccCimc;
 
 void Init_sfcc()
 {
   mSfcc = rb_define_module("Sfcc");
-  mSfccCmci= rb_define_module_under(mSfcc, "Cmci");
-  mSfccCmpi= rb_define_module_under(mSfcc, "Cmpi");
-
-  init_cmci_client();
-  //init_cmpi_object_path();
+  mSfccCimc= rb_define_module_under(mSfcc, "Cimc");
+  init_cimc_environment();
+  init_cimc_object_path();
+  init_cimc_client();
 }
