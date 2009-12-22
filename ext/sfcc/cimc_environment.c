@@ -64,9 +64,6 @@ static VALUE new(VALUE klass, VALUE env_id)
 {
   int rc = 0;
   char *msg;
-  CIMCStatus status;
-  memset(&status, 0, sizeof(CIMCStatus));
-
   CIMCEnv *env = NewCIMCEnv(StringValuePtr(env_id), 0, &rc, &msg);
 
   if (env && !rc) {
@@ -77,9 +74,7 @@ static VALUE new(VALUE klass, VALUE env_id)
     return rb_env;
   }
   
-  status.rc = rc;
-  status.msg = msg;
-  sfcc_rb_raise_if_error(status, "Can't create CIM environment: %s", msg);
+  rb_raise(rb_eRuntimeError, "(%d) Can't create CIM environment: %s", rc, msg);
   return Qnil;
 }
 
@@ -96,7 +91,6 @@ static VALUE new_object_path(VALUE self,
   CIMCEnv *env = NULL;
   CIMCObjectPath *op = NULL;
   CIMCStatus status;
-  char *msg = NULL;
   Data_Get_Struct(self, CIMCEnv, env);
 
   op = env->ft->newObjectPath(env,
