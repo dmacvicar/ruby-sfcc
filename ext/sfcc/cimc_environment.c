@@ -47,6 +47,8 @@ connect( VALUE self,
     if (rb_block_given_p()) rb_yield(rb_client);
     return rb_client;
   }
+
+  rb_raise(rb_eRuntimeError, "Can't connect to CIMOM: %s", msg);
   return Qnil;
 }
 
@@ -61,19 +63,24 @@ connect( VALUE self,
 static VALUE new(VALUE klass, VALUE env_id)
 {
   int rc = 0;
-  char *msg = NULL;
+  char *msg;
+  CIMCStatus status;
+  memset(&status, 0, sizeof(CIMCStatus));
 
-  CIMCEnv *env = NewCIMCEnv(StringValuePtr(env_id),0,&rc,&msg);
-  if (env == NULL) {
-    rb_raise(rb_eRuntimeError, "Can't create CIM environment: %s", msg);
-    return Qnil;
+  CIMCEnv *env = NewCIMCEnv(StringValuePtr(env_id), 0, &rc, &msg);
+
+  if (env && !rc) {
+    VALUE rb_env = Sfcc_wrap_cimc_environment(env) ;
+    rb_obj_call_init(rb_env, 0, NULL);
+
+    if(rb_block_given_p()) rb_yield(rb_env);
+    return rb_env;
   }
-
-  VALUE rb_env = Sfcc_wrap_cimc_environment(env) ;
-  rb_obj_call_init(rb_env, 0, NULL);
-
-  if(rb_block_given_p()) rb_yield(rb_env);
-  return rb_env;
+  
+  status.rc = rc;
+  status.msg = msg;
+  sfcc_rb_raise_if_error(status, "Can't create CIM environment: %s", msg);
+  return Qnil;
 }
 
 /*
@@ -96,11 +103,12 @@ static VALUE new_object_path(VALUE self,
                               StringValuePtr(namespace),
                               StringValuePtr(classname),
                               &status);
-  if (op == NULL) {
-    rb_raise(rb_eRuntimeError, "Can't create CIM object path: %s", msg);
-    return Qnil;
+  if (!status.rc) {
+    return Sfcc_wrap_cimc_object_path(op);
   }
-  return Sfcc_wrap_cimc_object_path(op);
+  sfcc_rb_raise_if_error(status, "Can't create CIM object path");
+  return Qnil;
+  
 }
 
 

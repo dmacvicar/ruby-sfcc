@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include <cimc/cimc.h>
+#include <cimc/cimcdt.h>
 #include <CimClientLib/cmci.h>
 #include <CimClientLib/native.h>
 #include <CimClientLib/cmcimacs.h>
@@ -15,5 +16,11 @@
 
 extern VALUE mSfcc;
 extern VALUE mSfccCimc;
+
+/**
+ * raises a ruby exception if the status is an error
+ * whenever possible, adds the custom message if not null
+ */
+void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...);
 
 #endif

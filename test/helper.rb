@@ -14,4 +14,12 @@ class SfccTestCase < Test::Unit::TestCase
   unless RUBY_VERSION >= '1.9'
     undef :default_test
   end
+
+  def cimom_running?
+    `ps -e`.each_line do |line|
+      return true if line =~ /sfcbd/
+    end
+    return false
+  end
+  
 end
