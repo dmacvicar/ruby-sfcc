@@ -1,0 +1,29 @@
+
+ruby-sfcc
+=========
+
+ruby-sfcc provides the SBLIM client API (http://sblim.wiki.sourceforge.net/Sfcc) for ruby.
+
+FAQ
+===
+
+1. Why not using SWIG?
+
+sfcc has a complex API based on function tables to simulate an object
+oriented environment in C which would make wrapping it complicated.
+
+2. Why the API?
+
+The motivation is to have the plain API available, and use it to access
+the CIMOM, gaining the footprint of SBLIM plus features like the
+local interface to talk with the CIMOM without overhead.
+
+So the API is pretty "raw", and it is supposed to be consumed by
+ActiveCim (http://github.com/dmacvicar/activecim) which is a more
+ruby-like API to do CIM based management.
+
+Authors
+=======
+
+Duncan Mac-Vicar P. <dmacvicar@suse.de>
+
