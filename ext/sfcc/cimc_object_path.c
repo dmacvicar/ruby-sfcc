@@ -7,6 +7,17 @@ dealloc(CIMCObjectPath *object_path)
   object_path->ft->release(object_path);
 }
 
+static VALUE to_s(VALUE self)
+{
+  CIMCObjectPath *op = NULL;
+  CIMCString *cimstr = NULL;
+  char *name = NULL;
+  Data_Get_Struct(self, CIMCObjectPath, op);
+  cimstr = op->ft->toString(op, NULL);
+  name = cimstr->ft->getCharPtr(cimstr, NULL);
+  return rb_str_new2(name);
+}
+
 VALUE
 Sfcc_wrap_cimc_object_path(CIMCObjectPath *object_path)
 {
@@ -21,4 +32,6 @@ void init_cimc_object_path()
 
   VALUE klass = rb_define_class_under(cimc, "ObjectPath", rb_cObject);
   cSfccCimcObjectPath = klass;
+
+  rb_define_method(klass, "to_s", to_s, 0);
 }

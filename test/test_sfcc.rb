@@ -25,10 +25,11 @@ class BasicTest < SfccTestCase
     result = []
     client.each_class_name(op, Sfcc::CIMC_FLAG_DeepInheritance) { |name| result << name }
     assert result.include?("CIM_ManagedElement"), "class names include base CIM_ManagedElement"
+    assert_kind_of(String, result.first)
 
     result = []
     op = env.new_object_path("root/cimv2", "")
-    client.each_class(op, Sfcc::CIMC_FLAG_DeepInheritance) { |name| result << name }
+    client.each_class(op, Sfcc::CIMC_FLAG_DeepInheritance) { |cimclass| result << cimclass }
     assert_kind_of(Sfcc::Cimc::Class, result.first)
 
     op = env.new_object_path("root/cimv2", "CIM_ManagedElement")
@@ -40,6 +41,15 @@ class BasicTest < SfccTestCase
     result = []
     client.each_instance_name(op) { |name| result << name }
     assert ! result.empty?, "At least one CIM_ComputerSystem as an instance"
+    assert_kind_of(String, result.first)
+    first_instance_name = result.first
+    
+    result = []
+    client.each_instance(op, 0, []) { |instance| result << instance }
+    assert_kind_of(Sfcc::Cimc::Instance, result.first)
+
+    assert_kind_of(Sfcc::Cimc::Instance, result.first)
+    assert_equal first_instance_name, result.first.object_path.to_s
   end
   
 end

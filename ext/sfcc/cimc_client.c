@@ -1,6 +1,7 @@
 #include "cimc_client.h"
 #include "cimc_object_path.h"
 #include "cimc_class.h"
+#include "cimc_instance.h"
 
 static void
 dealloc(CIMCClient *client)
@@ -43,6 +44,8 @@ static VALUE each_class_name(VALUE self, VALUE object_path, VALUE flags)
   return Qnil;
 }
 
+
+
 /**
  * call-seq:
  *  each_class(object_path, flags)
@@ -74,7 +77,6 @@ static VALUE each_class(VALUE self, VALUE object_path, VALUE flags)
   sfcc_rb_raise_if_error(status, "Can't get classes");
   return Qnil;
 }
-
 
 /**
  * call-seq:
@@ -112,6 +114,50 @@ static VALUE each_instance_name(VALUE self, VALUE object_path)
   return Qnil;
 }
 
+/**
+ * call-seq:
+ *  each_instance(object_path, flags, properties)
+ *
+ * Enumerate the instance names of the class defined by +object_path+
+ * +object_path+ ObjectPath containing nameSpace and classname components.
+ * +flags+ Any combination of the following flags are supported:
+ * CIMC_FLAG_LocalOnly, CIMC_FLAG_DeepInheritance,
+ * CIMC_FLAG_IncludeQualifiers and CIMC_FLAG_IncludeClassOrigin.
+ * +properties+ If not NULL, the members of the array define one or more 
+ * Property names.
+ * Each returned Object MUST NOT include elements for any Properties
+ * missing from this list
+ * 
+ */
+static VALUE each_instance(VALUE self, VALUE object_path, VALUE flags, VALUE properties)
+{
+  CIMCStatus status;
+  CIMCObjectPath *op = NULL;
+  CIMCClient *client = NULL;
+  char *props[RARRAY_LEN(properties)];
+  int i = 0;
+
+  memset(&status, 0, sizeof(CIMCStatus));
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
+
+  for (; i < RARRAY_LEN(properties); ++i)
+    props[i] = StringValuePtr(*(RARRAY_PTR(properties) + i));
+
+  CIMCEnumeration *enm = client->ft->enumInstances(client, op, NUM2INT(flags), props, &status);
+
+  if (enm && !status.rc ) {
+    while (enm->ft->hasNext(enm, NULL)) {
+      CIMCData next = enm->ft->getNext(enm, NULL);
+      rb_yield(Sfcc_wrap_cimc_instance(next.value.inst->ft->clone(next.value.inst, &status)));
+    }
+    enm->ft->release(enm);
+    return Qnil;
+  }
+
+  sfcc_rb_raise_if_error(status, "Can't get instances");
+  return Qnil;
+}
 
 /**
  * call-seq:
@@ -167,6 +213,7 @@ void init_cimc_client()
   rb_define_method(klass, "each_class_name", each_class_name, 2);
   rb_define_method(klass, "each_class", each_class, 2);
   rb_define_method(klass, "each_instance_name", each_instance_name, 1);
+  rb_define_method(klass, "each_instance", each_instance, 3);
   rb_define_method(klass, "get_class", get_class, 3);
 }
 
