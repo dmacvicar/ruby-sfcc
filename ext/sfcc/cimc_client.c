@@ -144,7 +144,7 @@ static VALUE each_instance(VALUE self, VALUE object_path, VALUE flags, VALUE pro
   for (; i < RARRAY_LEN(properties); ++i)
     props[i] = StringValuePtr(*(RARRAY_PTR(properties) + i));
 
-  CIMCEnumeration *enm = client->ft->enumInstances(client, op, NUM2INT(flags), props, &status);
+  CIMCEnumeration *enm = client->ft->enumInstances(client, op, NUM2INT(flags), /*props*/ NULL, &status);
 
   if (enm && !status.rc ) {
     while (enm->ft->hasNext(enm, NULL)) {

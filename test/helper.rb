@@ -1,4 +1,6 @@
+require 'rubygems'
 require 'test/unit'
+require 'shoulda'
 require 'tempfile'
  
 %w(../lib ../ext).each do |path|
