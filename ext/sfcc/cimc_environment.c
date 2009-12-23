@@ -8,7 +8,7 @@ dealloc(CIMCEnv *env)
   ReleaseCIMCEnv(env);
 }
 
-/*
+/**
  * call-seq:
  *  connect(host, frontend, port, user, passwd)
  *
@@ -52,7 +52,7 @@ connect( VALUE self,
   return Qnil;
 }
 
-/*
+/**
  * call-seq:
  *  new(env_id)
  *
@@ -78,7 +78,7 @@ static VALUE new(VALUE klass, VALUE env_id)
   return Qnil;
 }
 
-/*
+/**
  * call-seq:
  *  new_object_path(namespace, classname)
  *
@@ -104,7 +104,6 @@ static VALUE new_object_path(VALUE self,
   return Qnil;
   
 }
-
 
 VALUE
 Sfcc_wrap_cimc_environment(CIMCEnv *environment)

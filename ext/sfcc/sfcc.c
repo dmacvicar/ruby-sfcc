@@ -75,7 +75,6 @@ static VALUE sfcc_status_exception(CIMCStatus status)
   }
 }
 
-
 void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...)
 {
   va_list arg_list;
@@ -85,4 +84,93 @@ void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...)
     return;
 
   rb_raise(sfcc_status_exception(status), msg, arg_list);
+}
+
+char ** sfcc_value_array_to_string_array(VALUE array)
+{
+  char **ret;
+  int i = 0;
+
+  if ( !NIL_P(array) && RARRAY_LEN(array) > 0 ) {
+    ret = (char**) malloc(RARRAY_LEN(array)*sizeof(char*));
+    for (; i < RARRAY_LEN(array); ++i)
+      ret[i] = StringValuePtr(*(RARRAY_PTR(array) + i));
+  }
+  else
+    ret = NULL;
+
+  return ret;
+}
+
+VALUE sfcc_cimcdata_to_value(CIMCData data)
+{
+  CIMCString *cimstr = NULL;
+  VALUE rbval;
+  CIMCStatus status;
+
+  if (data.type & CIMC_ARRAY) {
+    int k = 0;
+    int n = 0;
+    VALUE rbarray = rb_ary_new();
+
+    if (!data.value.array)
+      return rb_ary_new();
+
+    n = data.value.array->ft->getSize(data.value.array, &status);
+    if (!status.rc) {
+      for (k = 0; k < n; ++k) {
+        CIMCData element = data.value.array->ft->getElementAt(data.value.array, k, NULL);
+        rb_ary_push(rbarray, sfcc_cimcdata_to_value(element));
+      }
+      return rbarray;
+    }
+    sfcc_rb_raise_if_error(status, "Can't retrieve array size");
+    return Qnil;
+  }
+  else if (data.type & CIMC_ENC) {    
+    switch (data.type) {
+    case CIMC_instance: 
+    case CIMC_ref:        
+    case CIMC_args:
+    case CIMC_filter:
+      return Qnil;
+    case CIMC_string:
+    case CIMC_numericString:
+    case CIMC_booleanString:
+    case CIMC_dateTimeString:
+    case CIMC_classNameString:
+      return data.value.string ? rb_str_new2((char*)data.value.string->hdl) : Qnil;
+    case CIMC_dateTime:
+      cimstr = data.value.dateTime ? CMGetStringFormat(data.value.dateTime,NULL) : NULL;
+      rbval = cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+      if (cimstr) CMRelease(cimstr);
+      return rbval;
+    }
+  }
+  else if (data.type & CIMC_SIMPLE) {
+    switch (data.type) {
+    case CIMC_boolean: return data.value.boolean ? Qtrue : Qfalse;
+    case CIMC_char16: return UINT2NUM(data.value.char16);
+    }
+  }
+  else if (data.type & CIMC_INTEGER) {
+    switch (data.type) {
+    case CIMC_uint8: return UINT2NUM(data.value.uint8);
+    case CIMC_sint8: return INT2NUM(data.value.sint8);
+    case CIMC_uint16: return UINT2NUM(data.value.uint16);
+    case CIMC_sint16: return INT2NUM(data.value.sint16);
+    case CIMC_uint32: return UINT2NUM(data.value.uint32);
+    case CIMC_sint32: return INT2NUM(data.value.sint32);
+    case CIMC_uint64: return UINT2NUM(data.value.uint64);
+    case CIMC_sint64: return INT2NUM(data.value.sint64);
+    }
+  }
+  else if (data.type & CIMC_REAL) {
+    switch (data.type) {
+    case CIMC_real32: return LONG2NUM(data.value.real32);
+    case CIMC_real64: return LONG2NUM(data.value.real64);
+    }
+  }
+  rb_raise(rb_eTypeError, "unsupported data data type %d", data.type);
+  return Qnil;
 }

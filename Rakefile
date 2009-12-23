@@ -2,6 +2,8 @@ $: << File.join(File.dirname(__FILE__), "test")
 require 'rubygems'
 require 'rake/gempackagetask'
 require 'rake/extensiontask'
+require 'rake/rdoctask'
+require 'rake/testtask'
 
 task :default => :test
 
@@ -29,3 +31,15 @@ Rake::GemPackageTask.new(spec) do |pkg|
 end
 
 Rake::ExtensionTask.new('sfcc')
+
+Rake::RDocTask.new(:rdoc_dev) do |rd|
+    rd.main = "README.rdoc"
+    rd.rdoc_files.include("README.rdoc", "lib/**/*.rb", "ext/**/*")
+    rd.options << "--all"
+end
+
+Rake::TestTask.new do |t|
+    #t.libs << "test"
+    t.test_files = FileList['test/test_*.rb']
+    t.verbose = true
+  end

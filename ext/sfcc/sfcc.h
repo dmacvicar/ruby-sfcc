@@ -23,4 +23,18 @@ extern VALUE mSfccCimc;
  */
 void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...);
 
+/**
+ * allocates a string array where each string points to the
+ * str pointer of the value
+ *
+ * you need to deallocate the array yourself. But don't deallocate
+ * the elements.
+ */
+inline char ** sfcc_value_array_to_string_array(VALUE array);
+
+/**
+ *
+ */
+inline VALUE sfcc_cimcdata_to_value(CIMCData data);
+
 #endif

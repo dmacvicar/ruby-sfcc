@@ -44,8 +44,6 @@ static VALUE each_class_name(VALUE self, VALUE object_path, VALUE flags)
   return Qnil;
 }
 
-
-
 /**
  * call-seq:
  *  each_class(object_path, flags)
@@ -134,17 +132,17 @@ static VALUE each_instance(VALUE self, VALUE object_path, VALUE flags, VALUE pro
   CIMCStatus status;
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
-  char *props[RARRAY_LEN(properties)];
-  int i = 0;
+  char **props;
 
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, CIMCObjectPath, op);
 
-  for (; i < RARRAY_LEN(properties); ++i)
-    props[i] = StringValuePtr(*(RARRAY_PTR(properties) + i));
+  props = sfcc_value_array_to_string_array(properties);
 
-  CIMCEnumeration *enm = client->ft->enumInstances(client, op, NUM2INT(flags), /*props*/ NULL, &status);
+  CIMCEnumeration *enm = client->ft->enumInstances(client, op, NUM2INT(flags), props, &status);
+
+  free(props);
 
   if (enm && !status.rc ) {
     while (enm->ft->hasNext(enm, NULL)) {
@@ -179,17 +177,18 @@ static VALUE get_class(VALUE self, VALUE object_path, VALUE flags, VALUE propert
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
   CIMCClass *cimclass = NULL;
-  char *props[RARRAY_LEN(properties)];
-  int i = 0;
+  char **props;
 
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, CIMCObjectPath, op);
 
-  for (; i < RARRAY_LEN(properties); ++i)
-    props[i] = StringValuePtr(*(RARRAY_PTR(properties) + i));
+  props = sfcc_value_array_to_string_array(properties);
 
   cimclass = client->ft->getClass(client, op, NUM2INT(flags), props, &status);
+
+  free(props);
+
   sfcc_rb_raise_if_error(status, "Can't get class");
   return Sfcc_wrap_cimc_class(cimclass);
 }
