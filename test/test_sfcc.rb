@@ -28,7 +28,7 @@ class BasicTest < SfccTestCase
         should "be of class Client" do
           assert_kind_of(Sfcc::Cimc::Client, @client)
         end
-
+        
         context "a new object path for root/cimv2" do
           setup do
             @op = @env.new_object_path("root/cimv2", "")
@@ -38,6 +38,13 @@ class BasicTest < SfccTestCase
             assert_kind_of(Sfcc::Cimc::ObjectPath, @op)
           end
 
+          should "allow for query" do
+            @client.each_for_query(@op, "select * from CIM_ComputerSystem", "wql") do |instance|
+              puts instance
+            end
+          end
+
+          
           context "class names" do
             setup do
               @class_names = []

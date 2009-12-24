@@ -28,5 +28,15 @@ module Sfcc
     class ErrorDoNotUnload < RuntimeError; end
     class ErrorErrorSystem < RuntimeError; end
     class ErrorRcError < RuntimeError; end
+
+    class Instance
+      # returns the string representation of
+      # the object path for this instance
+      def to_s
+        object_path.to_s
+      end
+    end
   end
+  
 end
+

@@ -73,6 +73,40 @@ static VALUE each_class(VALUE self, VALUE object_path, VALUE flags)
 
 /**
  * call-seq:
+ */
+static VALUE each_for_query(VALUE self,
+                           VALUE object_path,
+                           VALUE query,
+                           VALUE lang)
+{
+  CIMCStatus status;
+  CIMCObjectPath *op = NULL;
+  CIMCClient *client = NULL;
+
+  memset(&status, 0, sizeof(CIMCStatus));
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
+
+  CIMCEnumeration *enm = client->ft->execQuery(client,
+                                               op,
+                                               StringValuePtr(query),
+                                               StringValuePtr(lang),
+                                               &status);
+  if (enm && !status.rc ) {
+    while (enm->ft->hasNext(enm, NULL)) {
+      CIMCData next = enm->ft->getNext(enm, NULL);
+      rb_yield(sfcc_cimcdata_to_value(next));
+    }
+    enm->ft->release(enm);
+    return Qnil;
+  }
+
+  sfcc_rb_raise_if_error(status, "Can't get instances from query");
+  return Qnil;
+}
+
+/**
+ * call-seq:
  *  each_instance_name(object_path, flags)
  *
  * Enumerate the instance names of the class defined by +object_path+
@@ -202,6 +236,7 @@ void init_cimc_client()
 
   rb_define_method(klass, "each_class_name", each_class_name, 2);
   rb_define_method(klass, "each_class", each_class, 2);
+  rb_define_method(klass, "each_for_query", each_for_query, 3);
   rb_define_method(klass, "each_instance_name", each_instance_name, 1);
   rb_define_method(klass, "each_instance", each_instance, 3);
   rb_define_method(klass, "get_class", get_class, 3);
