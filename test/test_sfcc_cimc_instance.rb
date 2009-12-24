@@ -39,8 +39,8 @@ class SfccCimcObjectPathTest < SfccTestCase
           assert ! @cim_instance_names.empty?
         end
 
-        should "have all elements of type String" do
-          @cim_instance_names.each { |i| assert_kind_of(String, i) }
+        should "have all elements of type ObjectPath" do
+          @cim_instance_names.each { |i| assert_kind_of(Sfcc::Cimc::ObjectPath, i) }
         end
       end
 

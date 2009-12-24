@@ -33,7 +33,7 @@ void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...);
 inline char ** sfcc_value_array_to_string_array(VALUE array);
 
 /**
- *
+ * converts CIMCData to ruby VALUE
  */
 inline VALUE sfcc_cimcdata_to_value(CIMCData data);
 

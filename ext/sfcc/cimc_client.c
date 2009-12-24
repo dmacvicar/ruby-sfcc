@@ -21,21 +21,16 @@ static VALUE each_class_name(VALUE self, VALUE object_path, VALUE flags)
   CIMCStatus status;
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
-  CIMCString *path = NULL;
 
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   CIMCEnumeration *enm = client->ft->enumClassNames(client, op, NUM2INT(flags), &status);
-
   if (enm && !status.rc ) {
     while (enm->ft->hasNext(enm, NULL)) {
       CIMCData next = enm->ft->getNext(enm, NULL);
-      op = next.value.ref;
-      path = op->ft->toString(op, NULL);
-      char *name = path->ft->getCharPtr(path, NULL);
-      rb_yield(rb_str_new2(name));
+      rb_yield(sfcc_cimcdata_to_value(next));
     }
     enm->ft->release(enm);
     return Qnil;
@@ -67,7 +62,7 @@ static VALUE each_class(VALUE self, VALUE object_path, VALUE flags)
   if (enm && !status.rc ) {
     while (enm->ft->hasNext(enm, NULL)) {
       CIMCData next = enm->ft->getNext(enm, NULL);
-      rb_yield(Sfcc_wrap_cimc_class(next.value.cls->ft->clone(next.value.cls, &status)));
+      rb_yield(sfcc_cimcdata_to_value(next));
     }
     enm->ft->release(enm);
     return Qnil;
@@ -88,7 +83,6 @@ static VALUE each_instance_name(VALUE self, VALUE object_path)
   CIMCStatus status;
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
-  CIMCString *path = NULL;
 
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
@@ -99,10 +93,7 @@ static VALUE each_instance_name(VALUE self, VALUE object_path)
   if (enm && !status.rc ) {
     while (enm->ft->hasNext(enm, NULL)) {
       CIMCData next = enm->ft->getNext(enm, NULL);
-      op = next.value.ref;
-      path = op->ft->toString(op, NULL);
-      char *name = path->ft->getCharPtr(path, NULL);
-      rb_yield(rb_str_new2(name));
+      rb_yield(sfcc_cimcdata_to_value(next));
     }
     enm->ft->release(enm);
     return Qnil;
@@ -147,7 +138,7 @@ static VALUE each_instance(VALUE self, VALUE object_path, VALUE flags, VALUE pro
   if (enm && !status.rc ) {
     while (enm->ft->hasNext(enm, NULL)) {
       CIMCData next = enm->ft->getNext(enm, NULL);
-      rb_yield(Sfcc_wrap_cimc_instance(next.value.inst->ft->clone(next.value.inst, &status)));
+      rb_yield(sfcc_cimcdata_to_value(next));
     }
     enm->ft->release(enm);
     return Qnil;

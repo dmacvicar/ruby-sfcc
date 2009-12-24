@@ -129,8 +129,12 @@ VALUE sfcc_cimcdata_to_value(CIMCData data)
   }
   else if (data.type & CIMC_ENC) {    
     switch (data.type) {
-    case CIMC_instance: 
-    case CIMC_ref:        
+    case CIMC_instance:
+      return data.value.inst ? Sfcc_wrap_cimc_instance(data.value.inst->ft->clone(data.value.inst, NULL)) : Qnil;
+    case CIMC_class:
+      return data.value.cls ? Sfcc_wrap_cimc_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
+    case CIMC_ref:
+      return data.value.ref ? Sfcc_wrap_cimc_object_path(data.value.ref->ft->clone(data.value.ref, NULL)) : Qnil;
     case CIMC_args:
     case CIMC_filter:
       return Qnil;
@@ -174,3 +178,4 @@ VALUE sfcc_cimcdata_to_value(CIMCData data)
   rb_raise(rb_eTypeError, "unsupported data data type %d", data.type);
   return Qnil;
 }
+

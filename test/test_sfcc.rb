@@ -44,12 +44,12 @@ class BasicTest < SfccTestCase
               @client.each_class_name(@op, Sfcc::CIMC_FLAG_DeepInheritance) { |name| @class_names << name }
             end
 
-            should "include CIM_ManagedElement string" do
-              assert @class_names.include?("CIM_ManagedElement")
+            should "include CIM_ManagedElement" do
+              assert !@class_names.select { |x| x.to_s == "CIM_ManagedElement" }.empty?
             end
 
-            should "have every element of type String" do
-              @class_names.each { |n| assert_kind_of(String, n) }
+            should "have every element of type Sfcc::Cimc::ObjectPath" do
+              @class_names.each { |n| assert_kind_of(Sfcc::Cimc::ObjectPath, n) }
             end            
           end
 
