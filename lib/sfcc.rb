@@ -1,5 +1,6 @@
 
 require "sfcc.so" # native
+require 'enumerator'
 
 module Sfcc
   CIMC_FLAG_LocalOnly          = 1
@@ -36,6 +37,14 @@ module Sfcc
         object_path.to_s
       end
     end
+
+    class Client
+      def each_class_name
+        
+      end
+      
+    end
+    
   end
   
 end

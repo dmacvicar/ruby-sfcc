@@ -4,7 +4,7 @@
 static void
 dealloc(CIMCClass *cimclass)
 {
-  cimclass->ft->release(cimclass);
+  SFCC_DEC_REFCOUNT(cimclass);
 }
 
 static VALUE class_name(VALUE self)
@@ -19,6 +19,7 @@ static VALUE class_name(VALUE self)
 VALUE
 Sfcc_wrap_cimc_class(CIMCClass *cimclass)
 {
+  SFCC_INC_REFCOUNT(cimclass);
   return Data_Wrap_Struct(cSfccCimcClass, NULL, dealloc, cimclass);
 }
 

@@ -1,4 +1,5 @@
 #include "cimc_client.h"
+#include "cimc_enumeration.h"
 #include "cimc_object_path.h"
 #include "cimc_class.h"
 #include "cimc_instance.h"
@@ -6,21 +7,22 @@
 static void
 dealloc(CIMCClient *client)
 {
-  client->ft->release(client);
+  SFCC_DEC_REFCOUNT(client);
 }
 
 /**
  * call-seq:
- *  each_class_name(object_path, flags)
+ *  class_names(object_path, flags)
  *
- * Enumerate the available class names for the given
+ * return the available class names for the given
  * +object_path+ and +flags+
  */
-static VALUE each_class_name(VALUE self, VALUE object_path, VALUE flags)
+static VALUE class_names(VALUE self, VALUE object_path, VALUE flags)
 {
   CIMCStatus status;
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
+  VALUE rbenm = Qnil;
 
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
@@ -28,31 +30,28 @@ static VALUE each_class_name(VALUE self, VALUE object_path, VALUE flags)
 
   CIMCEnumeration *enm = client->ft->enumClassNames(client, op, NUM2INT(flags), &status);
   if (enm && !status.rc ) {
-    while (enm->ft->hasNext(enm, NULL)) {
-      CIMCData next = enm->ft->getNext(enm, NULL);
-      rb_yield(sfcc_cimcdata_to_value(next));
-    }
-    enm->ft->release(enm);
-    return Qnil;
+    rbenm = Sfcc_wrap_cimc_enumeration(enm);
   }
+  //enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get class names");
-  return Qnil;
+  return rbenm;
 }
 
 /**
  * call-seq:
- *  each_class(object_path, flags)
+ *  classes(object_path, flags)
  *
- * Enumerate classes and subclasses in the namespace defined by +object_path+.
+ * classes and subclasses in the namespace defined by +object_path+.
  * Class structure and inheritance scope can be controled using the +flags+ parameter
  * Any combination of the following flags are supported:
  * CIMC_FLAG_LocalOnly, CIMC_FLAG_IncludeQualifiers and CIMC_FLAG_IncludeClassOrigin.
  */
-static VALUE each_class(VALUE self, VALUE object_path, VALUE flags)
+static VALUE classes(VALUE self, VALUE object_path, VALUE flags)
 {
   CIMCStatus status;
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
+  VALUE rbenm = Qnil;
 
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
@@ -60,24 +59,20 @@ static VALUE each_class(VALUE self, VALUE object_path, VALUE flags)
 
   CIMCEnumeration *enm = client->ft->enumClasses(client, op, NUM2INT(flags), &status);
   if (enm && !status.rc ) {
-    while (enm->ft->hasNext(enm, NULL)) {
-      CIMCData next = enm->ft->getNext(enm, NULL);
-      rb_yield(sfcc_cimcdata_to_value(next));
-    }
-    enm->ft->release(enm);
-    return Qnil;
+    rbenm = Sfcc_wrap_cimc_enumeration(enm);
   }
+  //enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get classes");
-  return Qnil;
+  return rbenm;
 }
 
 /**
  * call-seq:
  */
-static VALUE each_for_query(VALUE self,
-                           VALUE object_path,
-                           VALUE query,
-                           VALUE lang)
+static VALUE query(VALUE self,
+                   VALUE object_path,
+                   VALUE query,
+                   VALUE lang)
 {
   CIMCStatus status;
   CIMCObjectPath *op = NULL;
@@ -86,6 +81,7 @@ static VALUE each_for_query(VALUE self,
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, CIMCObjectPath, op);
+  VALUE rbenm = Qnil;
 
   CIMCEnumeration *enm = client->ft->execQuery(client,
                                                op,
@@ -93,30 +89,25 @@ static VALUE each_for_query(VALUE self,
                                                StringValuePtr(lang),
                                                &status);
   if (enm && !status.rc ) {
-    while (enm->ft->hasNext(enm, NULL)) {
-      CIMCData next = enm->ft->getNext(enm, NULL);
-      rb_yield(sfcc_cimcdata_to_value(next));
-    }
-    enm->ft->release(enm);
-    return Qnil;
+    rbenm = Sfcc_wrap_cimc_enumeration(enm);
   }
-
+  //enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get instances from query");
-  return Qnil;
+  return rbenm;
 }
 
 /**
  * call-seq:
- *  each_instance_name(object_path, flags)
+ *  instance_names(object_path, flags)
  *
- * Enumerate the instance names of the class defined by +object_path+
- * +object_path+
+ * instance names of the class defined by +object_path+
  */
-static VALUE each_instance_name(VALUE self, VALUE object_path)
+static VALUE instance_names(VALUE self, VALUE object_path)
 {
   CIMCStatus status;
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
+  VALUE rbenm = Qnil;
 
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
@@ -125,21 +116,16 @@ static VALUE each_instance_name(VALUE self, VALUE object_path)
   CIMCEnumeration *enm = client->ft->enumInstanceNames(client, op, &status);
 
   if (enm && !status.rc ) {
-    while (enm->ft->hasNext(enm, NULL)) {
-      CIMCData next = enm->ft->getNext(enm, NULL);
-      rb_yield(sfcc_cimcdata_to_value(next));
-    }
-    enm->ft->release(enm);
-    return Qnil;
+    rbenm = Sfcc_wrap_cimc_enumeration(enm);
   }
-
+  //enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get instance names");
-  return Qnil;
+  return rbenm;
 }
 
 /**
  * call-seq:
- *  each_instance(object_path, flags, properties)
+ *  instances(object_path, flags, properties)
  *
  * Enumerate the instance names of the class defined by +object_path+
  * +object_path+ ObjectPath containing nameSpace and classname components.
@@ -152,12 +138,13 @@ static VALUE each_instance_name(VALUE self, VALUE object_path)
  * missing from this list
  * 
  */
-static VALUE each_instance(VALUE self, VALUE object_path, VALUE flags, VALUE properties)
+static VALUE instances(VALUE self, VALUE object_path, VALUE flags, VALUE properties)
 {
   CIMCStatus status;
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
   char **props;
+  VALUE rbenm = Qnil;
 
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClient, client);
@@ -170,16 +157,10 @@ static VALUE each_instance(VALUE self, VALUE object_path, VALUE flags, VALUE pro
   free(props);
 
   if (enm && !status.rc ) {
-    while (enm->ft->hasNext(enm, NULL)) {
-      CIMCData next = enm->ft->getNext(enm, NULL);
-      rb_yield(sfcc_cimcdata_to_value(next));
-    }
-    enm->ft->release(enm);
-    return Qnil;
+    rbenm = Sfcc_wrap_cimc_enumeration(enm);
   }
-
   sfcc_rb_raise_if_error(status, "Can't get instances");
-  return Qnil;
+  return rbenm;
 }
 
 /**
@@ -222,6 +203,7 @@ VALUE
 Sfcc_wrap_cimc_client(CIMCClient *client)
 {
   assert(client);
+  SFCC_INC_REFCOUNT(client);
   return Data_Wrap_Struct(cSfccCimcClient, NULL, dealloc, client);
 }
 
@@ -234,11 +216,11 @@ void init_cimc_client()
   VALUE klass = rb_define_class_under(cimc, "Client", rb_cObject);
   cSfccCimcClient = klass;
 
-  rb_define_method(klass, "each_class_name", each_class_name, 2);
-  rb_define_method(klass, "each_class", each_class, 2);
-  rb_define_method(klass, "each_for_query", each_for_query, 3);
-  rb_define_method(klass, "each_instance_name", each_instance_name, 1);
-  rb_define_method(klass, "each_instance", each_instance, 3);
+  rb_define_method(klass, "class_names", class_names, 2);
+  rb_define_method(klass, "classes", classes, 2);
+  rb_define_method(klass, "query", query, 3);
+  rb_define_method(klass, "instance_names", instance_names, 1);
+  rb_define_method(klass, "instances", instances, 3);
   rb_define_method(klass, "get_class", get_class, 3);
 }
 

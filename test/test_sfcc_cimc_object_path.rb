@@ -29,7 +29,7 @@ class SfccCimcObjectPathTest < SfccTestCase
           assert_equal "root/cimv3", @op.namespace
         end
 
-        should "have localhost as hostname" do
+        should "have respond to hostname" do
           assert_nil @op.hostname
         end
 
@@ -38,6 +38,15 @@ class SfccCimcObjectPathTest < SfccTestCase
           assert_equal "foo.bar.com", @op.namespace
         end
 
+        should "respond to class_name" do
+          assert_equal "", @op.class_name
+        end
+
+        should "change its class name after setting it" do
+          @op.class_name = "ClassName"
+          assert_equal "ClassName", @op.class_name
+        end
+        
       end            
     end
   end

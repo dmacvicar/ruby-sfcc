@@ -5,7 +5,7 @@
 static void
 dealloc(CIMCInstance *instance)
 {
-  instance->ft->release(instance);
+  SFCC_DEC_REFCOUNT(instance);
 }
 
 /**
@@ -97,6 +97,7 @@ static VALUE object_path(VALUE self)
 VALUE
 Sfcc_wrap_cimc_instance(CIMCInstance *instance)
 {
+  SFCC_INC_REFCOUNT(instance);
   return Data_Wrap_Struct(cSfccCimcInstance, NULL, dealloc, instance);
 }
 

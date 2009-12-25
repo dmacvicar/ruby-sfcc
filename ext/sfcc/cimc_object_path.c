@@ -4,7 +4,7 @@
 static void
 dealloc(CIMCObjectPath *object_path)
 {
-  object_path->ft->release(object_path);
+  SFCC_DEC_REFCOUNT(object_path);
 }
 
 /**
@@ -63,6 +63,33 @@ static VALUE hostname(VALUE self)
 
 /**
  * call-seq:
+ *   class_name=(ns)
+ * Set/replace the class name component
+ */
+static VALUE set_class_name(VALUE self, VALUE val)
+{
+  CIMCObjectPath *ptr = NULL;
+  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  ptr->ft->setClassName(ptr, StringValuePtr(val));
+  return val;
+}
+
+/**
+ * call-seq:
+ *   class_name()
+ * Get the class name component
+ */
+static VALUE class_name(VALUE self)
+{
+  CIMCObjectPath *ptr = NULL;
+  CIMCString *cimstr = NULL;
+  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  cimstr = ptr->ft->getClassName(ptr, NULL);
+  return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+}
+
+/**
+ * call-seq:
  *   to_s
  * Generates a well formed string representation of this ObjectPath
  */
@@ -78,6 +105,7 @@ static VALUE to_s(VALUE self)
 VALUE
 Sfcc_wrap_cimc_object_path(CIMCObjectPath *object_path)
 {
+  SFCC_INC_REFCOUNT(object_path);
   return Data_Wrap_Struct(cSfccCimcObjectPath, NULL, dealloc, object_path);
 }
 
@@ -94,5 +122,7 @@ void init_cimc_object_path()
   rb_define_method(klass, "namespace", namespace, 0);
   rb_define_method(klass, "hostname=", set_hostname, 1);
   rb_define_method(klass, "hostname", hostname, 0);
+  rb_define_method(klass, "class_name=", set_class_name, 1);
+  rb_define_method(klass, "class_name", class_name, 0);
   rb_define_method(klass, "to_s", to_s, 0);
 }

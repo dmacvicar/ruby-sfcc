@@ -17,6 +17,32 @@
 extern VALUE mSfcc;
 extern VALUE mSfccCimc;
 
+/*
+#define SFCC_DEC_REFCOUNT(x) \
+  do { \
+    int refc = ((CIMCObject*)x)->refCount; \
+    printf("dec X: %d rf: %d\n", (int)x, refc); \
+    --((CIMCObject*)x)->refCount;          \
+    if (refc <= 0) \
+      x->ft->release(x); \
+    free(x); \
+  } while (0);
+*/
+
+#define SFCC_DEC_REFCOUNT(x) \
+  x->ft->release(x);
+
+/*
+#define SFCC_INC_REFCOUNT(x) \
+  do { \
+    int refc = ((CIMCObject*)x)->refCount; \
+    printf("inc X: %d rf: %d\n", (int) x, refc); \
+    ++((CIMCObject*)x)->refCount;          \
+  } while (0);
+*/
+
+#define SFCC_INC_REFCOUNT(x) (void)(0);
+
 /**
  * raises a ruby exception if the status is an error
  * whenever possible, adds the custom message if not null

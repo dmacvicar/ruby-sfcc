@@ -32,37 +32,35 @@ class SfccCimcObjectPathTest < SfccTestCase
 
       context "it instance names" do
         setup do
-          @cim_instance_names = []
-          @client.each_instance_name(@op_computer_system) { |i| @cim_instance_names << i }
+          @instance_names = @client.instance_names(@op_computer_system)
         end
         should "not be empty, at least one CIM_ComputerSystem has to be there" do
-          assert ! @cim_instance_names.empty?
+          assert @instance_names.any?
         end
 
         should "have all elements of type ObjectPath" do
-          @cim_instance_names.each { |i| assert_kind_of(Sfcc::Cimc::ObjectPath, i) }
+          @instance_names.each { |i| assert_kind_of(Sfcc::Cimc::ObjectPath, i) }
         end
       end
 
       context "instances of CIM_ComputerSystem" do
         setup do
-          @cim_instances = []
-          @client.each_instance(@op_computer_system, 0, nil) { |i| @cim_instances << i }
+          @instances = @client.instances(@op_computer_system, 0, nil)
         end
 
         should "have all elements of type Cimc::Instance" do
-          @cim_instances.each { |i| assert_kind_of(Sfcc::Cimc::Instance, i) }
+          @instances.each { |i| assert_kind_of(Sfcc::Cimc::Instance, i) }
         end
 
         should "respond to property Name" do
-          @cim_instances.each do |i|
+          @instances.each do |i|
             assert_kind_of(String, i.property('Name'))
             #puts i.property('Name')
           end
         end
 
         should "be able to iterate over properties" do
-          @cim_instances.each do |i|
+          @instances.each do |i|
             i.each_property do |name, value|              
               puts "#{name} -> #{value}"
               puts "---"

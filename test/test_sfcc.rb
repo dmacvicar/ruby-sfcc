@@ -39,7 +39,8 @@ class BasicTest < SfccTestCase
           end
 
           should "allow for query" do
-            @client.each_for_query(@op, "select * from CIM_ComputerSystem", "wql") do |instance|
+            result = @client.query(@op, "select * from CIM_ComputerSystem", "wql")
+            result.each do |instance|
               puts instance
             end
           end
@@ -47,10 +48,13 @@ class BasicTest < SfccTestCase
           
           context "class names" do
             setup do
-              @class_names = []
-              @client.each_class_name(@op, Sfcc::CIMC_FLAG_DeepInheritance) { |name| @class_names << name }
+              @class_names = @client.class_names(@op, Sfcc::CIMC_FLAG_DeepInheritance)
             end
 
+            should "be a Cimc::Enumeration" do
+              assert_kind_of(Sfcc::Cimc::Enumeration, @class_names)
+            end
+            
             should "include CIM_ManagedElement" do
               assert !@class_names.select { |x| x.to_s == "CIM_ManagedElement" }.empty?
             end
@@ -62,12 +66,15 @@ class BasicTest < SfccTestCase
 
           context "classes" do
             setup do
-              @cimclasses = []
-              @client.each_class(@op, Sfcc::CIMC_FLAG_DeepInheritance) { |cimclass| @cimclasses << cimclass }
+              @classes = @client.classes(@op, Sfcc::CIMC_FLAG_DeepInheritance)
+            end
+
+            should "be a Cimc::Enumeration" do
+              assert_kind_of(Sfcc::Cimc::Enumeration, @classes)
             end
 
             should "have every alement of type Cimc::Class" do
-              @cimclasses.each { |c| assert_kind_of(Sfcc::Cimc::Class, c) }
+              @classes.each { |c| assert_kind_of(Sfcc::Cimc::Class, c) }
             end            
           end
 

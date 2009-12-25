@@ -4,6 +4,7 @@
 
 #include "cimc_environment.h"
 #include "cimc_object_path.h"
+#include "cimc_enumeration.h"
 #include "cimc_class.h"
 #include "cimc_instance.h"
 #include "cimc_client.h"
@@ -18,6 +19,7 @@ void Init_sfcc()
 
   init_cimc_environment();
   init_cimc_object_path();
+  init_cimc_enumeration();
   init_cimc_class();
   init_cimc_instance();
   init_cimc_client();

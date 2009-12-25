@@ -5,7 +5,7 @@
 static void
 dealloc(CIMCEnv *env)
 {
-  ReleaseCIMCEnv(env);
+  SFCC_DEC_REFCOUNT(env);
 }
 
 /**
@@ -109,6 +109,7 @@ VALUE
 Sfcc_wrap_cimc_environment(CIMCEnv *environment)
 {
   assert(environment);
+  SFCC_INC_REFCOUNT(environment);
   return Data_Wrap_Struct(cSfccCimcEnvironment, NULL, dealloc, environment);
 }
 
