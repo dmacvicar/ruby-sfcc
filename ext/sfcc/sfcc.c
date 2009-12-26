@@ -2,6 +2,10 @@
 #include <stdarg.h>
 #include "sfcc.h"
 
+#include <CimClientLib/cmci.h>
+#include <CimClientLib/native.h>
+#include <CimClientLib/cmcimacs.h>
+
 #include "cimc_environment.h"
 #include "cimc_object_path.h"
 #include "cimc_enumeration.h"
@@ -14,7 +18,13 @@ VALUE mSfccCimc;
 
 void Init_sfcc()
 {
+  /**
+   * SBLIM sfcc ruby API
+   */
   mSfcc = rb_define_module("Sfcc");
+  /**
+   * SBLIM sfcc CIMC API
+   */
   mSfccCimc= rb_define_module_under(mSfcc, "Cimc");
 
   init_cimc_environment();
@@ -146,8 +156,9 @@ VALUE sfcc_cimcdata_to_value(CIMCData data)
     case CIMC_classNameString:
       break;
     case CIMC_string:
-      printf("--> converting to rb: %s\n", (char*)data.value.string->ft->getCharPtr(data.value.string, NULL));
       return data.value.string ? rb_str_new2((char*)data.value.string->ft->getCharPtr(data.value.string, NULL)) : Qnil;
+    case CIMC_charsptr:
+      return data.value.chars ? rb_str_new((char*)data.value.dataPtr.ptr, data.value.dataPtr.length) : Qnil;
     case CIMC_dateTime:
       cimstr = data.value.dateTime ? CMGetStringFormat(data.value.dateTime,NULL) : NULL;
       rbval = cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
@@ -201,6 +212,9 @@ CIMCData sfcc_value_to_cimcdata(VALUE value)
   case T_STRING:
     data.type = CIMC_chars;
     data.value.chars = StringValuePtr(value);
+    //data.type = CIMC_charsptr;
+    //data.value.dataPtr.ptr = StringValuePtr(value);
+    //data.value.dataPtr.length =  RSTRING_LEN(value);
     break;
   case T_TRUE:
     data.type = CIMC_boolean;

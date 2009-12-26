@@ -80,6 +80,21 @@ static VALUE property_count(VALUE self)
 
 /**
  * call-seq:
+ *   set_property(name, value)
+ * Adds/replaces a names property
+ */
+static VALUE set_property(VALUE self, VALUE name, VALUE value)
+{
+  CIMCInstance *ptr = NULL;
+  CIMCData data;
+  Data_Get_Struct(self, CIMCInstance, ptr);
+  data = sfcc_value_to_cimcdata(value);
+  ptr->ft->setProperty(ptr, StringValuePtr(name), &data.value, data.type);
+  return value;
+}
+
+/**
+ * call-seq:
  *  object_path()
  *
  * Generates an ObjectPath out of the nameSpace, classname and
@@ -107,11 +122,15 @@ void init_cimc_instance()
   VALUE sfcc = rb_define_module("Sfcc");
   VALUE cimc = rb_define_module_under(sfcc, "Cimc");
 
+  /**
+   * an instance of a CIM class
+   */
   VALUE klass = rb_define_class_under(cimc, "Instance", rb_cObject);
   cSfccCimcInstance = klass;
 
   rb_define_method(klass, "property", property, 1);
   rb_define_method(klass, "each_property", each_property, 0);
   rb_define_method(klass, "property_count", property_count, 0);
+  rb_define_method(klass, "set_property", set_property, 2);
   rb_define_method(klass, "object_path", object_path, 0);
 }

@@ -29,6 +29,9 @@ void init_cimc_class()
   VALUE sfcc = rb_define_module("Sfcc");
   VALUE cimc = rb_define_module_under(sfcc, "Cimc");
 
+  /**
+   * class from the CIM schema
+   */
   VALUE klass = rb_define_class_under(cimc, "Class", rb_cObject);
   cSfccCimcClass = klass;
 

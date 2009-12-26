@@ -213,6 +213,9 @@ void init_cimc_client()
   VALUE sfcc = rb_define_module("Sfcc");
   VALUE cimc = rb_define_module_under(sfcc, "Cimc");
 
+  /**
+   * CIM client which can communicate with a CIMOM
+   */
   VALUE klass = rb_define_class_under(cimc, "Client", rb_cObject);
   cSfccCimcClient = klass;
 

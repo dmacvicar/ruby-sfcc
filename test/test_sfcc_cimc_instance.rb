@@ -67,6 +67,19 @@ class SfccCimcObjectPathTest < SfccTestCase
             end
           end
         end
+
+        should "be able to set and retrieve properties" do
+          @instances.each do |i|
+            assert_raises Sfcc::Cimc::ErrorNoSuchProperty do
+              i.property("foobar");
+            end
+            assert_nothing_raised do
+              i.set_property("Name", "newname");
+            end
+            assert_equal "newname", i.property("Name")
+          end
+        end
+
         
         #should "have the same object path as the first instance name" do
         # assert_equal @cim_instance_names.first, @cim_instances.first.object_path.to_s

@@ -119,6 +119,9 @@ void init_cimc_environment()
   VALUE sfcc = rb_define_module("Sfcc");
   VALUE cimc = rb_define_module_under(sfcc, "Cimc");
 
+  /**
+   * CIM environment which can create clients
+   */
   VALUE klass = rb_define_class_under(cimc, "Environment", rb_cObject);
   cSfccCimcEnvironment = klass;
 
