@@ -63,4 +63,9 @@ inline char ** sfcc_value_array_to_string_array(VALUE array);
  */
 inline VALUE sfcc_cimcdata_to_value(CIMCData data);
 
+/**
+ * convert ruby VALUE to CIMCData
+ */
+inline CIMCData sfcc_value_to_cimcdata(VALUE value);
+
 #endif

@@ -140,12 +140,14 @@ VALUE sfcc_cimcdata_to_value(CIMCData data)
     case CIMC_args:
     case CIMC_filter:
       return Qnil;
-    case CIMC_string:
     case CIMC_numericString:
     case CIMC_booleanString:
     case CIMC_dateTimeString:
     case CIMC_classNameString:
-      return data.value.string ? rb_str_new2((char*)data.value.string->hdl) : Qnil;
+      break;
+    case CIMC_string:
+      printf("--> converting to rb: %s\n", (char*)data.value.string->ft->getCharPtr(data.value.string, NULL));
+      return data.value.string ? rb_str_new2((char*)data.value.string->ft->getCharPtr(data.value.string, NULL)) : Qnil;
     case CIMC_dateTime:
       cimstr = data.value.dateTime ? CMGetStringFormat(data.value.dateTime,NULL) : NULL;
       rbval = cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
@@ -177,7 +179,57 @@ VALUE sfcc_cimcdata_to_value(CIMCData data)
     case CIMC_real64: return LONG2NUM(data.value.real64);
     }
   }
+  else if (data.type & CIMC_null ) {
+    return Qnil;
+  }
   rb_raise(rb_eTypeError, "unsupported data data type %d", data.type);
   return Qnil;
 }
 
+CIMCData sfcc_value_to_cimcdata(VALUE value)
+{
+  CIMCData data;
+  data.state = CIMC_goodValue;
+  data.type = CIMC_null;
+
+  switch (TYPE(value))
+  {
+  case T_NIL:
+    data.type = CIMC_null;
+    data.state = CIMC_nullValue;
+    break;
+  case T_STRING:
+    data.type = CIMC_chars;
+    data.value.chars = StringValuePtr(value);
+    break;
+  case T_TRUE:
+    data.type = CIMC_boolean;
+    data.value.boolean = 1;
+    break;
+  case T_FALSE:
+    data.type = CIMC_boolean;
+    data.value.boolean = 0;
+    break;
+    /* not yet supported
+  case T_FIXNUM:
+    break;
+  case T_FLOAT:
+    break;
+  case T_ARRAY:
+    break;
+  case T_HASH:
+    break;
+  case T_SYMBOL:
+  case T_DATA:
+    break;
+    */
+  default:
+    data.state = CIMC_badValue;
+    data.type = CIMC_null;
+    VALUE cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
+    const char *class_name = StringValuePtr(cname);
+    rb_raise(rb_eTypeError, "unsupported data data type: %s", class_name);
+    return data;
+  }
+  return data;
+}

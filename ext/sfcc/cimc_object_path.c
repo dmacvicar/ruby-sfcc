@@ -90,6 +90,91 @@ static VALUE class_name(VALUE self)
 
 /**
  * call-seq:
+ *   add_key(name, value)
+ * Gets a named key value
+ */
+static VALUE add_key(VALUE self, VALUE name, VALUE value)
+{
+  CIMCObjectPath *ptr = NULL;
+  CIMCData data;
+  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  data = sfcc_value_to_cimcdata(value);
+  ptr->ft->addKey(ptr, StringValuePtr(name), &data.value, data.type);
+  return value;
+}
+
+/**
+ * call-seq:
+ *   key(name)
+ * Gets a named key value
+ */
+static VALUE key(VALUE self, VALUE name)
+{
+  CIMCObjectPath *ptr = NULL;
+  CIMCStatus status;
+  CIMCData data;
+  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  data = ptr->ft->getKey(ptr, StringValuePtr(name), &status);
+  if ( !status.rc )
+    return sfcc_cimcdata_to_value(data);
+
+  sfcc_rb_raise_if_error(status, "Can't retrieve key '%s'", StringValuePtr(name));
+  return Qnil;
+}
+
+/**
+ * call-seq:
+ *   ObjectPath.each_key do |name, value|
+ *      ...
+ *   end
+ *
+ * enumerates properties yielding the key name and
+ * its value
+ *
+ */
+static VALUE each_key(VALUE self)
+{
+  CIMCObjectPath *ptr = NULL;
+  CIMCStatus status;
+  int k=0;
+  int num_props=0;
+  CIMCString *key_name = NULL;
+  CIMCData data;
+  Data_Get_Struct(self, CIMCObjectPath, ptr);
+
+  num_props = ptr->ft->getKeyCount(ptr, &status);
+  if (!status.rc) {
+    for (; k < num_props; ++k) {
+      data = ptr->ft->getKeyAt(ptr, k, &key_name, &status);
+      if (!status.rc) {
+        rb_yield_values(2, (key_name ? rb_str_new2(key_name->ft->getCharPtr(key_name, NULL)) : Qnil), sfcc_cimcdata_to_value(data));
+      }
+      else {
+        sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);
+      } 
+      if (key_name) CMRelease(key_name);
+    }
+  }
+  else {
+    sfcc_rb_raise_if_error(status, "Can't retrieve key count");
+  }
+  return Qnil;
+}
+
+/**
+ * call-seq:
+ *   key_count()
+ * Gets the number of properties contained in this ObjectPath
+ */
+static VALUE key_count(VALUE self)
+{
+  CIMCObjectPath *ptr = NULL;
+  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  return UINT2NUM(ptr->ft->getKeyCount(ptr, NULL));
+}
+
+/**
+ * call-seq:
  *   to_s
  * Generates a well formed string representation of this ObjectPath
  */
@@ -124,5 +209,9 @@ void init_cimc_object_path()
   rb_define_method(klass, "hostname", hostname, 0);
   rb_define_method(klass, "class_name=", set_class_name, 1);
   rb_define_method(klass, "class_name", class_name, 0);
+  rb_define_method(klass, "add_key", add_key, 2);
+  rb_define_method(klass, "key", key, 1);
+  rb_define_method(klass, "each_key", each_key, 0);
+  rb_define_method(klass, "key_count", key_count, 0);
   rb_define_method(klass, "to_s", to_s, 0);
 }
