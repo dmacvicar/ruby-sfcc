@@ -6,6 +6,7 @@
 
 #include <cimc/cimc.h>
 #include <cimc/cimcdt.h>
+#include <cimc/cimcft.h>
 #include <CimClientLib/cmci.h>
 #include <CimClientLib/native.h>
 #include <CimClientLib/cmcimacs.h>

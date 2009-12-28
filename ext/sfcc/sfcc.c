@@ -7,6 +7,7 @@
 #include <CimClientLib/cmcimacs.h>
 
 #include "cimc_environment.h"
+#include "cimc_args.h"
 #include "cimc_string.h"
 #include "cimc_object_path.h"
 #include "cimc_enumeration.h"
@@ -29,6 +30,7 @@ void Init_sfcc()
   mSfccCimc= rb_define_module_under(mSfcc, "Cimc");
 
   init_cimc_environment();
+  init_cimc_args();
   init_cimc_string();
   init_cimc_object_path();
   init_cimc_enumeration();
