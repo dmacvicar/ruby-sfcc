@@ -68,23 +68,21 @@ class SfccCimcObjectPathTest < SfccTestCase
           end
         end
 
-        should "be able to set and retrieve properties" do
+        should "be able to set and retrieve stringproperties" do
           @instances.each do |i|
             assert_raises Sfcc::Cimc::ErrorNoSuchProperty do
               i.property("foobar");
             end
             assert_nothing_raised do
-              i.set_property("Name", "newname");
+              # can't work, sfcc bug 2921255 see:
+              # https://sourceforge.net/tracker/?func=detail&aid=2921255&group_id=128809&atid=712784
+              #i.set_property("Name", "newname");
+              i.set_property("Name", @env.new_string("newname"));
             end
             assert_equal "newname", i.property("Name")
           end
         end
-
-        
-        #should "have the same object path as the first instance name" do
-        # assert_equal @cim_instance_names.first, @cim_instances.first.object_path.to_s
-        #end
-        
+                        
       end            
     end
   end

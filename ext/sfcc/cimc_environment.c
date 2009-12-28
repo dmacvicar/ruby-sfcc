@@ -1,4 +1,5 @@
 #include "cimc_environment.h"
+#include "cimc_string.h"
 #include "cimc_object_path.h"
 #include "cimc_client.h"
 
@@ -105,6 +106,27 @@ static VALUE new_object_path(VALUE self,
   
 }
 
+/**
+ * call-seq:
+ *  new_string(str)
+ *
+ * Creates a new Cimc::String
+ */
+static VALUE new_string(VALUE self, VALUE str)
+{
+  CIMCEnv *env = NULL;
+  CIMCString *cimstr = NULL;
+  CIMCStatus status;
+  Data_Get_Struct(self, CIMCEnv, env);
+
+  cimstr = env->ft->newString(env, StringValuePtr(str), &status);
+  if (!status.rc) {
+    return Sfcc_wrap_cimc_string(cimstr);
+  }
+  sfcc_rb_raise_if_error(status, "Can't create CIM string");
+  return Qnil;
+}
+
 VALUE
 Sfcc_wrap_cimc_environment(CIMCEnv *environment)
 {
@@ -127,6 +149,7 @@ void init_cimc_environment()
 
   rb_define_singleton_method(klass, "new", new, 1);
   rb_define_method(klass, "connect", connect, 5);
+  rb_define_method(klass, "new_string", new_string, 1);
   rb_define_method(klass, "new_object_path", new_object_path, 2);
 }
 

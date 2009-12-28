@@ -58,14 +58,16 @@ class SfccCimcObjectPathTest < SfccTestCase
           end
           
           assert_nothing_raised do
-            @op.add_key("prop0", "hello")
+            # can't work, sfcc bug 2921255 see:
+            # https://sourceforge.net/tracker/?func=detail&aid=2921255&group_id=128809&atid=712784
+            #@op.add_key("prop0", "hello")
+            @op.add_key("prop0", @env.new_string("hello"))
             @op.add_key("prop1", true)
             @op.add_key("prop2", false)
           end
           assert_equal 3, @op.key_count
-          # can't work, sfcc bug 2921255 see:
-          # https://sourceforge.net/tracker/?func=detail&aid=2921255&group_id=128809&atid=712784
-          # assert_equal "hello", @op.key("prop0")
+          
+          assert_equal "hello", @op.key("prop0")
           assert_equal true, @op.key("prop1")
           assert_equal false, @op.key("prop2")
         end

@@ -7,6 +7,7 @@
 #include <CimClientLib/cmcimacs.h>
 
 #include "cimc_environment.h"
+#include "cimc_string.h"
 #include "cimc_object_path.h"
 #include "cimc_enumeration.h"
 #include "cimc_class.h"
@@ -28,6 +29,7 @@ void Init_sfcc()
   mSfccCimc= rb_define_module_under(mSfcc, "Cimc");
 
   init_cimc_environment();
+  init_cimc_string();
   init_cimc_object_path();
   init_cimc_enumeration();
   init_cimc_class();
@@ -234,16 +236,21 @@ CIMCData sfcc_value_to_cimcdata(VALUE value)
   case T_HASH:
     break;
   case T_SYMBOL:
-  case T_DATA:
-    break;
     */
+  case T_DATA:
   default:
-    data.state = CIMC_badValue;
-    data.type = CIMC_null;
-    VALUE cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
-    const char *class_name = StringValuePtr(cname);
-    rb_raise(rb_eTypeError, "unsupported data data type: %s", class_name);
-    return data;
+    if (CLASS_OF(value) == cSfccCimcString) {
+      Data_Get_Struct(value, CIMCString, data.value.string);  
+      data.type = CIMC_string;
+    }
+    else {
+      data.state = CIMC_badValue;
+      data.type = CIMC_null;
+      VALUE cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
+      const char *class_name = StringValuePtr(cname);
+      rb_raise(rb_eTypeError, "unsupported data data type: %s", class_name);
+      return data;
+    }
   }
   return data;
 }
