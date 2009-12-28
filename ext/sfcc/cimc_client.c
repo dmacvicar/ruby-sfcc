@@ -165,6 +165,86 @@ static VALUE instances(VALUE self, VALUE object_path, VALUE flags, VALUE propert
 
 /**
  * call-seq:
+ *   invoke_method(object_path, method_name, argin, argout)
+ * Invoke a named, extrinsic method of an instance defined by +object_path+
+ *
+ * +object_path+ containing namespace, classname, and key
+ * components.
+ * +argin+ hash containing the input parameters (keys can be symbols) or
+ * strings.
+ * +argout+ hash where output parameters will be returned
+ */
+static VALUE invoke_method(VALUE self,
+                           VALUE object_path,
+                           VALUE method_name,
+                           VALUE argin,
+                           VALUE argout)
+{
+  CIMCClient *ptr = NULL;
+  CIMCObjectPath *op = NULL;
+  CIMCData data;
+  /*
+  Data_Get_Struct(self, CIMClient_t, ptr);
+  Data_Get_Struct(object_path, CIMObjectPath_t, op);
+  data = sfcc_value_to_cimcdata(value);
+  ptr->ft->setProperty(ptr, op, StringValuePtr(name), &data.value, data.type);
+  return value;
+  */
+  return Qnil;
+}
+
+/**
+ * call-seq:
+ *   set_property(object_path, name, value)
+ * Sets the named property value of an instance defined by
+ * +object_path+
+ *
+ * +object_path+ containing namespace, classname, and key
+ * components.
+ */
+static VALUE set_property(VALUE self,
+                          VALUE object_path,
+                          VALUE name,
+                          VALUE value)
+{
+  CIMCClient *ptr = NULL;
+  CIMCObjectPath *op = NULL;
+  CIMCData data;
+  Data_Get_Struct(self, CIMCClient, ptr);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
+  data = sfcc_value_to_cimcdata(value);
+  ptr->ft->setProperty(ptr, op, StringValuePtr(name), &data.value, data.type);
+  return value;
+}
+
+/**
+ * call-seq:
+ *   property(object_path, name)
+ *
+ * Gets the named property value of an instance defined by
+ * +object_path+
+ *
+ * +object_path+ containing namespace, classname, and key
+ * components.
+ */
+static VALUE property(VALUE self, VALUE object_path, VALUE name)
+{
+  CIMCClient *ptr = NULL;
+  CIMCObjectPath *op = NULL;
+  CIMCStatus status;
+  CIMCData data;
+  Data_Get_Struct(self, CIMCClient, ptr);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
+  data = ptr->ft->getProperty(ptr, op, StringValuePtr(name), &status);
+  if ( !status.rc )
+    return sfcc_cimcdata_to_value(data);
+
+  sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", StringValuePtr(name));
+  return Qnil;
+}
+
+/**
+ * call-seq:
  *  get_class(object_path, flags, properties)
  *
  * Get Class using +object_path+ as reference. Class structure can be
