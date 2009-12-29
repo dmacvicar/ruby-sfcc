@@ -23,5 +23,10 @@ class SfccTestCase < Test::Unit::TestCase
     end
     return false
   end
+
+  def setup_cim_client
+    @client = Sfcc::Cim::Client.connect('http://root@localhost:5988')
+    # @client = Sfcc::Cim::Client.connect(:host => 'localhost', :scheme => 'http', :user => 'root', :port => '5988')
+  end
   
 end

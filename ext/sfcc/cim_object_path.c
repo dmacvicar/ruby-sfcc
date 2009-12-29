@@ -1,8 +1,8 @@
 
-#include "cimc_object_path.h"
+#include "cim_object_path.h"
 
 static void
-dealloc(CIMCObjectPath *object_path)
+dealloc(CMPIObjectPath *object_path)
 {
   SFCC_DEC_REFCOUNT(object_path);
 }
@@ -14,8 +14,8 @@ dealloc(CIMCObjectPath *object_path)
  */
 static VALUE set_namespace(VALUE self, VALUE val)
 {
-  CIMCObjectPath *ptr = NULL;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   ptr->ft->setNameSpace(ptr, StringValuePtr(val));
   return val;
 }
@@ -27,9 +27,9 @@ static VALUE set_namespace(VALUE self, VALUE val)
  */
 static VALUE namespace(VALUE self)
 {
-  CIMCObjectPath *ptr = NULL;
-  CIMCString *cimstr = NULL;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  CMPIString *cimstr = NULL;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   cimstr = ptr->ft->getNameSpace(ptr, NULL);
   return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
 }
@@ -41,8 +41,8 @@ static VALUE namespace(VALUE self)
  */
 static VALUE set_hostname(VALUE self, VALUE val)
 {
-  CIMCObjectPath *ptr = NULL;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   ptr->ft->setHostname(ptr, StringValuePtr(val));
   return val;
 }
@@ -54,9 +54,9 @@ static VALUE set_hostname(VALUE self, VALUE val)
  */
 static VALUE hostname(VALUE self)
 {
-  CIMCObjectPath *ptr = NULL;
-  CIMCString *cimstr = NULL;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  CMPIString *cimstr = NULL;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   cimstr = ptr->ft->getHostname(ptr, NULL);
   return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
 }
@@ -68,8 +68,8 @@ static VALUE hostname(VALUE self)
  */
 static VALUE set_class_name(VALUE self, VALUE val)
 {
-  CIMCObjectPath *ptr = NULL;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   ptr->ft->setClassName(ptr, StringValuePtr(val));
   return val;
 }
@@ -81,9 +81,9 @@ static VALUE set_class_name(VALUE self, VALUE val)
  */
 static VALUE class_name(VALUE self)
 {
-  CIMCObjectPath *ptr = NULL;
-  CIMCString *cimstr = NULL;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  CMPIString *cimstr = NULL;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   cimstr = ptr->ft->getClassName(ptr, NULL);
   return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
 }
@@ -95,10 +95,10 @@ static VALUE class_name(VALUE self)
  */
 static VALUE add_key(VALUE self, VALUE name, VALUE value)
 {
-  CIMCObjectPath *ptr = NULL;
-  CIMCData data;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
-  data = sfcc_value_to_cimcdata(value);
+  CMPIObjectPath *ptr = NULL;
+  CMPIData data;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
+  data = sfcc_value_to_cimdata(value);
   ptr->ft->addKey(ptr, StringValuePtr(name), &data.value, data.type);
   return value;
 }
@@ -110,13 +110,13 @@ static VALUE add_key(VALUE self, VALUE name, VALUE value)
  */
 static VALUE key(VALUE self, VALUE name)
 {
-  CIMCObjectPath *ptr = NULL;
-  CIMCStatus status;
-  CIMCData data;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  CMPIStatus status;
+  CMPIData data;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   data = ptr->ft->getKey(ptr, StringValuePtr(name), &status);
   if ( !status.rc )
-    return sfcc_cimcdata_to_value(data);
+    return sfcc_cimdata_to_value(data);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve key '%s'", StringValuePtr(name));
   return Qnil;
@@ -134,20 +134,20 @@ static VALUE key(VALUE self, VALUE name)
  */
 static VALUE each_key(VALUE self)
 {
-  CIMCObjectPath *ptr = NULL;
-  CIMCStatus status;
+  CMPIObjectPath *ptr = NULL;
+  CMPIStatus status;
   int k=0;
   int num_props=0;
-  CIMCString *key_name = NULL;
-  CIMCData data;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIString *key_name = NULL;
+  CMPIData data;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
 
   num_props = ptr->ft->getKeyCount(ptr, &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
       data = ptr->ft->getKeyAt(ptr, k, &key_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (key_name ? rb_str_new2(key_name->ft->getCharPtr(key_name, NULL)) : Qnil), sfcc_cimcdata_to_value(data));
+        rb_yield_values(2, (key_name ? rb_str_new2(key_name->ft->getCharPtr(key_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);
@@ -168,8 +168,8 @@ static VALUE each_key(VALUE self)
  */
 static VALUE key_count(VALUE self)
 {
-  CIMCObjectPath *ptr = NULL;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   return UINT2NUM(ptr->ft->getKeyCount(ptr, NULL));
 }
 
@@ -180,32 +180,51 @@ static VALUE key_count(VALUE self)
  */
 static VALUE to_s(VALUE self)
 {
-  CIMCObjectPath *ptr = NULL;
-  CIMCString *cimstr = NULL;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  CMPIObjectPath *ptr = NULL;
+  CMPIString *cimstr = NULL;
+  Data_Get_Struct(self, CMPIObjectPath, ptr);
   cimstr = ptr->ft->toString(ptr, NULL);
   return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
 }
 
-VALUE
-Sfcc_wrap_cimc_object_path(CIMCObjectPath *object_path)
+/**
+ * call-seq
+ *   new
+ * Creates an object path from +namespace+ and +class_name+
+ *
+ */
+static VALUE new(VALUE klass, VALUE namespace, VALUE class_name)
 {
-  SFCC_INC_REFCOUNT(object_path);
-  return Data_Wrap_Struct(cSfccCimcObjectPath, NULL, dealloc, object_path);
+  CMPIStatus status;
+  CMPIObjectPath *ptr = newCMPIObjectPath(StringValuePtr(namespace),
+                                          StringValuePtr(class_name),
+                                          &status);
+  if (!status.rc)
+    return Sfcc_wrap_cim_object_path(ptr);
+  sfcc_rb_raise_if_error(status, "Can't create object path");
+  return Qnil;
 }
 
-VALUE cSfccCimcObjectPath;
-void init_cimc_object_path()
+VALUE
+Sfcc_wrap_cim_object_path(CMPIObjectPath *object_path)
+{
+  SFCC_INC_REFCOUNT(object_path);
+  return Data_Wrap_Struct(cSfccCimObjectPath, NULL, dealloc, object_path);
+}
+
+VALUE cSfccCimObjectPath;
+void init_cim_object_path()
 {
   VALUE sfcc = rb_define_module("Sfcc");
-  VALUE cimc = rb_define_module_under(sfcc, "Cimc");
+  VALUE cimc = rb_define_module_under(sfcc, "Cim");
 
   /**
    * an object path on the CIM namespace
    */
   VALUE klass = rb_define_class_under(cimc, "ObjectPath", rb_cObject);
-  cSfccCimcObjectPath = klass;
+  cSfccCimObjectPath = klass;
 
+  rb_define_singleton_method(klass, "new", new, 2);
   rb_define_method(klass, "namespace=", set_namespace, 1);
   rb_define_method(klass, "namespace", namespace, 0);
   rb_define_method(klass, "hostname=", set_hostname, 1);

@@ -4,19 +4,24 @@
 
 #include <assert.h>
 
+/*
 #include <cimc/cimc.h>
 #include <cimc/cimcdt.h>
 #include <cimc/cimcft.h>
+*/
 #include <CimClientLib/cmci.h>
+#include <CimClientLib/cmcidt.h>
+#include <CimClientLib/cmcift.h>
 #include <CimClientLib/native.h>
 #include <CimClientLib/cmcimacs.h>
 
 #include "ruby.h"
+#include "st.h"
 #include <unistd.h>
 #include <stdlib.h>
 
 extern VALUE mSfcc;
-extern VALUE mSfccCimc;
+extern VALUE mSfccCim;
 
 /*
 #define SFCC_DEC_REFCOUNT(x) \
@@ -48,7 +53,7 @@ extern VALUE mSfccCimc;
  * raises a ruby exception if the status is an error
  * whenever possible, adds the custom message if not null
  */
-void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...);
+void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...);
 
 /**
  * allocates a string array where each string points to the
@@ -60,13 +65,13 @@ void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...);
 inline char ** sfcc_value_array_to_string_array(VALUE array);
 
 /**
- * converts CIMCData to ruby VALUE
+ * converts CMPIData to ruby VALUE
  */
-inline VALUE sfcc_cimcdata_to_value(CIMCData data);
+inline VALUE sfcc_cimdata_to_value(CMPIData data);
 
 /**
- * convert ruby VALUE to CIMCData
+ * convert ruby VALUE to CMPIData
  */
-inline CIMCData sfcc_value_to_cimcdata(VALUE value);
+inline CMPIData sfcc_value_to_cimdata(VALUE value);
 
 #endif

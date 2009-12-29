@@ -4,9 +4,9 @@
 
 #include "sfcc.h"
 
-void init_cimc_string();
+void init_cim_string();
 
-extern VALUE cSfccCimcString;
-VALUE Sfcc_wrap_cimc_string(CIMCString *string);
+extern VALUE cSfccCimString;
+VALUE Sfcc_wrap_cim_string(CMPIString *string);
 
 #endif
