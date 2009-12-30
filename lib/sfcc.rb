@@ -52,13 +52,13 @@ module Sfcc
       # args[key] => value
       # retrieves a named argument
       def [](key)
-        to_hash[key]
+        to_hash[key.to_sym]
       end
 
       # args[key] = value
       # sets a named argument
       def []=(key, value)
-        add_arg(key, value)
+        add_arg(key.to_sym, value)
       end
       
       # alias for arg_count

@@ -15,9 +15,13 @@ dealloc(CMPIObjectPath *object_path)
 static VALUE set_namespace(VALUE self, VALUE val)
 {
   CMPIObjectPath *ptr = NULL;
+  CMPIStatus status;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  ptr->ft->setNameSpace(ptr, StringValuePtr(val));
-  return val;
+  status = ptr->ft->setNameSpace(ptr, StringValuePtr(val));
+  if (!status.rc)
+    return val;
+  sfcc_rb_raise_if_error(status, "Can't set namespace");
+  return Qnil;
 }
 
 /**
@@ -29,9 +33,13 @@ static VALUE namespace(VALUE self)
 {
   CMPIObjectPath *ptr = NULL;
   CMPIString *cimstr = NULL;
+  CMPIStatus status;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  cimstr = ptr->ft->getNameSpace(ptr, NULL);
-  return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+  cimstr = ptr->ft->getNameSpace(ptr, &status);
+  if (!status.rc)
+    return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+  sfcc_rb_raise_if_error(status, "Can't get namespace");
+  return Qnil;
 }
 
 /**
@@ -43,8 +51,12 @@ static VALUE set_hostname(VALUE self, VALUE val)
 {
   CMPIObjectPath *ptr = NULL;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  ptr->ft->setHostname(ptr, StringValuePtr(val));
-  return val;
+  CMPIStatus status;
+  status = ptr->ft->setHostname(ptr, StringValuePtr(val));
+  if (!status.rc)
+    return val;
+  sfcc_rb_raise_if_error(status, "Can't set hostname");
+  return Qnil;
 }
 
 /**
@@ -56,9 +68,13 @@ static VALUE hostname(VALUE self)
 {
   CMPIObjectPath *ptr = NULL;
   CMPIString *cimstr = NULL;
+  CMPIStatus status;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  cimstr = ptr->ft->getHostname(ptr, NULL);
-  return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+  cimstr = ptr->ft->getHostname(ptr, &status);
+  if (!status.rc)
+    return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+  sfcc_rb_raise_if_error(status, "Can't get hostname");
+  return Qnil;
 }
 
 /**

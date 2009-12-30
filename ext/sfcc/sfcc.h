@@ -65,6 +65,16 @@ void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...);
 inline char ** sfcc_value_array_to_string_array(VALUE array);
 
 /**
+ * converts a ruby hash to a CIM args object
+ */
+inline CMPIArgs* sfcc_hash_to_cimargs(VALUE hash);
+
+/**
+ * converts a CIM args object to a hash
+ */
+inline VALUE sfcc_cimargs_to_hash(CMPIArgs *args);
+
+/**
  * converts CMPIData to ruby VALUE
  */
 inline VALUE sfcc_cimdata_to_value(CMPIData data);

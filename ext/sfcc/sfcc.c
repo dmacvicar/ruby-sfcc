@@ -7,7 +7,6 @@
 #include <CimClientLib/native.h>
 #include <CimClientLib/cmcimacs.h>
 
-#include "cim_args.h"
 #include "cim_string.h"
 #include "cim_object_path.h"
 #include "cim_enumeration.h"
@@ -29,7 +28,6 @@ void Init_sfcc()
    */
   mSfccCim= rb_define_module_under(mSfcc, "Cim");
 
-  init_cim_args();
   init_cim_string();
   init_cim_object_path();
   init_cim_enumeration();
@@ -94,11 +92,24 @@ void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...)
 {
   va_list arg_list;
   va_start(arg_list, msg);
+  int size = 0;
+  char *error;
 
   if (!status.rc)
     return;
 
-  rb_raise(sfcc_status_exception(status), msg, arg_list);
+  size = strlen(msg) + 3;
+  if (status.msg)
+    size = size + strlen(status.msg->ft->getCharPtr(status.msg, NULL));
+  error = (char *)malloc(size);
+  strcat(error, msg);
+  if (status.msg) {
+    strcat(error, " : ");
+    strcat(error, status.msg->ft->getCharPtr(status.msg, NULL));
+  }
+
+  rb_raise(sfcc_status_exception(status), error, arg_list);
+  free(error);
 }
 
 char ** sfcc_value_array_to_string_array(VALUE array)
@@ -150,8 +161,8 @@ VALUE sfcc_cimdata_to_value(CMPIData data)
       return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
     case CMPI_ref:
       return data.value.ref ? Sfcc_wrap_cim_object_path(data.value.ref->ft->clone(data.value.ref, NULL)) : Qnil;
-    case CMPI_args:
-      return data.value.args ? Sfcc_wrap_cim_args(data.value.args->ft->clone(data.value.args, NULL)) : Qnil;
+    case CMPI_args:      
+      return data.value.args ? sfcc_cimargs_to_hash(data.value.args) : Qnil;
     case CMPI_filter:
       return Qnil;
     case CMPI_numericString:
@@ -207,8 +218,10 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
   CMPIStatus status;
   CMPIData data;
   CMPIArgs *args = (CMPIArgs *)extra;
+  VALUE key_str = rb_funcall(key, rb_intern("to_s"), 0);
+  char *key_cstr = StringValuePtr(key_str);
   data = sfcc_value_to_cimdata(value);
-  status = args->ft->addArg(args, StringValuePtr(key), &data.value, data.type);
+  status = args->ft->addArg(args, key_cstr, &data.value, data.type);
 
   if ( !status.rc ) {
     return ST_CONTINUE;
@@ -216,6 +229,54 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
 
   sfcc_rb_raise_if_error(status, "Can't add argument '%s'", StringValuePtr(key));
   return ST_STOP;
+}
+
+CMPIArgs *sfcc_hash_to_cimargs(VALUE hash)
+{
+  CMPIArgs *args;
+  args = newCMPIArgs(NULL);
+  rb_hash_foreach(hash, hash_to_cimargs_iterator, (VALUE)args);
+  return args;
+}
+
+VALUE sfcc_cimargs_to_hash(CMPIArgs *args)
+{
+  CMPIArgs *ptr = NULL;
+  int i = 0;
+  int n = 0;
+  VALUE hash;
+  CMPIString *argname;
+  CMPIData argdata;
+  CMPIStatus status;
+  char *argname_cstr = NULL;
+
+  Data_Get_Struct(args, CMPIArgs, ptr);
+  n = ptr->ft->getArgCount(ptr, NULL);
+  hash = rb_hash_new();
+
+  for (; i < n; ++i) {
+    argname = NULL;
+    argdata = ptr->ft->getArgAt(ptr, i, &argname, &status);
+    if (!status.rc) {
+      argname_cstr = argname->ft->getCharPtr(argname, &status);
+      if (!argname_cstr) {
+        rb_raise(rb_eRuntimeError, "Can't retrieve argument name");
+        return Qnil;
+      }
+      if (!status.rc) {
+        rb_hash_aset(hash, rb_funcall(rb_str_new2(argname_cstr), rb_intern("to_sym"), 0), sfcc_cimdata_to_value(argdata));
+      }
+      else {
+        sfcc_rb_raise_if_error(status, "Can't retrieve argument name");
+        return Qnil;
+      }
+    }
+    else {
+      sfcc_rb_raise_if_error(status, "Can't retrieve argument");
+      return Qnil;
+    }
+  }
+  return hash;
 }
 
 CMPIData sfcc_value_to_cimdata(VALUE value)
@@ -245,22 +306,16 @@ CMPIData sfcc_value_to_cimdata(VALUE value)
   case T_FIXNUM:
     data.type = CMPI_sint64;
     data.value.Long = NUM2INT(value);
+    break;
 /* not yet supported
   case T_BIGNUM:       
     break;
   case T_FLOAT:
     break;
-    */
   case T_ARRAY:
     break;
   case T_HASH:
-    /* as Hash is not part of CIM data types, we use here
-       to get a CIMArgs object */
-    data.type = CMPI_args;
-    data.value.args = newCMPIArgs(NULL);
-    rb_hash_foreach(value, hash_to_cimargs_iterator, (VALUE)data.value.args);
     break;
-    /*
   case T_SYMBOL:
     */
   case T_DATA:

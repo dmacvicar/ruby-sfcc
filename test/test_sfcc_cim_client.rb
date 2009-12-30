@@ -22,7 +22,7 @@ class SfccCimcClient < SfccTestCase
     should "allow for query" do
       result = @client.query(@op, "select * from CIM_OperatingSystem", "wql")
       result.each do |instance|
-        puts instance
+        puts "query result: #{instance}"
       end
     end
     
@@ -38,8 +38,13 @@ class SfccCimcClient < SfccTestCase
 
     should "be able to invoke methods using an object path" do
       @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
-      @client.instance_names(@op).each do |path|
+      @client.query(@op, "select * from Linux_OperatingSystem", "wql").each do |instance|
+      # @client.instances(@op, Sfcc::Flags::IncludeClassOrigin | Sfcc::Flags::IncludeQualifiers, nil).each do |instance|
+        path = instance.object_path
+        puts "********** #{instance.object_path}"
         assert_kind_of Sfcc::Cim::ObjectPath, path
+        out = {}
+        ret = @client.invoke_method(path, :execCmd, {:cmd => "cat /etc/SuSE-release"}, out)
         # FAILS
         # assert ! @client.property(path, "PrimaryOwnerContact").empty?        
       end      

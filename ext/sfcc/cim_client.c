@@ -118,7 +118,6 @@ static VALUE instance_names(VALUE self, VALUE object_path)
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm);
   }
-  //enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get instance names");
   return rbenm;
 }
@@ -180,21 +179,37 @@ static VALUE invoke_method(VALUE self,
                            VALUE argin,
                            VALUE argout)
 {
+  CMPIStatus status;
   CMCIClient *ptr = NULL;
   CMPIObjectPath *op = NULL;
-  CMPIData datain;
   CMPIArgs *cmpiargsout;
+  VALUE rbargsout;
+  VALUE method_name_str;
+  char *method_name_cstr;
+  CMPIData ret;
+  Check_Type(argin, T_HASH);
+  memset(&status, 0, sizeof(CMPIStatus));
 
   cmpiargsout = newCMPIArgs(NULL);
 
   Data_Get_Struct(self, CMCIClient, ptr);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
-  datain = sfcc_value_to_cimdata(argin);
-  datain = sfcc_value_to_cimdata(argout);
-  ptr->ft->invokeMethod(ptr, op, StringValuePtr(name), datain.value.args, data.type);
-  return value;
-  */
+  method_name_str = rb_funcall(method_name, rb_intern("to_s"), 0);
+  method_name_cstr = StringValuePtr(method_name_str);
+  ret = ptr->ft->invokeMethod(ptr,
+                              op,
+                              method_name_cstr,
+                              sfcc_hash_to_cimargs(argin),
+                              cmpiargsout,
+                              &status);
+  if (!status.rc) {
+    if (cmpiargsout) {
+      rbargsout = sfcc_cimargs_to_hash(cmpiargsout);      
+    }
+    return sfcc_cimdata_to_value(ret);
+  }
+  sfcc_rb_raise_if_error(status, "Can't invoke method '%s'", method_name_cstr);
   return Qnil;
 }
 
@@ -328,6 +343,7 @@ void init_cim_client()
   rb_define_method(klass, "instance_names", instance_names, 1);
   rb_define_method(klass, "instances", instances, 3);
   rb_define_method(klass, "get_class", get_class, 3);
+  rb_define_method(klass, "invoke_method", invoke_method, 4);
   rb_define_method(klass, "set_property", set_property, 3);
   rb_define_method(klass, "property", property, 2);
 }
