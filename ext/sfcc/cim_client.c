@@ -204,8 +204,9 @@ static VALUE invoke_method(VALUE self,
                               cmpiargsout,
                               &status);
   if (!status.rc) {
-    if (cmpiargsout) {
-      rbargsout = sfcc_cimargs_to_hash(cmpiargsout);      
+    if (cmpiargsout && ! NIL_P(argout)) {
+      Check_Type(argout, T_HASH);
+      rb_funcall(argout, rb_intern("merge!"), 1, sfcc_cimargs_to_hash(cmpiargsout));
     }
     return sfcc_cimdata_to_value(ret);
   }

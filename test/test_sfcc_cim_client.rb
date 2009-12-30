@@ -41,12 +41,12 @@ class SfccCimcClient < SfccTestCase
       @client.query(@op, "select * from Linux_OperatingSystem", "wql").each do |instance|
       # @client.instances(@op, Sfcc::Flags::IncludeClassOrigin | Sfcc::Flags::IncludeQualifiers, nil).each do |instance|
         path = instance.object_path
-        puts "********** #{instance.object_path}"
         assert_kind_of Sfcc::Cim::ObjectPath, path
         out = {}
         ret = @client.invoke_method(path, :execCmd, {:cmd => "cat /etc/SuSE-release"}, out)
-        # FAILS
-        # assert ! @client.property(path, "PrimaryOwnerContact").empty?        
+        assert out.has_key?(:out), "output parameter is present"
+        assert out[:out].match(/VERSION/)
+        assert_equal 0, ret, "execCmd returns 0"
       end      
     end
     

@@ -4,10 +4,11 @@ require 'pp'
 
 class SfccCimcObjectPathTest < SfccTestCase
 
-  context "a new object path for root/cimv2" do
+  context "a new object path for an instance of root/cimv2:Linux_OperatingSystem" do
     setup do
       setup_cim_client
-      @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "FooClass")
+      @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      @op = @client.query(@op, "select * from Linux_OperatingSystem", "wql").first.object_path
     end
     
     should "be running" do
@@ -22,18 +23,24 @@ class SfccCimcObjectPathTest < SfccTestCase
       @op.namespace = "root/cimv3"
       assert_equal "root/cimv3", @op.namespace
     end
-    
-    should "have respond to hostname" do
-      assert_nil @op.hostname
+
+    should "not have namespace at the beginning" do
+      assert_raise Sfcc::Cim::ErrorNotSupported do
+        @op.hostname
+      end
     end
     
     should "change its hostname after setting it" do
-      @op.namespace = "foo.bar.com"
-      assert_equal "foo.bar.com", @op.namespace
+      assert_raise Sfcc::Cim::ErrorNotSupported do
+        @op.hostname = "foo.bar.com"
+      end
+      assert_raise Sfcc::Cim::ErrorNotSupported do
+        assert_equal "foo.bar.com", @op.hostname
+      end
     end
     
     should "respond to class_name" do
-      assert_equal "FooClass", @op.class_name
+      assert_equal "Linux_OperatingSystem", @op.class_name
     end
     
     should "change its class name after setting it" do
@@ -45,14 +52,14 @@ class SfccCimcObjectPathTest < SfccTestCase
       assert_raise Sfcc::Cim::ErrorNoSuchProperty do
         @op.key("foo")
       end
-      assert_equal 0, @op.key_count
+      assert_equal 4, @op.key_count
             
       assert_nothing_raised do
         @op.add_key("prop0", "hello")
         @op.add_key("prop1", true)
         @op.add_key("prop2", false)
       end
-      assert_equal 3, @op.key_count
+      assert_equal 7, @op.key_count
       
       assert_equal "hello", @op.key("prop0")
       assert_equal true, @op.key("prop1")

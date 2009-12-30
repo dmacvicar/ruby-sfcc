@@ -250,19 +250,25 @@ VALUE sfcc_cimargs_to_hash(CMPIArgs *args)
   CMPIStatus status;
   char *argname_cstr = NULL;
 
-  Data_Get_Struct(args, CMPIArgs, ptr);
+  //Data_Get_Struct(args, CMPIArgs, ptr);
+  ptr = args;
+  if (!ptr) {
+    rb_raise(rb_eRuntimeError, "Can't retrieve args pointer");
+    return Qnil;
+  }
   n = ptr->ft->getArgCount(ptr, NULL);
   hash = rb_hash_new();
 
   for (; i < n; ++i) {
     argname = NULL;
     argdata = ptr->ft->getArgAt(ptr, i, &argname, &status);
-    if (!status.rc) {
+    if (!status.rc && argdata.state == CMPI_goodValue ) {
       argname_cstr = argname->ft->getCharPtr(argname, &status);
       if (!argname_cstr) {
         rb_raise(rb_eRuntimeError, "Can't retrieve argument name");
         return Qnil;
       }
+
       if (!status.rc) {
         rb_hash_aset(hash, rb_funcall(rb_str_new2(argname_cstr), rb_intern("to_sym"), 0), sfcc_cimdata_to_value(argdata));
       }
@@ -282,6 +288,7 @@ VALUE sfcc_cimargs_to_hash(CMPIArgs *args)
 CMPIData sfcc_value_to_cimdata(VALUE value)
 {
   CMPIData data;
+  memset(&data, 0, sizeof(CMPIData));
   data.state = CMPI_goodValue;
   data.type = CMPI_null;
 
