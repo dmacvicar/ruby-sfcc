@@ -90,24 +90,24 @@ static VALUE sfcc_status_exception(CMPIStatus status)
 
 void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...)
 {
+  static char *error_separator = " : ";
   va_list arg_list;
   va_start(arg_list, msg);
-  int size = 0;
-  char *error;
+  size_t size = 0;
+  char *error = NULL;
 
   if (!status.rc)
     return;
 
-  size = strlen(msg) + 3;
+  size = sizeof(msg) + sizeof(error_separator);
   if (status.msg)
-    size = size + strlen(status.msg->ft->getCharPtr(status.msg, NULL));
-  error = (char *)malloc(size);
-  strcat(error, msg);
+    size = size + sizeof(status.msg->ft->getCharPtr(status.msg, NULL));
+  error = (char *)malloc(size*sizeof(char *));
+  strcpy(error, msg);
   if (status.msg) {
     strcat(error, " : ");
     strcat(error, status.msg->ft->getCharPtr(status.msg, NULL));
   }
-
   rb_raise(sfcc_status_exception(status), error, arg_list);
   free(error);
 }

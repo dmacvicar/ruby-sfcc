@@ -28,10 +28,9 @@ class SfccCimcClient < SfccTestCase
     
     should "be able to get set properties using an object path" do
       @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
-      @client.instance_names(@op).each do |path|
-        assert_kind_of Sfcc::Cim::ObjectPath, path
-        # FAILS
-        # assert ! @client.property(path, "PrimaryOwnerContact").empty?        
+      # @client.instance_names(@op).each do |path|
+      @client.query(@op, "select * from Linux_OperatingSystem", "wql").each do |instance|
+        assert ! @client.property(instance.object_path, "PrimaryOwnerContact").empty?        
       end
 
     end

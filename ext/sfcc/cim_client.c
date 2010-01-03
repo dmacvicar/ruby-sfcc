@@ -183,7 +183,6 @@ static VALUE invoke_method(VALUE self,
   CMCIClient *ptr = NULL;
   CMPIObjectPath *op = NULL;
   CMPIArgs *cmpiargsout;
-  VALUE rbargsout;
   VALUE method_name_str;
   char *method_name_cstr;
   CMPIData ret;
