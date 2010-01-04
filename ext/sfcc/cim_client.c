@@ -12,17 +12,23 @@ dealloc(CMCIClient *client)
 
 /**
  * call-seq:
- *  class_names(object_path, flags)
+ *  class_names(object_path, flags=0)
  *
  * return the available class names for the given
  * +object_path+ and +flags+
  */
-static VALUE class_names(VALUE self, VALUE object_path, VALUE flags)
+static VALUE class_names(int argc, VALUE *argv, VALUE self)
 {
+  VALUE object_path;
+  VALUE flags;
+
   CMPIStatus status;
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   VALUE rbenm = Qnil;
+
+  rb_scan_args(argc, argv, "11", &object_path, &flags);
+  if (NIL_P(flags)) flags = INT2NUM(0);
 
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
@@ -39,19 +45,25 @@ static VALUE class_names(VALUE self, VALUE object_path, VALUE flags)
 
 /**
  * call-seq:
- *  classes(object_path, flags)
+ *  classes(object_path, flags=0)
  *
  * classes and subclasses in the namespace defined by +object_path+.
  * Class structure and inheritance scope can be controled using the +flags+ parameter
  * Any combination of the following flags are supported:
  * Flags::LocalOnly, Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
  */
-static VALUE classes(VALUE self, VALUE object_path, VALUE flags)
+static VALUE classes(int argc, VALUE *argv, VALUE self)
 {
+  VALUE object_path;
+  VALUE flags;
+
   CMPIStatus status;
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   VALUE rbenm = Qnil;
+
+  rb_scan_args(argc, argv, "11", &object_path, &flags);
+  if (NIL_P(flags)) flags = INT2NUM(0);
 
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
@@ -352,8 +364,8 @@ void init_cim_client()
   cSfccCimClient = klass;
 
   rb_define_singleton_method(klass, "native_connect", connect, 5);
-  rb_define_method(klass, "class_names", class_names, 2);
-  rb_define_method(klass, "classes", classes, 2);
+  rb_define_method(klass, "class_names", class_names, -1);
+  rb_define_method(klass, "classes", classes, -1);
   rb_define_method(klass, "query", query, 3);
   rb_define_method(klass, "instance_names", instance_names, 1);
   rb_define_method(klass, "instances", instances, -1);
