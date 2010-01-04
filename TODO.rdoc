@@ -10,15 +10,6 @@ style API
 
 === CIMCClass
 
-* getProperty
-* getPropertyAt
-* getPropertyCount
-* getQualifier
-* getQualifierAt
-* getQualifierCount
-* getPropQualifier
-* getPropQualifierAt
-* getPropQualifierCount
 * getSuperClassName
 * getKeyList
 * toString
@@ -38,16 +29,6 @@ style API
 * getPropertyQualifier
 * getMethodQualifier
 * getParameterQualifier
-
-=== CIMCInstance
-
-* setPropertyFilter
-* getQualifier
-* getQualifierAt
-* getQualifierCount
-* getPropertyQualifier
-* getPropertyQualifierAt
-* getProeprtyQualifierCount
 
 
 
