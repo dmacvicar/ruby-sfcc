@@ -58,35 +58,6 @@ module Sfcc
     class ErrorErrorSystem < RuntimeError; end
     class ErrorRcError < RuntimeError; end
     
-    class Args
-      include Enumerable
-      # args.each do |name, value|
-      #   ...
-      # end
-      #
-      # enumerate all arguments
-      def each
-        Enumerable::Enumerator.new(to_hash)
-      end
-
-      # args[key] => value
-      # retrieves a named argument
-      def [](key)
-        to_hash[key.to_sym]
-      end
-
-      # args[key] = value
-      # sets a named argument
-      def []=(key, value)
-        add_arg(key.to_sym, value)
-      end
-      
-      # alias for arg_count
-      def size
-        arg_count
-      end
-    end
-
     class Client
       # Client.connect(:host => "localhost",
       #                :scheme => "http",

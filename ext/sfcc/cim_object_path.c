@@ -10,6 +10,7 @@ dealloc(CMPIObjectPath *object_path)
 /**
  * call-seq:
  *   namespace=(ns)
+ *
  * Set/replace the namespace component
  */
 static VALUE set_namespace(VALUE self, VALUE val)
@@ -27,6 +28,7 @@ static VALUE set_namespace(VALUE self, VALUE val)
 /**
  * call-seq:
  *   namespace()
+ *
  * Get the namespace component
  */
 static VALUE namespace(VALUE self)
@@ -45,6 +47,7 @@ static VALUE namespace(VALUE self)
 /**
  * call-seq:
  *   hostname=(ns)
+ *
  * Set/replace the hostname component
  */
 static VALUE set_hostname(VALUE self, VALUE val)
@@ -93,6 +96,7 @@ static VALUE set_class_name(VALUE self, VALUE val)
 /**
  * call-seq:
  *   class_name()
+ *
  * Get the class name component
  */
 static VALUE class_name(VALUE self)
@@ -107,6 +111,7 @@ static VALUE class_name(VALUE self)
 /**
  * call-seq:
  *   add_key(name, value)
+ *
  * Gets a named key value
  */
 static VALUE add_key(VALUE self, VALUE name, VALUE value)
@@ -122,6 +127,7 @@ static VALUE add_key(VALUE self, VALUE name, VALUE value)
 /**
  * call-seq:
  *   key(name)
+ *
  * Gets a named key value
  */
 static VALUE key(VALUE self, VALUE name)
@@ -204,8 +210,8 @@ static VALUE to_s(VALUE self)
 }
 
 /**
- * call-seq
- *   new
+ * call-seq:
+ *   new()
  * Creates an object path from +namespace+ and +class_name+
  *
  */

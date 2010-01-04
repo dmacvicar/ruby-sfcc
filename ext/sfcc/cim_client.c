@@ -18,8 +18,10 @@ dealloc(CMCIClient *client)
  * controled using the flags parameter.
  *
  * +object_path+ ObjectPath containing nameSpace and classname components.
+ *
  * +flags+ Any combination of the following flags are supported:
  *  Flags::LocalOnly, Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
+ *
  * +properties+ If not nil, the members of the array define one or more Property
  * names. Each returned Object MUST NOT include elements for any Properties
  * missing from this list
@@ -92,6 +94,7 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
  *  classes(object_path, flags=0)
  *
  * classes and subclasses in the namespace defined by +object_path+.
+ *
  * Class structure and inheritance scope can be controled using the +flags+ parameter
  * Any combination of the following flags are supported:
  * Flags::LocalOnly, Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
@@ -175,7 +178,9 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
  *   create_instance(object_path, instance)
  *
  * Create Instance from +object_path+ as reference.
+ *
  * +object_path+ ObjectPath containing nameSpace, classname and key components.
+ *
  * +instance+ Complete instance.
  *
  * returns the assigned instance reference (object path)
@@ -207,8 +212,11 @@ static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
  * Replace an existing Instance from +instance+, using +object_path+ as reference.
  *
  * +object_path+ ObjectPath containing nameSpace, classname and key components.
+ *
  * +instance+ Complete instance.
+ *
  * +flags+ The following flag is supported: Flags::IncludeQualifiers.
+ *
  * + properties+ If not nil, the members of the array define one or more Property
  * names, only those properties will be updated. Else, all properties will be updated.
  */
@@ -264,6 +272,18 @@ static VALUE delete_instance(VALUE self, VALUE object_path)
 
 /**
  * call-seq:
+ *   query(object_path, query, lang)
+ *
+ * Query the enumeration of instances of the class (and subclasses) defined
+ * by +object_path+ using +query+ expression.
+ *
+ * +object_path+ ObjectPath containing nameSpace and classname components.
+ *
+ * +query+ Query expression
+ *
+ * +lang+ Query Language
+ *
+ * returns resulting eumeration of instances
  */
 static VALUE query(VALUE self,
                    VALUE object_path,
@@ -323,11 +343,14 @@ static VALUE instance_names(VALUE self, VALUE object_path)
  *  instances(object_path, flags=0, properties=nil)
  *
  * Enumerate the instance names of the class defined by +object_path+
+ *
  * +object_path+ ObjectPath containing nameSpace and classname components.
+ *
  * +flags+ Any combination of the following flags are supported:
  * Flags::LocalOnly, Flags::DeepInheritance,
  * Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
- * +properties+ If not NULL, the members of the array define one or more 
+ *
+ * +properties+ If not NULL, the members of the array define one or more
  * Property names.
  * Each returned Object MUST NOT include elements for any Properties
  * missing from this list
@@ -535,12 +558,12 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
  *
  * +object_path+ Source ObjectPath containing nameSpace, classname and key components.
  *
- * +result_class+ If not NULL, MUST be a valid Class name.
+ * +result_class+ If not nil, MUST be a valid Class name.
  * It acts as a filter on the returned set of Objects by mandating that
  * each returned Object MUST be either an Instance of this Class (or one
  * of its subclasses).
  *
- * +role+ If not NULL, MUST be a valid Property name.
+ * +role+ If not nil, MUST be a valid Property name.
  * It acts as a filter on the returned set of Objects by mandating
  * that each returned Object MUST be associated to the source Object
  * via an Association in which the source Object plays the specified role
@@ -550,7 +573,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
  * +flags+ Any combination of the following flags are supported:
  * Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
  *
- * +properties+ If not NULL, the members of the array define one or more Property
+ * +properties+ If not nil, the members of the array define one or more Property
  * names. Each returned Object MUST NOT include elements for any Properties
  * missing from this list
  *
@@ -604,12 +627,12 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
  *
  * +object_path+ Source ObjectPath containing nameSpace, classname and key components.
  *
- * +result_class+ If not NULL, MUST be a valid Class name.
+ * +result_class+ If not nil, MUST be a valid Class name.
  * It acts as a filter on the returned set of Objects by mandating that
  * each returned Object MUST be either an Instance of this Class (or one
  * of its subclasses).
  *
- * +role+ If not NULL, MUST be a valid Property name.
+ * +role+ If not nil, MUST be a valid Property name.
  * It acts as a filter on the returned set of Objects by mandating
  * that each returned Object MUST be associated to the source Object
  * via an Association in which the source Object plays the specified role
@@ -652,12 +675,15 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
 /**
  * call-seq:
  *   invoke_method(object_path, method_name, argin, argout)
+ *
  * Invoke a named, extrinsic method of an instance defined by +object_path+
  *
  * +object_path+ containing namespace, classname, and key
  * components.
+ *
  * +argin+ hash containing the input parameters (keys can be symbols) or
  * strings.
+ *
  * +argout+ hash where output parameters will be returned
  */
 static VALUE invoke_method(VALUE self,
@@ -703,6 +729,7 @@ static VALUE invoke_method(VALUE self,
 /**
  * call-seq:
  *   set_property(object_path, name, value)
+ *
  * Sets the named property value of an instance defined by
  * +object_path+
  *
