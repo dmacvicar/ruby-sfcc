@@ -31,9 +31,38 @@ class SfccCimcClient < SfccTestCase
       @client.query(@op, "select * from Linux_OperatingSystem", "wql").each do |instance|
 #        assert ! @client.property(instance.object_path, "PrimaryOwnerContact").empty?        
       end
-
     end
 
+    should "be able to get an instance from the object path" do
+      @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
+      instance = @client.query(@op, "select * from Linux_OperatingSystem", "wql").to_a.first
+      instance2 = @client.get_instance(instance.object_path)
+      assert_kind_of Sfcc::Cim::Instance, instance2
+    end
+
+    should "be able to create an instance" do
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
+      instance = Sfcc::Cim::Instance.new(op)
+      assert_raise Sfcc::Cim::ErrorNotSupported do
+        new_op = @client.create_instance(op, instance)
+      end
+    end
+
+    should "be able to set an instance" do
+      @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
+      instance = @client.query(@op, "select * from Linux_OperatingSystem", "wql").to_a.first
+      assert_raise Sfcc::Cim::ErrorNotSupported do
+        instance = @client.set_instance(instance.object_path, instance)
+      end
+    end
+
+    should "be able to delete an instance" do
+      instance = @client.query(@op, "select * from Linux_OperatingSystem", "wql").to_a.first
+      assert_raise Sfcc::Cim::ErrorNotSupported do
+        @client.delete_instance(instance.object_path)
+      end
+    end
+    
     should "be able to invoke methods using an object path" do
       @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
       @client.query(@op, "select * from Linux_OperatingSystem", "wql").each do |instance|

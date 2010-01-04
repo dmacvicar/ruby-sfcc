@@ -12,6 +12,50 @@ dealloc(CMCIClient *client)
 
 /**
  * call-seq:
+ *  get_class(object_path, flags=0, properties=nil)
+ *
+ * Get Class using +object_path+ as reference. Class structure can be
+ * controled using the flags parameter.
+ *
+ * +object_path+ ObjectPath containing nameSpace and classname components.
+ * +flags+ Any combination of the following flags are supported:
+ *  Flags::LocalOnly, Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
+ * +properties+ If not nil, the members of the array define one or more Property
+ * names. Each returned Object MUST NOT include elements for any Properties
+ * missing from this list
+ */
+static VALUE get_class(int argc, VALUE *argv, VALUE self)
+{
+  VALUE object_path;
+  VALUE flags;
+  VALUE properties;
+
+  CMPIStatus status;
+  CMPIObjectPath *op = NULL;
+  CMCIClient *client = NULL;
+  CMPIConstClass *cimclass = NULL;
+  char **props;
+
+  rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
+
+  if (NIL_P(flags)) flags = INT2NUM(0);
+
+  memset(&status, 0, sizeof(CMPIStatus));
+  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+
+  props = sfcc_value_array_to_string_array(properties);
+
+  cimclass = client->ft->getClass(client, op, NUM2INT(flags), props, &status);
+
+  free(props);
+
+  sfcc_rb_raise_if_error(status, "Can't get class");
+  return Sfcc_wrap_cim_class(cimclass);
+}
+
+/**
+ * call-seq:
  *  class_names(object_path, flags=0)
  *
  * return the available class names for the given
@@ -76,6 +120,146 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   //enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get classes");
   return rbenm;
+}
+
+/**
+ * call-seq:
+ *  get_instance(object_path, flags=0, properties=nil)
+ *
+ * get instance using +object_path+ as reference. Instance structure
+ * can be controlled using the flags parameter.
+ *
+ * +object_path* an ObjectPath containing namespace, class name and key
+ * components.
+ *
+ * +flags+ Any combination of the following flags are supported:
+ * Flags::LocalOnly, Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
+ *
+ * +properties+ If not nil, the members of the array define one or more Property
+ * names. Each returned Object MUST NOT include elements for any Properties
+ * missing from this list
+ */
+static VALUE get_instance(int argc, VALUE *argv, VALUE self)
+{
+  VALUE object_path;
+  VALUE flags;
+  VALUE properties;
+
+  CMPIStatus status;
+  CMPIObjectPath *op = NULL;
+  CMCIClient *client = NULL;
+  CMPIInstance *ciminstance = NULL;
+  char **props;
+
+  rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
+  if (NIL_P(flags)) flags = INT2NUM(0);
+
+  memset(&status, 0, sizeof(CMPIStatus));
+  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+
+  props = sfcc_value_array_to_string_array(properties);
+
+  ciminstance = client->ft->getInstance(client, op, NUM2INT(flags), props, &status);
+  free(props);
+
+  if (!status.rc)
+    return Sfcc_wrap_cim_instance(ciminstance->ft->clone(ciminstance, NULL));
+
+  sfcc_rb_raise_if_error(status, "Can't get instance");
+  return Qnil;
+}
+
+/**
+ * call-seq:
+ *   create_instance(object_path, instance)
+ *
+ * Create Instance from +object_path+ as reference.
+ * +object_path+ ObjectPath containing nameSpace, classname and key components.
+ * +instance+ Complete instance.
+ *
+ * returns the assigned instance reference (object path)
+ */
+static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
+{
+  CMPIStatus status;
+  CMCIClient *ptr = NULL;
+  CMPIObjectPath *op = NULL;
+  CMPIObjectPath *new_op = NULL;
+  CMPIInstance *inst = NULL;
+
+  Data_Get_Struct(self, CMCIClient, ptr);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+  Data_Get_Struct(instance, CMPIInstance, inst);
+  new_op = ptr->ft->createInstance(ptr, op, inst, &status);
+
+  if (!status.rc)
+    return Sfcc_wrap_cim_object_path(new_op->ft->clone(new_op, NULL));
+
+  sfcc_rb_raise_if_error(status, "Can't create instance");
+  return Qnil;
+}
+
+/**
+ * call-seq:
+ *  set_instance(object_path, instance, flags=0, properties=nil)
+ *
+ * Replace an existing Instance from +instance+, using +object_path+ as reference.
+ *
+ * +object_path+ ObjectPath containing nameSpace, classname and key components.
+ * +instance+ Complete instance.
+ * +flags+ The following flag is supported: Flags::IncludeQualifiers.
+ * + properties+ If not nil, the members of the array define one or more Property
+ * names, only those properties will be updated. Else, all properties will be updated.
+ */
+static VALUE set_instance(int argc, VALUE *argv, VALUE self)
+{
+  VALUE object_path;
+  VALUE instance;
+  VALUE flags;
+  VALUE properties;
+
+  CMPIStatus status;
+  CMPIObjectPath *op = NULL;
+  CMPIInstance *inst = NULL;
+  CMCIClient *client = NULL;
+  char **props;
+
+  rb_scan_args(argc, argv, "22", &object_path, &instance, &flags, &properties);
+  if (NIL_P(flags)) flags = INT2NUM(0);
+
+  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+  Data_Get_Struct(instance, CMPIInstance, inst);
+
+  props = sfcc_value_array_to_string_array(properties);
+
+  status = client->ft->setInstance(client, op, inst, NUM2INT(flags), props);
+  free(props);
+
+  sfcc_rb_raise_if_error(status, "Can't set instance");
+  return instance;
+}
+
+/**
+ * call-seq:
+ *  delete_instance(object_path)
+ *
+ * Delete an existing Instance using +object_path+ as reference.
+ * +object_path+ ObjectPath containing nameSpace, classname and key components.
+ */
+static VALUE delete_instance(VALUE self, VALUE object_path)
+{
+  CMPIStatus status;
+  CMPIObjectPath *op = NULL;
+  CMCIClient *client = NULL;
+
+  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+
+  status = client->ft->deleteInstance(client, op);
+  sfcc_rb_raise_if_error(status, "Can't delete instance '%s'", op->ft->toString(op, NULL));
+  return Qnil;
 }
 
 /**
@@ -246,14 +430,19 @@ static VALUE set_property(VALUE self,
                           VALUE name,
                           VALUE value)
 {
+  CMPIStatus status;
   CMCIClient *ptr = NULL;
   CMPIObjectPath *op = NULL;
   CMPIData data;
   Data_Get_Struct(self, CMCIClient, ptr);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
   data = sfcc_value_to_cimdata(value);
-  ptr->ft->setProperty(ptr, op, StringValuePtr(name), &data.value, data.type);
-  return value;
+  status = ptr->ft->setProperty(ptr, op, StringValuePtr(name), &data.value, data.type);
+
+  if ( !status.rc )
+    return value;
+  sfcc_rb_raise_if_error(status, "Can't set property '%s'", StringValuePtr(name));
+  return Qnil;
 }
 
 /**
@@ -281,50 +470,6 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", StringValuePtr(name));
   return Qnil;
-}
-
-/**
- * call-seq:
- *  get_class(object_path, flags=0, properties=nil)
- *
- * Get Class using +object_path+ as reference. Class structure can be
- * controled using the flags parameter.
- *
- * +object_path+ ObjectPath containing nameSpace and classname components.
- * +flags+ Any combination of the following flags are supported:
- *  Flags::LocalOnly, Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
- * +properties+ If not nil, the members of the array define one or more Property
- * names. Each returned Object MUST NOT include elements for any Properties
- * missing from this list
- */
-static VALUE get_class(int argc, VALUE *argv, VALUE self)
-{
-  VALUE object_path;
-  VALUE flags;
-  VALUE properties;
-
-  CMPIStatus status;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
-  CMPIConstClass *cimclass = NULL;
-  char **props;
-
-  rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
-
-  if (NIL_P(flags)) flags = INT2NUM(0);
-
-  memset(&status, 0, sizeof(CMPIStatus));
-  Data_Get_Struct(self, CMCIClient, client);
-  Data_Get_Struct(object_path, CMPIObjectPath, op);
-
-  props = sfcc_value_array_to_string_array(properties);
-
-  cimclass = client->ft->getClass(client, op, NUM2INT(flags), props, &status);
-
-  free(props);
-
-  sfcc_rb_raise_if_error(status, "Can't get class");
-  return Sfcc_wrap_cim_class(cimclass);
 }
 
 static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE user, VALUE pwd)
@@ -364,12 +509,16 @@ void init_cim_client()
   cSfccCimClient = klass;
 
   rb_define_singleton_method(klass, "native_connect", connect, 5);
+  rb_define_method(klass, "get_class", get_class, -1);
   rb_define_method(klass, "class_names", class_names, -1);
   rb_define_method(klass, "classes", classes, -1);
+  rb_define_method(klass, "get_instance", get_instance, -1);
+  rb_define_method(klass, "create_instance", create_instance, 2);
+  rb_define_method(klass, "set_instance", set_instance, -1);
+  rb_define_method(klass, "delete_instance", delete_instance, 1);  
   rb_define_method(klass, "query", query, 3);
   rb_define_method(klass, "instance_names", instance_names, 1);
   rb_define_method(klass, "instances", instances, -1);
-  rb_define_method(klass, "get_class", get_class, -1);
   rb_define_method(klass, "invoke_method", invoke_method, 4);
   rb_define_method(klass, "set_property", set_property, 3);
   rb_define_method(klass, "property", property, 2);

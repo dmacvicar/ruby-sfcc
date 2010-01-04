@@ -110,6 +110,27 @@ static VALUE object_path(VALUE self)
   return Sfcc_wrap_cim_object_path(op);
 }
 
+/**
+ * call-seq
+ *   new
+ * Creates an instance from in +object_path+
+ *
+ */
+static VALUE new(VALUE klass, VALUE object_path)
+{
+  CMPIStatus status;
+  CMPIInstance *ptr;
+  CMPIObjectPath *op;
+
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+  ptr = newCMPIInstance(op, &status);
+
+  if (!status.rc)
+    return Sfcc_wrap_cim_instance(ptr);
+  sfcc_rb_raise_if_error(status, "Can't create instance");
+  return Qnil;
+}
+
 VALUE
 Sfcc_wrap_cim_instance(CMPIInstance *instance)
 {
@@ -129,6 +150,7 @@ void init_cim_instance()
   VALUE klass = rb_define_class_under(cimc, "Instance", rb_cObject);
   cSfccCimInstance = klass;
 
+  rb_define_singleton_method(klass, "new", new, 1);
   rb_define_method(klass, "property", property, 1);
   rb_define_method(klass, "each_property", each_property, 0);
   rb_define_method(klass, "property_count", property_count, 0);

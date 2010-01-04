@@ -2,7 +2,7 @@
 require File.join(File.dirname(__FILE__), 'helper')
 require 'pp'
 
-class SfccCimcObjectPathTest < SfccTestCase
+class SfccCimInstanceTest < SfccTestCase
 
   context "object path for CIM_ComputerSystem and running CIMOM with no auth" do
     setup do
@@ -14,6 +14,10 @@ class SfccCimcObjectPathTest < SfccTestCase
       assert cimom_running?
     end
 
+    should "be able to create an instance" do
+      instance = Sfcc::Cim::Instance.new(@op_computer_system)
+    end
+    
     context "CIM_ComputerSystem class" do
       setup do
         @cim_computer_system = @client.get_class(@op_computer_system)
