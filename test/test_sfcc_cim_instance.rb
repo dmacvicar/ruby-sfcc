@@ -17,71 +17,73 @@ class SfccCimInstanceTest < SfccTestCase
     should "be able to create an instance" do
       instance = Sfcc::Cim::Instance.new(@op_computer_system)
     end
-    
-    context "CIM_ComputerSystem class" do
-      setup do
-        @cim_computer_system = @client.get_class(@op_computer_system)
-      end
-
-      should "be of class Cimc::Class" do
-        assert_kind_of(Sfcc::Cim::Class, @cim_computer_system)
-      end
-
-      should "have CIM_ComputerSystem as class name attribute" do
-        assert_equal(@cim_computer_system.class_name, "CIM_ComputerSystem")
-      end
-
-      context "it instance names" do
-        setup do
-          @instance_names = @client.instance_names(@op_computer_system)
-        end
-        should "not be empty, at least one CIM_ComputerSystem has to be there" do
-          assert @instance_names.any?
-        end
-
-        should "have all elements of type ObjectPath" do
-          @instance_names.each { |i| assert_kind_of(Sfcc::Cim::ObjectPath, i) }
-        end
-      end
-
-      context "instances of CIM_ComputerSystem" do
-        setup do
-          @instances = @client.instances(@op_computer_system)
-        end
-
-        should "have all elements of type Cimc::Instance" do
-          @instances.each { |i| assert_kind_of(Sfcc::Cim::Instance, i) }
-        end
-
-        should "respond to property Name" do
-          @instances.each do |i|
-            assert_kind_of(String, i.property('Name'))
-            #puts i.property('Name')
-          end
-        end
-
-        should "be able to iterate over properties" do
-          @instances.each do |i|
-            i.each_property do |name, value|              
-              puts "#{name} -> #{value}"
-              puts "---"
-            end
-          end
-        end
-
-        should "be able to set and retrieve stringproperties" do
-          @instances.each do |i|
-            assert_raises Sfcc::Cim::ErrorNoSuchProperty do
-              i.property("foobar");
-            end
-            assert_nothing_raised do
-              i.set_property("Name", "newname");
-            end
-            assert_equal "newname", i.property("Name")
-          end
-        end
-                        
-      end            
-    end
   end
-end
+    
+  context "an instance of CIM_ComputerSystem" do
+    setup do
+      setup_cim_client
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      @instance = @client.query(op, "select * from CIM_ComputerSystem", "wql").to_a.first
+    end
+    
+    should "be running" do
+      assert cimom_running?
+    end
+
+    should "respond to property Name" do
+      assert_kind_of(String, @instance.property('Name'))
+    end
+
+    should "be able to iterate over properties" do
+      @instance.each_property do |name, value|              
+        puts "#{name} -> #{value}"
+        puts "---"
+      end
+    end
+
+    should "be able to set and retrieve stringproperties" do
+      assert_raises Sfcc::Cim::ErrorNoSuchProperty do
+        @instance.property("foobar");
+      end
+      assert_nothing_raised do
+        @instance.set_property("Name", "newname");
+      end
+      assert_equal "newname", @instance.property("Name")
+    end
+
+    should "be able to set and retrieve stringproperties" do
+      assert_raises Sfcc::Cim::ErrorNoSuchProperty do
+        @instance.property("foobar");
+      end
+      assert_nothing_raised do
+        @instance.set_property("Name", "newname");
+      end
+      assert_equal "newname", @instance.property("Name")
+    end
+
+    should "be able to enumerate qualifiers" do
+      @instance.each_qualifier do |k, v|
+        assert_not_nil(k)
+      end
+      
+      qualifiers = @instance.qualifiers
+      assert qualifiers.empty?
+      assert_equal qualifiers.size, @instance.qualifier_count
+      pp qualifiers
+    end
+    
+    should "be able to enumerate qualifiers for a property" do
+      @instance.each_property_qualifier("Status") do |k, v|
+        assert_not_nil(k)
+      end
+      
+      qualifiers = @instance.property_qualifiers("Status")
+      assert qualifiers.empty?
+      assert_equal qualifiers.size, @instance.qualifier_count
+      pp qualifiers
+    end
+    
+    
+  end   
+end            
+
