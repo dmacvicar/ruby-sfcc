@@ -11,6 +11,7 @@ dealloc(CMPIInstance *instance)
 /**
  * call-seq:
  *   property(name)
+ *
  * Gets a named property value
  */
 static VALUE property(VALUE self, VALUE name)
@@ -69,6 +70,7 @@ static VALUE each_property(VALUE self)
 /**
  * call-seq:
  *   property_count()
+ *
  * Gets the number of properties contained in this Instance
  */
 static VALUE property_count(VALUE self)
@@ -81,6 +83,7 @@ static VALUE property_count(VALUE self)
 /**
  * call-seq:
  *   set_property(name, value)
+ *
  * Adds/replaces a names property
  */
 static VALUE set_property(VALUE self, VALUE name, VALUE value)
@@ -112,7 +115,8 @@ static VALUE object_path(VALUE self)
 
 /**
  * call-seq
- *   new
+ *   new()
+ *
  * Creates an instance from in +object_path+
  *
  */
