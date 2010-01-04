@@ -124,7 +124,7 @@ static VALUE instance_names(VALUE self, VALUE object_path)
 
 /**
  * call-seq:
- *  instances(object_path, flags, properties)
+ *  instances(object_path, flags=0, properties=nil)
  *
  * Enumerate the instance names of the class defined by +object_path+
  * +object_path+ ObjectPath containing nameSpace and classname components.
@@ -137,13 +137,20 @@ static VALUE instance_names(VALUE self, VALUE object_path)
  * missing from this list
  * 
  */
-static VALUE instances(VALUE self, VALUE object_path, VALUE flags, VALUE properties)
+static VALUE instances(int argc, VALUE *argv, VALUE self)
 {
+  VALUE object_path;
+  VALUE flags;
+  VALUE properties;
+
   CMPIStatus status;
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   char **props;
   VALUE rbenm = Qnil;
+
+  rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
+  if (NIL_P(flags)) flags = INT2NUM(0);
 
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
@@ -266,7 +273,7 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
 
 /**
  * call-seq:
- *  get_class(object_path, flags, properties)
+ *  get_class(object_path, flags=0, properties=nil)
  *
  * Get Class using +object_path+ as reference. Class structure can be
  * controled using the flags parameter.
@@ -278,13 +285,21 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
  * names. Each returned Object MUST NOT include elements for any Properties
  * missing from this list
  */
-static VALUE get_class(VALUE self, VALUE object_path, VALUE flags, VALUE properties)
+static VALUE get_class(int argc, VALUE *argv, VALUE self)
 {
+  VALUE object_path;
+  VALUE flags;
+  VALUE properties;
+
   CMPIStatus status;
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   CMPIConstClass *cimclass = NULL;
   char **props;
+
+  rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
+
+  if (NIL_P(flags)) flags = INT2NUM(0);
 
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
@@ -341,8 +356,8 @@ void init_cim_client()
   rb_define_method(klass, "classes", classes, 2);
   rb_define_method(klass, "query", query, 3);
   rb_define_method(klass, "instance_names", instance_names, 1);
-  rb_define_method(klass, "instances", instances, 3);
-  rb_define_method(klass, "get_class", get_class, 3);
+  rb_define_method(klass, "instances", instances, -1);
+  rb_define_method(klass, "get_class", get_class, -1);
   rb_define_method(klass, "invoke_method", invoke_method, 4);
   rb_define_method(klass, "set_property", set_property, 3);
   rb_define_method(klass, "property", property, 2);

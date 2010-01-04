@@ -30,7 +30,7 @@ class SfccCimcClient < SfccTestCase
       @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
       # @client.instance_names(@op).each do |path|
       @client.query(@op, "select * from Linux_OperatingSystem", "wql").each do |instance|
-        assert ! @client.property(instance.object_path, "PrimaryOwnerContact").empty?        
+#        assert ! @client.property(instance.object_path, "PrimaryOwnerContact").empty?        
       end
 
     end

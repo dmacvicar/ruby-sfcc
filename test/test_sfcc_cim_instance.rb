@@ -16,7 +16,7 @@ class SfccCimcObjectPathTest < SfccTestCase
 
     context "CIM_ComputerSystem class" do
       setup do
-        @cim_computer_system = @client.get_class(@op_computer_system, 0, nil)
+        @cim_computer_system = @client.get_class(@op_computer_system)
       end
 
       should "be of class Cimc::Class" do
@@ -42,7 +42,7 @@ class SfccCimcObjectPathTest < SfccTestCase
 
       context "instances of CIM_ComputerSystem" do
         setup do
-          @instances = @client.instances(@op_computer_system, 0, nil)
+          @instances = @client.instances(@op_computer_system)
         end
 
         should "have all elements of type Cimc::Instance" do
