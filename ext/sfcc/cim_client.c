@@ -258,7 +258,7 @@ static VALUE delete_instance(VALUE self, VALUE object_path)
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
   status = client->ft->deleteInstance(client, op);
-  sfcc_rb_raise_if_error(status, "Can't delete instance '%s'", op->ft->toString(op, NULL));
+  sfcc_rb_raise_if_error(status, "Can't delete instance '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return Qnil;
 }
 
@@ -362,6 +362,290 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
     rbenm = Sfcc_wrap_cim_enumeration(enm);
   }
   sfcc_rb_raise_if_error(status, "Can't get instances");
+  return rbenm;
+}
+
+/**
+ * call-seq:
+ *  associators(object_path, association_class=nil,
+ *              result_class=nil, role=nil, result_role=nil, flags=0
+ *              properties=nil)
+ *
+ * Enumerate instances associated with the Instance defined by the +object_path+
+ * 
+ * +object_path+ Source ObjectPath containing nameSpace, classname
+ * and key components.
+ *
+ * +association_class+ If not nil, MUST be a valid Association Class name.
+ * It acts as a filter on the returned set of Objects by mandating that
+ * each returned Object MUST be associated to the source Object via an
+ * Instance of this Class or one of its subclasses.
+ *
+ * +result_class+ If not nil, MUST be a valid Class name.
+ * It acts as a filter on the returned set of Objects by mandating that
+ * each returned Object MUST be either an Instance of this Class (or one
+ * of its subclasses).
+ *
+ * +role+ If not nil, MUST be a valid Property name.
+ * It acts as a filter on the returned set of Objects by mandating
+ * that each returned Object MUST be associated to the source Object
+ * via an Association in which the source Object plays the specified role
+ * (i.e. the name of the Property in the Association Class that refers
+ * to the source Object MUST match the value of this parameter).
+ *
+ * +result_role+ If not nil, MUST be a valid Property name.
+ * It acts as a filter on the returned set of Objects by mandating
+ * that each returned Object MUST be associated to the source Object
+ * via an Association in which the returned Object plays the specified role
+ * (i.e. the name of the Property in the Association Class that refers to
+ * the returned Object MUST match the value of this parameter).
+ *
+ * +flags+ Any combination of the following flags are supported:
+ * Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
+ *
+ * +properties+ If not nil, the members of the array define one or more Property
+ * names. Each returned Object MUST NOT include elements for any Properties
+ * missing from this list
+ *
+ * returns enumeration of instances
+ */
+static VALUE associators(int argc, VALUE *argv, VALUE self)
+{
+  VALUE object_path;
+  VALUE assoc_class;
+  VALUE result_class;
+  VALUE role;
+  VALUE result_role;
+  VALUE flags;
+  VALUE properties;
+
+  CMPIStatus status;
+  CMPIObjectPath *op = NULL;
+  CMCIClient *client = NULL;
+  char **props;
+  CMPIEnumeration *enm = NULL;
+  VALUE rbenm = Qnil;
+
+  rb_scan_args(argc, argv, "16", &object_path,
+               &assoc_class, &result_class,
+               &role, &result_role, &flags, &properties);
+
+  if (NIL_P(flags)) flags = INT2NUM(0);
+  memset(&status, 0, sizeof(CMPIStatus));
+  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+
+  props = sfcc_value_array_to_string_array(properties);
+
+  enm = client->ft->associators(client,
+                                op,
+                                NIL_P(assoc_class) ? NULL : StringValuePtr(assoc_class),
+                                NIL_P(result_class) ? NULL : StringValuePtr(result_class),
+                                NIL_P(role) ? NULL : StringValuePtr(role),
+                                NIL_P(result_role) ? NULL : StringValuePtr(result_role),
+                                NUM2INT(flags), props, &status);
+  free(props);
+  if (enm && !status.rc ) {
+    rbenm = Sfcc_wrap_cim_enumeration(enm);
+  }
+  sfcc_rb_raise_if_error(status, "Can't get associators for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  return rbenm;
+}
+
+/**
+ * call-seq:
+ *  associator_names(object_path, association_class=nil,
+ *                   result_class=nil, role=nil, result_role=nil, flags=0
+ *                   properties=nil)
+ *
+ * Enumerate object paths associated with the Instance defined by the
+ * +object_path+
+ * 
+ * +object_path+ Source ObjectPath containing nameSpace, classname
+ * and key components.
+ *
+ * +association_class+ If not nil, MUST be a valid Association Class name.
+ * It acts as a filter on the returned set of Objects by mandating that
+ * each returned Object MUST be associated to the source Object via an
+ * Instance of this Class or one of its subclasses.
+ *
+ * +result_class+ If not nil, MUST be a valid Class name.
+ * It acts as a filter on the returned set of Objects by mandating that
+ * each returned Object MUST be either an Instance of this Class (or one
+ * of its subclasses).
+ *
+ * +role+ If not nil, MUST be a valid Property name.
+ * It acts as a filter on the returned set of Objects by mandating
+ * that each returned Object MUST be associated to the source Object
+ * via an Association in which the source Object plays the specified role
+ * (i.e. the name of the Property in the Association Class that refers
+ * to the source Object MUST match the value of this parameter).
+ *
+ * +result_role+ If not nil, MUST be a valid Property name.
+ * It acts as a filter on the returned set of Objects by mandating
+ * that each returned Object MUST be associated to the source Object
+ * via an Association in which the returned Object plays the specified role
+ * (i.e. the name of the Property in the Association Class that refers to
+ * the returned Object MUST match the value of this parameter).
+ *
+ * returns enumeration of object paths
+ */
+static VALUE associator_names(int argc, VALUE *argv, VALUE self)
+{
+  VALUE object_path;
+  VALUE assoc_class;
+  VALUE result_class;
+  VALUE role;
+  VALUE result_role;
+
+  CMPIStatus status;
+  CMPIObjectPath *op = NULL;
+  CMCIClient *client = NULL;
+  CMPIEnumeration *enm = NULL;
+  VALUE rbenm = Qnil;
+
+  rb_scan_args(argc, argv, "14", &object_path,
+               &assoc_class, &result_class,
+               &role, &result_role);
+
+  memset(&status, 0, sizeof(CMPIStatus));
+  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+
+  enm = client->ft->associatorNames(client,
+                                    op,
+                                    NIL_P(assoc_class) ? NULL : StringValuePtr(assoc_class),
+                                    NIL_P(result_class) ? NULL : StringValuePtr(result_class),
+                                    NIL_P(role) ? NULL : StringValuePtr(role),
+                                    NIL_P(result_role) ? NULL : StringValuePtr(result_role),
+                                    &status);
+  if (enm && !status.rc ) {
+    rbenm = Sfcc_wrap_cim_enumeration(enm);
+  }
+  sfcc_rb_raise_if_error(status, "Can't get associator names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  return rbenm;
+}
+
+/**
+ * call-seq:
+ *  references(object_path, result_class=nil, role=nil, flags=0, properties=nil)
+ *
+ * Enumerates the association instances that refer to the instance defined by
+ * +object_path+
+ *
+ * +object_path+ Source ObjectPath containing nameSpace, classname and key components.
+ *
+ * +result_class+ If not NULL, MUST be a valid Class name.
+ * It acts as a filter on the returned set of Objects by mandating that
+ * each returned Object MUST be either an Instance of this Class (or one
+ * of its subclasses).
+ *
+ * +role+ If not NULL, MUST be a valid Property name.
+ * It acts as a filter on the returned set of Objects by mandating
+ * that each returned Object MUST be associated to the source Object
+ * via an Association in which the source Object plays the specified role
+ * (i.e. the name of the Property in the Association Class that refers
+ * to the source Object MUST match the value of this parameter).
+ *
+ * +flags+ Any combination of the following flags are supported:
+ * Flags::IncludeQualifiers and Flags::IncludeClassOrigin.
+ *
+ * +properties+ If not NULL, the members of the array define one or more Property
+ * names. Each returned Object MUST NOT include elements for any Properties
+ * missing from this list
+ *
+ * returns enumeration of ObjectPaths
+ */
+static VALUE references(int argc, VALUE *argv, VALUE self)
+{
+  VALUE object_path;
+  VALUE result_class;
+  VALUE role;
+  VALUE flags;
+  VALUE properties;
+
+  CMPIStatus status;
+  CMPIObjectPath *op = NULL;
+  CMCIClient *client = NULL;
+  char **props;
+  CMPIEnumeration *enm = NULL;
+  VALUE rbenm = Qnil;
+
+  rb_scan_args(argc, argv, "14", &object_path,
+               &result_class, &role,
+               &flags, &properties);
+
+  if (NIL_P(flags)) flags = INT2NUM(0);
+  memset(&status, 0, sizeof(CMPIStatus));
+  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+
+  props = sfcc_value_array_to_string_array(properties);
+
+  enm = client->ft->references(client,
+                               op,
+                               NIL_P(result_class) ? NULL : StringValuePtr(result_class),
+                               NIL_P(role) ? NULL : StringValuePtr(role),
+                               NUM2INT(flags), props, &status);
+  free(props);
+  if (enm && !status.rc ) {
+    rbenm = Sfcc_wrap_cim_enumeration(enm);
+  }
+  sfcc_rb_raise_if_error(status, "Can't get references for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  return rbenm;
+}
+
+/**
+ * call-seq:
+ *  reference_names(object_path, result_class=nil, role=nil, flags=0, properties=nil)
+ *
+ * Enumerates the association instances that refer to the instance defined by
+ * +object_path+
+ *
+ * +object_path+ Source ObjectPath containing nameSpace, classname and key components.
+ *
+ * +result_class+ If not NULL, MUST be a valid Class name.
+ * It acts as a filter on the returned set of Objects by mandating that
+ * each returned Object MUST be either an Instance of this Class (or one
+ * of its subclasses).
+ *
+ * +role+ If not NULL, MUST be a valid Property name.
+ * It acts as a filter on the returned set of Objects by mandating
+ * that each returned Object MUST be associated to the source Object
+ * via an Association in which the source Object plays the specified role
+ * (i.e. the name of the Property in the Association Class that refers
+ * to the source Object MUST match the value of this parameter).
+ *
+ * returns enumeration of ObjectPaths
+ */
+static VALUE reference_names(int argc, VALUE *argv, VALUE self)
+{
+  VALUE object_path;
+  VALUE result_class;
+  VALUE role;
+
+  CMPIStatus status;
+  CMPIObjectPath *op = NULL;
+  CMCIClient *client = NULL;
+  CMPIEnumeration *enm = NULL;
+  VALUE rbenm = Qnil;
+
+  rb_scan_args(argc, argv, "12", &object_path,
+               &result_class, &role);
+
+  memset(&status, 0, sizeof(CMPIStatus));
+  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(object_path, CMPIObjectPath, op);
+
+  enm = client->ft->referenceNames(client,
+                                   op,
+                                   NIL_P(result_class) ? NULL : StringValuePtr(result_class),
+                                   NIL_P(role) ? NULL : StringValuePtr(role),
+                                   &status);
+  if (enm && !status.rc ) {
+    rbenm = Sfcc_wrap_cim_enumeration(enm);
+  }
+  sfcc_rb_raise_if_error(status, "Can't get reference names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return rbenm;
 }
 
@@ -519,6 +803,10 @@ void init_cim_client()
   rb_define_method(klass, "query", query, 3);
   rb_define_method(klass, "instance_names", instance_names, 1);
   rb_define_method(klass, "instances", instances, -1);
+  rb_define_method(klass, "associators", associators, -1);
+  rb_define_method(klass, "associator_names", associator_names, -1);
+  rb_define_method(klass, "references", references, -1);
+  rb_define_method(klass, "reference_names", reference_names, -1);
   rb_define_method(klass, "invoke_method", invoke_method, 4);
   rb_define_method(klass, "set_property", set_property, 3);
   rb_define_method(klass, "property", property, 2);

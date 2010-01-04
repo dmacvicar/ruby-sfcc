@@ -62,7 +62,43 @@ class SfccCimcClient < SfccTestCase
         @client.delete_instance(instance.object_path)
       end
     end
-    
+
+    should "be able to get associator for an instance" do
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = @client.query(op, "select * from CIM_ComputerSystem", "wql").to_a.first.object_path
+      associators = @client.associators(op, 'CIM_RunningOS').to_a
+      assert !associators.empty?
+      associators.each { |assoc| assert_kind_of Sfcc::Cim::Instance, assoc }
+      pp associators
+    end
+
+    should "be able to get associator names for an instance" do
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = @client.query(op, "select * from CIM_ComputerSystem", "wql").to_a.first.object_path
+      associators = @client.associator_names(op, 'CIM_RunningOS').to_a
+      assert !associators.empty?
+      associators.each { |assoc| assert_kind_of Sfcc::Cim::ObjectPath, assoc }
+      pp associators
+    end
+
+    should "be able to get references for an instance" do
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = @client.query(op, "select * from CIM_OperatingSystem", "wql").to_a.first.object_path
+      associators = @client.references(op, 'CIM_RunningOS').to_a
+      assert !associators.empty?
+      associators.each { |assoc| assert_kind_of Sfcc::Cim::Instance, assoc }
+      pp associators
+    end
+
+    should "be able to get reference names for an instance" do
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = @client.query(op, "select * from CIM_OperatingSystem", "wql").to_a.first.object_path
+      associators = @client.reference_names(op, 'CIM_RunningOS').to_a
+      assert !associators.empty?
+      associators.each { |assoc| assert_kind_of Sfcc::Cim::ObjectPath, assoc }
+      pp associators
+    end
+
     should "be able to invoke methods using an object path" do
       @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
       @client.query(@op, "select * from Linux_OperatingSystem", "wql").each do |instance|
