@@ -13,7 +13,6 @@ class SfccCimcClient < SfccTestCase
     should "be running" do
       assert cimom_running?
     end
-
     
     should "be of class Client" do
       assert_kind_of(Sfcc::Cim::Client, @client)
