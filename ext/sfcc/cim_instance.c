@@ -238,7 +238,7 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve property_qualifier '%s'", StringValuePtr(qualifier_name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s'", StringValuePtr(qualifier_name));
   return Qnil;
 }
 
