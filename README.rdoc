@@ -32,6 +32,13 @@ So the API is pretty "raw", and it is supposed to be consumed by
 ActiveCim ( http://github.com/dmacvicar/activecim ) which is a more
 ruby-like API to do CIM based management.
 
+== Known Issues
+
+* If you call Instance#references without a filter class you may get an
+  error. It seems sfcb can't load a provider.
+
+* ObjectPath qualifier methods crash
+
 == Authors
 
 * Duncan Mac-Vicar P. <dmacvicar@suse.de>

@@ -1,12 +1,13 @@
 
 == General:
 
-* support default parameters where the sfcc API does
+* add convencience [] operator to Class and Instance to set and
+  retrieve properties
 
 == Missing relevant APIs
 
 Other APIs may be missing, but they may not be relevant in a ruby
-style API
+style API.
 
 === CIMCClass
 

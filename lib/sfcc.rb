@@ -165,7 +165,6 @@ module Sfcc
     class ObjectPath
     end
 
-    # foo bar ne ne
     class Enumeration
     end
     
