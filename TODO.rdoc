@@ -10,6 +10,8 @@ style API
 
 === CIMCClass
 
+Only available in the v2 API (we use v1):
+
 * getSuperClassName
 * getKeyList
 * toString
@@ -20,17 +22,6 @@ style API
 * isAbstract
 * isIndication
 * getPropQualAt
-
-=== CIMCObjectPath
-
-* setNameSpaceFromObjectPath
-* setHostAndNamespaceFromObjectPath
-* getClassQualifier
-* getPropertyQualifier
-* getMethodQualifier
-* getParameterQualifier
-
-
 
 
 
