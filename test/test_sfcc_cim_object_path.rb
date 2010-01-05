@@ -65,6 +65,21 @@ class SfccCimcObjectPathTest < SfccTestCase
       assert_equal true, @op.key("prop1")
       assert_equal false, @op.key("prop2")
     end
+
+    should "be able to set namespace and classname from other object path" do
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
+      op2 = Sfcc::Cim::ObjectPath.new("root/cimv3", "FooBar")
+      assert_equal "Linux_OperatingSystem", op.class_name
+      op.set_namespace_from(op2)
+      assert_equal "FooBar", op2.class_name
+      assert_equal "root/cimv3", op2.namespace
+    end
     
-  end            
+    should "be able to retrieve qualifiers" do
+      # CRASH? CIMOM?
+      #op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
+      # assert_equal "2.17.1", @op.class_qualifier("Version")
+      #assert_equal "Number", op.property_qualifier("NumberOfUsers", "Description")
+    end    
+  end
 end
