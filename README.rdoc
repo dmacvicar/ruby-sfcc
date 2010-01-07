@@ -10,6 +10,21 @@ ruby-sfcc provides the SBLIM client API ( http://sblim.wiki.sourceforge.net/Sfcc
 You can use it to connect to any CIMOM talking CIM-XML, but it can take advantage of
 sfcb CIMOM by connecting using a native interface.
 
+== Quick Start
+
+You can create a gem by running rake gem.
+
+See the testsuite for more examples. Or run rake docs.
+
+    require 'sfcc'
+
+    client = Sfcc::Cim::Client.connect('http://root@localhost:5988')
+    op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+    result = client.query(op, "select * from CIM_OperatingSystem", "wql")
+    result.each do |instance|
+      puts "query result: #{instance}"
+    end
+
 == FAQ
 
 * Why not using SWIG?
@@ -23,14 +38,14 @@ sfcb CIMOM by connecting using a native interface.
   the CIMOM, gaining the footprint of SBLIM plus features like the
   local interface to talk with the CIMOM without overhead.
 
+  So the API is pretty "raw", and it is supposed to be consumed by
+ActiveCim ( http://github.com/dmacvicar/activecim ) which is a more
+ruby-like API to do CIM based management.
+
 * How to run the testsuite?
 
   You need a CIMOM with base providers (ie: Linux_OperatingSystem) running
   on localhost 5988 with no authentication
-
-So the API is pretty "raw", and it is supposed to be consumed by
-ActiveCim ( http://github.com/dmacvicar/activecim ) which is a more
-ruby-like API to do CIM based management.
 
 == Known Issues
 
