@@ -29,10 +29,13 @@ static VALUE to_s(VALUE self)
 static VALUE new(VALUE klass, VALUE value)
 {
   CMPIStatus status;
+  CMPIString *newstr = NULL;
   CMPIString *ptr = newCMPIString(StringValuePtr(value),
                                   &status);
+  newstr = ptr->ft->clone(ptr, &status);
+  ptr->ft->release(ptr);
   if (!status.rc)
-    return Sfcc_wrap_cim_string(ptr);
+    return Sfcc_wrap_cim_string(newstr);
   sfcc_rb_raise_if_error(status, "Can't create CIM string");
   return Qnil;
 }

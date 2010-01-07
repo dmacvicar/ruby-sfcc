@@ -108,9 +108,12 @@ static VALUE object_path(VALUE self)
 {
   CMPIInstance *ptr = NULL;
   CMPIObjectPath *op;
+  CMPIObjectPath *newop;
   Data_Get_Struct(self, CMPIInstance, ptr);
   op = ptr->ft->getObjectPath(ptr, NULL);
-  return Sfcc_wrap_cim_object_path(op);
+  newop = op->ft->clone(op, NULL);
+  op->ft->release(op);
+  return Sfcc_wrap_cim_object_path(newop);
 }
 
 /**
@@ -305,13 +308,16 @@ static VALUE new(VALUE klass, VALUE object_path)
 {
   CMPIStatus status;
   CMPIInstance *ptr;
+  CMPIInstance *newins;
   CMPIObjectPath *op;
 
   Data_Get_Struct(object_path, CMPIObjectPath, op);
   ptr = newCMPIInstance(op, &status);
+  newins = ptr->ft->clone(ptr, &status);
+  ptr->ft->release(ptr);
 
   if (!status.rc)
-    return Sfcc_wrap_cim_instance(ptr);
+    return Sfcc_wrap_cim_instance(newins);
   sfcc_rb_raise_if_error(status, "Can't create instance");
   return Qnil;
 }

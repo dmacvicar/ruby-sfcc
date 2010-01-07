@@ -20,14 +20,27 @@ dealloc(CMPIEnumeration *enm)
  */
 static VALUE each(VALUE self)
 {
+  CMPIStatus status;
   CMPIEnumeration *ptr = NULL;
   CMPIData next;
   Data_Get_Struct(self, CMPIEnumeration, ptr);
 
-  while (ptr->ft->hasNext(ptr, NULL)) {
-    next = ptr->ft->getNext(ptr, NULL);
-    rb_yield(sfcc_cimdata_to_value(next));
+  CMPIEnumeration *tmp = ptr->ft->clone(ptr, &status);
+  
+  if (!status.rc) {
+    while (tmp->ft->hasNext(tmp, NULL)) {
+      next = tmp->ft->getNext(tmp, NULL);
+      VALUE cimclass = sfcc_cimdata_to_value(next);
+      /* Strange sfcc bug, if I clone the enum, I get a NULL
+         class afterwards in the copy */
+      if (NIL_P(cimclass))
+        continue;
+      rb_yield(cimclass);
+    }
   }
+
+  tmp->ft->release(tmp);
+  sfcc_rb_raise_if_error(status, "Can't iterate enumeration");
   return Qnil;
 }
 

@@ -4,7 +4,7 @@
 static void
 dealloc(CMPIObjectPath *object_path)
 {
-  SFCC_DEC_REFCOUNT(object_path);
+  //SFCC_DEC_REFCOUNT(object_path);
 }
 
 /**
@@ -364,12 +364,17 @@ static VALUE new(VALUE klass, VALUE namespace, VALUE class_name)
 {
   CMPIStatus status;
   CMPIObjectPath *ptr = NULL;
+  CMPIObjectPath *newop = NULL;
   memset(&status, 0, sizeof(CMPIStatus));
   ptr = newCMPIObjectPath(StringValuePtr(namespace),
                           StringValuePtr(class_name),
                           &status);
+
+  newop = ptr->ft->clone(ptr, &status);
+  ptr->ft->release(ptr);
+
   if (!status.rc)
-    return Sfcc_wrap_cim_object_path(ptr);
+    return Sfcc_wrap_cim_object_path(newop);
   sfcc_rb_raise_if_error(status, "Can't create object path");
   return Qnil;
 }
