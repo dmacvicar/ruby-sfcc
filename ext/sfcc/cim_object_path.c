@@ -65,6 +65,7 @@ static VALUE set_hostname(VALUE self, VALUE val)
 /**
  * call-seq:
  *   hostname()
+ *
  * Get the hostname component
  */
 static VALUE hostname(VALUE self)
@@ -112,7 +113,7 @@ static VALUE class_name(VALUE self)
  * call-seq:
  *   add_key(name, value)
  *
- * Gets a named key value
+ * adds a named key value
  */
 static VALUE add_key(VALUE self, VALUE name, VALUE value)
 {
@@ -186,6 +187,7 @@ static VALUE each_key(VALUE self)
 /**
  * call-seq:
  *   key_count()
+ *
  * Gets the number of properties contained in this ObjectPath
  */
 static VALUE key_count(VALUE self)
@@ -354,6 +356,7 @@ static VALUE to_s(VALUE self)
 /**
  * call-seq:
  *   new()
+ *
  * Creates an object path from +namespace+ and +class_name+
  *
  */
