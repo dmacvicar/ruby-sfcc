@@ -366,8 +366,8 @@ static VALUE new(VALUE klass, VALUE namespace, VALUE class_name)
   CMPIObjectPath *ptr = NULL;
   CMPIObjectPath *newop = NULL;
   memset(&status, 0, sizeof(CMPIStatus));
-  ptr = newCMPIObjectPath(StringValuePtr(namespace),
-                          StringValuePtr(class_name),
+  ptr = newCMPIObjectPath(NIL_P(namespace) ? NULL : StringValuePtr(namespace),
+                          NIL_P(class_name) ? NULL : StringValuePtr(class_name),
                           &status);
 
   newop = ptr->ft->clone(ptr, &status);
