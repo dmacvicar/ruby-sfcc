@@ -660,7 +660,7 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   CMPIEnumeration *enm = NULL;
   VALUE rbenm = Qnil;
 
-  rb_scan_args(argc, argv, "12", &object_path,
+  rb_scan_args(argc, argv, "14", &object_path,
                &result_class, &role);
 
   memset(&status, 0, sizeof(CMPIStatus));
