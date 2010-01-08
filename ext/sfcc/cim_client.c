@@ -85,10 +85,12 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
   CMPIEnumeration *enm = client->ft->enumClassNames(client, op, NUM2INT(flags), &status);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
+
   sfcc_rb_raise_if_error(status, "Can't get class names");
-  return rbenm;
+  return Qnil;
 }
 
 /**
@@ -121,10 +123,12 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   CMPIEnumeration *enm = client->ft->enumClasses(client, op, NUM2INT(flags), &status);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
+
   sfcc_rb_raise_if_error(status, "Can't get classes");
-  return rbenm;
+  return Qnil;
 }
 
 /**
@@ -308,10 +312,12 @@ static VALUE query(VALUE self,
                                                &status);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
+
   sfcc_rb_raise_if_error(status, "Can't get instances from query");
-  return rbenm;
+  return Qnil;
 }
 
 /**
@@ -335,10 +341,11 @@ static VALUE instance_names(VALUE self, VALUE object_path)
 
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get instance names");
-  return rbenm;
+  return Qnil;
 }
 
 /**
@@ -386,10 +393,12 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
 
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
+
   sfcc_rb_raise_if_error(status, "Can't get instances");
-  return rbenm;
+  return Qnil;
 }
 
 /**
@@ -474,10 +483,12 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
   free(props);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
+
   sfcc_rb_raise_if_error(status, "Can't get associators for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
-  return rbenm;
+  return Qnil;
 }
 
 /**
@@ -549,10 +560,11 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
                                     &status);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get associator names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
-  return rbenm;
+  return Qnil;
 }
 
 /**
@@ -619,10 +631,11 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
   free(props);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get references for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
-  return rbenm;
+  return Qnil;
 }
 
 /**
@@ -650,9 +663,9 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
  */
 static VALUE reference_names(int argc, VALUE *argv, VALUE self)
 {
-  VALUE object_path;
-  VALUE result_class;
-  VALUE role;
+  VALUE object_path = Qnil;
+  VALUE result_class = Qnil;
+  VALUE role = Qnil;
 
   CMPIStatus status;
   CMPIObjectPath *op = NULL;
@@ -673,11 +686,12 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
                                    NIL_P(role) ? NULL : StringValuePtr(role),
                                    &status);
   if (enm && !status.rc ) {
-    rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
+    rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, &status));
+    enm->ft->release(enm);
+    return rbenm;
   }
-  enm->ft->release(enm);
   sfcc_rb_raise_if_error(status, "Can't get reference names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
-  return rbenm;
+  return Qnil;
 }
 
 /**
