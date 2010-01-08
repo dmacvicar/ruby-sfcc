@@ -134,7 +134,7 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
  * get instance using +object_path+ as reference. Instance structure
  * can be controlled using the flags parameter.
  *
- * +object_path* an ObjectPath containing namespace, class name and key
+ * +object_path+ an ObjectPath containing namespace, class name and key
  * components.
  *
  * +flags+ Any combination of the following flags are supported:

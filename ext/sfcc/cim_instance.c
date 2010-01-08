@@ -12,7 +12,7 @@ dealloc(CMPIInstance *instance)
  * call-seq:
  *   property(name)
  *
- * Gets a named property value
+ * Gets a named property value, where name is a Symbol or String
  */
 static VALUE property(VALUE self, VALUE name)
 {
@@ -53,7 +53,7 @@ static VALUE each_property(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropertyAt(ptr, k, &property_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_name ? rb_str_new2(property_name->ft->getCharPtr(property_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_name ? rb_str_intern(rb_str_new2(property_name->ft->getCharPtr(property_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property #%d", k);

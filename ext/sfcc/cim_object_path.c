@@ -170,7 +170,7 @@ static VALUE each_key(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getKeyAt(ptr, k, &key_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (key_name ? rb_str_new2(key_name->ft->getCharPtr(key_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (key_name ? rb_str_intern(rb_str_new2(key_name->ft->getCharPtr(key_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);

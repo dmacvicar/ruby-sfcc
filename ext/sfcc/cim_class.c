@@ -68,7 +68,7 @@ static VALUE each_property(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropertyAt(ptr, k, &property_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_name ? rb_str_new2(property_name->ft->getCharPtr(property_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_name ? rb_str_intern(rb_str_new2(property_name->ft->getCharPtr(property_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property #%d", k);
@@ -141,7 +141,7 @@ static VALUE each_qualifier(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getQualifierAt(ptr, k, &qualifier_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (qualifier_name ? rb_str_new2(qualifier_name->ft->getCharPtr(qualifier_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (qualifier_name ? rb_str_intern(rb_str_new2(qualifier_name->ft->getCharPtr(qualifier_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve qualifier #%d", k);
@@ -215,7 +215,7 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropertyQualifierAt(ptr, StringValuePtr(property_name), k, &property_qualifier_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_qualifier_name ? rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_qualifier_name ? rb_str_intern(rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier #%d", k);
