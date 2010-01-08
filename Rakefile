@@ -7,11 +7,12 @@ require 'hoe'
 #require 'rake/rdoctask'
 #require 'rake/testtask'
 
-task :default => :test
+task :default => [:compile, :docs, :test]
 
 HOE = Hoe.spec 'sfcc' do
   developer('Duncan Mac-Vicar P.', 'dmacvicar@suse.de')
-  self.summary = "sblim client ruby bindings"
+  self.summary = "sblim client ruby 
+bindings"
   self.description = "sblim client ruby bindings"
   self.readme_file = ['README', ENV['HLANG'], 'rdoc'].compact.join('.')
   self.history_file = ['CHANGELOG', ENV['HLANG'], 'rdoc'].compact.join('.')
