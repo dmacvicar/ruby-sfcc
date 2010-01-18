@@ -88,28 +88,27 @@ static VALUE sfcc_status_exception(CMPIStatus status)
   }
 }
 
+#define MAX_ERROR_BUFFER 255
+
 void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...)
 {
-  static char *error_separator = " : ";
   va_list arg_list;
-  va_start(arg_list, msg);
-  size_t size = 0;
-  char *error = NULL;
+  char orig_error[MAX_ERROR_BUFFER];
+  char error[MAX_ERROR_BUFFER];
 
   if (!status.rc)
     return;
 
-  size = sizeof(msg) + sizeof(error_separator);
+  va_start(arg_list, msg);
+  vsnprintf(orig_error, MAX_ERROR_BUFFER, msg, arg_list);
+  va_end(arg_list);
+
   if (status.msg)
-    size = size + sizeof(status.msg->ft->getCharPtr(status.msg, NULL));
-  error = (char *)malloc(size*sizeof(char *));
-  strcpy(error, msg);
-  if (status.msg) {
-    strcat(error, " : ");
-    strcat(error, status.msg->ft->getCharPtr(status.msg, NULL));
-  }
-  rb_raise(sfcc_status_exception(status), error, arg_list);
-  free(error);
+    snprintf(error, MAX_ERROR_BUFFER, "%s : %s", orig_error, status.msg->ft->getCharPtr(status.msg, NULL));
+  else
+    strcpy(error, orig_error);
+
+  rb_raise(sfcc_status_exception(status), error);
 }
 
 char ** sfcc_value_array_to_string_array(VALUE array)
