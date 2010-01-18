@@ -50,11 +50,13 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   cimclass = client->ft->getClass(client, op, NUM2INT(flags), props, &status);
   free(props);
 
-  cimclassnew = cimclass->ft->clone(cimclass, NULL);
-  cimclass->ft->release(cimclass);
-
-  sfcc_rb_raise_if_error(status, "Can't get class");
-  return Sfcc_wrap_cim_class(cimclassnew);
+  if (!status.rc) {
+      cimclassnew = cimclass->ft->clone(cimclass, NULL);
+      cimclass->ft->release(cimclass);
+      return Sfcc_wrap_cim_class(cimclassnew);
+  }
+  sfcc_rb_raise_if_error(status, "Can't get class at %s", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  return Qnil;
 }
 
 /**
