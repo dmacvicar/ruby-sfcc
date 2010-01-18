@@ -1,4 +1,10 @@
 
+== 0.1.1
+
+* fix crash when retrieving non-existing class
+* fix crash when calling reference names
+* fix garbage in exception messages
+
 == 0.1.0
 
 * First public version

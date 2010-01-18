@@ -5,7 +5,7 @@ require 'uri'
 
 module Sfcc
 
-  VERSION = "0.1.0"
+  VERSION = "0.1.2"
 
   module Flags
     LocalOnly          = 1
