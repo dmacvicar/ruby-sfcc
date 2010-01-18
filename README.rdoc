@@ -58,3 +58,9 @@ ruby-like API to do CIM based management.
 
 * Duncan Mac-Vicar P. <dmacvicar@suse.de>
 
+
+== Thanks
+
+The following people have contributed patches, fixes and enhancements:
+
+* Klaus Kaempf <kkaempf@suse.de>
