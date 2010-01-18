@@ -33,6 +33,19 @@ class SfccCimcClient < SfccTestCase
       end
     end
 
+    should "be able to get a class from the object path" do
+      @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
+      cimclass = @client.get_class(@op)
+      assert_kind_of Sfcc::Cim::Class, cimclass
+    end
+
+    should "report error when getting invalid class" do
+      @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "NotExistingClass")
+      assert_raise Sfcc::Cim::ErrorNotFound do
+        cimclass = @client.get_class(@op)
+      end
+    end
+    
     should "be able to get an instance from the object path" do
       @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
       instance = @client.query(@op, "select * from Linux_OperatingSystem", "wql").to_a.first
