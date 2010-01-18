@@ -32,7 +32,7 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   CMPIConstClass *cimclass = NULL;
@@ -43,7 +43,6 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
 
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -70,7 +69,7 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
   VALUE object_path;
   VALUE flags;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   VALUE rbenm = Qnil;
@@ -78,7 +77,6 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "11", &object_path, &flags);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -108,7 +106,7 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   VALUE object_path;
   VALUE flags;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   VALUE rbenm = Qnil;
@@ -116,7 +114,6 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "11", &object_path, &flags);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -154,7 +151,7 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   CMPIInstance *ciminstance = NULL;
@@ -163,7 +160,6 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -193,7 +189,7 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
  */
 static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
 {
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMCIClient *ptr = NULL;
   CMPIObjectPath *op = NULL;
   CMPIObjectPath *new_op = NULL;
@@ -233,7 +229,7 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMPIInstance *inst = NULL;
   CMCIClient *client = NULL;
@@ -264,7 +260,7 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
  */
 static VALUE delete_instance(VALUE self, VALUE object_path)
 {
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
 
@@ -296,11 +292,10 @@ static VALUE query(VALUE self,
                    VALUE query,
                    VALUE lang)
 {
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
   VALUE rbenm = Qnil;
@@ -328,12 +323,11 @@ static VALUE query(VALUE self,
  */
 static VALUE instance_names(VALUE self, VALUE object_path)
 {
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   VALUE rbenm = Qnil;
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -372,7 +366,7 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   char **props;
@@ -381,7 +375,6 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -455,7 +448,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   char **props;
@@ -467,7 +460,6 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
                &role, &result_role, &flags, &properties);
 
   if (NIL_P(flags)) flags = INT2NUM(0);
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -537,7 +529,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
   VALUE role;
   VALUE result_role;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   CMPIEnumeration *enm = NULL;
@@ -547,7 +539,6 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
                &assoc_class, &result_class,
                &role, &result_role);
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -605,7 +596,7 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   char **props;
@@ -617,7 +608,6 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
                &flags, &properties);
 
   if (NIL_P(flags)) flags = INT2NUM(0);
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -666,8 +656,8 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   VALUE object_path = Qnil;
   VALUE result_class = Qnil;
   VALUE role = Qnil;
-
-  CMPIStatus status;
+  
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   CMPIEnumeration *enm = NULL;
@@ -676,7 +666,6 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "14", &object_path,
                &result_class, &role);
 
-  memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMCIClient, client);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
@@ -714,7 +703,7 @@ static VALUE invoke_method(VALUE self,
                            VALUE argin,
                            VALUE argout)
 {
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMCIClient *ptr = NULL;
   CMPIObjectPath *op = NULL;
   CMPIArgs *cmpiargsout;
@@ -722,7 +711,6 @@ static VALUE invoke_method(VALUE self,
   char *method_name_cstr;
   CMPIData ret;
   Check_Type(argin, T_HASH);
-  memset(&status, 0, sizeof(CMPIStatus));
 
   cmpiargsout = newCMPIArgs(NULL);
 
@@ -763,7 +751,7 @@ static VALUE set_property(VALUE self,
                           VALUE name,
                           VALUE value)
 {
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMCIClient *ptr = NULL;
   CMPIObjectPath *op = NULL;
   CMPIData data;
@@ -792,9 +780,9 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
 {
   CMCIClient *ptr = NULL;
   CMPIObjectPath *op = NULL;
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIData data;
-  memset(&status, 0, sizeof(CMPIStatus));
+
   Data_Get_Struct(self, CMCIClient, ptr);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
   data = ptr->ft->getProperty(ptr, op, StringValuePtr(name), &status);
@@ -808,7 +796,7 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
 static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE user, VALUE pwd)
 {
   CMCIClient *client = NULL;
-  CMPIStatus status;
+  CMPIStatus status = {CMPI_RC_OK, NULL};
   client = cmciConnect(NIL_P(host) ? NULL : StringValuePtr(host),
                        NIL_P(scheme) ? NULL : StringValuePtr(scheme),
                        NIL_P(port) ? NULL : StringValuePtr(port),
