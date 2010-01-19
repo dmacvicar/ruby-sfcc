@@ -4,10 +4,21 @@ require 'pp'
 
 class SfccCimcObjectPathTest < SfccTestCase
 
+  context "an object path for a namespace" do
+    setup do
+      setup_cim_client
+      @op = Sfcc::Cim::ObjectPath.new("root/cimv2")
+    end
+
+    should "have a nil class name" do
+      assert_nil @op.class_name
+    end
+  end
+  
   context "a new object path for an instance of root/cimv2:Linux_OperatingSystem" do
     setup do
       setup_cim_client
-      @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      @op = Sfcc::Cim::ObjectPath.new("root/cimv2")
       @op = @client.query(@op, "select * from Linux_OperatingSystem", "wql").first.object_path
     end
     
@@ -18,7 +29,7 @@ class SfccCimcObjectPathTest < SfccTestCase
     should "have root/cimv2 as namespace" do
       assert_equal "root/cimv2", @op.namespace
     end
-      
+    
     should "change its namespace after setting it" do
       @op.namespace = "root/cimv3"
       assert_equal "root/cimv3", @op.namespace

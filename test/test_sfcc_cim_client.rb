@@ -7,7 +7,7 @@ class SfccCimcClient < SfccTestCase
 
     setup do
       setup_cim_client
-      @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      @op = Sfcc::Cim::ObjectPath.new("root/cimv2")
     end
     
     should "be running" do
@@ -77,7 +77,7 @@ class SfccCimcClient < SfccTestCase
     end
 
     should "be able to get associator for an instance" do
-      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2")
       op = @client.query(op, "select * from CIM_ComputerSystem", "wql").to_a.first.object_path
       associators = @client.associators(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
@@ -86,7 +86,7 @@ class SfccCimcClient < SfccTestCase
     end
 
     should "be able to get associator names for an instance" do
-      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2")
       op = @client.query(op, "select * from CIM_ComputerSystem", "wql").to_a.first.object_path
       associators = @client.associator_names(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
@@ -95,7 +95,7 @@ class SfccCimcClient < SfccTestCase
     end
 
     should "be able to get references for an instance" do
-      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2")
       op = @client.query(op, "select * from CIM_OperatingSystem", "wql").to_a.first.object_path
       associators = @client.references(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
@@ -104,7 +104,7 @@ class SfccCimcClient < SfccTestCase
     end
 
     should "be able to get reference names for an instance" do
-      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2")
       op = @client.query(op, "select * from CIM_OperatingSystem", "wql").to_a.first.object_path
       associators = @client.reference_names(op, 'CIM_RunningOS').to_a
       assert !associators.empty?

@@ -18,7 +18,7 @@ class BasicTest < SfccTestCase
         
     context "a new object path for root/cimv2" do
       setup do
-        @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+        @op = Sfcc::Cim::ObjectPath.new("root/cimv2")
       end
       
       should "be of class ObjectPath" do

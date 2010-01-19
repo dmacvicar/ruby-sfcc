@@ -22,7 +22,7 @@ class SfccCimInstanceTest < SfccTestCase
   context "an instance of CIM_ComputerSystem" do
     setup do
       setup_cim_client
-      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2")
       @instance = @client.query(op, "select * from CIM_ComputerSystem", "wql").to_a.first
     end
     

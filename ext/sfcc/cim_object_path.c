@@ -39,7 +39,7 @@ static VALUE namespace(VALUE self)
   Data_Get_Struct(self, CMPIObjectPath, ptr);
   cimstr = ptr->ft->getNameSpace(ptr, &status);
   if (!status.rc)
-    return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+    return CIMSTR_2_RUBYSTR(cimstr);
   sfcc_rb_raise_if_error(status, "Can't get namespace");
   return Qnil;
 }
@@ -76,7 +76,7 @@ static VALUE hostname(VALUE self)
   Data_Get_Struct(self, CMPIObjectPath, ptr);
   cimstr = ptr->ft->getHostname(ptr, &status);
   if (!status.rc)
-    return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+    return CIMSTR_2_RUBYSTR(cimstr);
   sfcc_rb_raise_if_error(status, "Can't get hostname");
   return Qnil;
 }
@@ -106,7 +106,7 @@ static VALUE class_name(VALUE self)
   CMPIString *cimstr = NULL;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
   cimstr = ptr->ft->getClassName(ptr, NULL);
-  return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+  return CIMSTR_2_RUBYSTR(cimstr);
 }
 
 /**
@@ -170,7 +170,7 @@ static VALUE each_key(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getKeyAt(ptr, k, &key_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (key_name ? rb_str_intern(rb_str_new2(key_name->ft->getCharPtr(key_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, rb_str_intern(CIMSTR_2_RUBYSTR(key_name)), sfcc_cimdata_to_value(data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);
@@ -350,7 +350,7 @@ static VALUE to_s(VALUE self)
   CMPIString *cimstr = NULL;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
   cimstr = ptr->ft->toString(ptr, NULL);
-  return cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
+  return CIMSTR_2_RUBYSTR(cimstr);
 }
 
 /**
@@ -360,12 +360,18 @@ static VALUE to_s(VALUE self)
  * Creates an object path from +namespace+ and +class_name+
  *
  */
-static VALUE new(VALUE klass, VALUE namespace, VALUE class_name)
+static VALUE new(int argc, VALUE *argv, VALUE self)
 {
+  VALUE namespace;
+  VALUE class_name;
+
   CMPIStatus status;
   CMPIObjectPath *ptr = NULL;
   CMPIObjectPath *newop = NULL;
   memset(&status, 0, sizeof(CMPIStatus));
+
+  rb_scan_args(argc, argv, "11", &namespace, &class_name);
+
   ptr = newCMPIObjectPath(NIL_P(namespace) ? NULL : StringValuePtr(namespace),
                           NIL_P(class_name) ? NULL : StringValuePtr(class_name),
                           &status);
@@ -398,7 +404,7 @@ void init_cim_object_path()
   VALUE klass = rb_define_class_under(cimc, "ObjectPath", rb_cObject);
   cSfccCimObjectPath = klass;
 
-  rb_define_singleton_method(klass, "new", new, 2);
+  rb_define_singleton_method(klass, "new", new, -1);
   rb_define_method(klass, "namespace=", set_namespace, 1);
   rb_define_method(klass, "namespace", namespace, 0);
   rb_define_method(klass, "hostname=", set_hostname, 1);

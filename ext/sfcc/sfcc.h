@@ -49,6 +49,8 @@ extern VALUE mSfccCim;
 
 #define SFCC_INC_REFCOUNT(x) (void)(0);
 
+#define CIMSTR_2_RUBYSTR(x) (x ? (x->ft->getCharPtr(x, NULL) ? rb_str_new2(x->ft->getCharPtr(x, NULL)) : Qnil) : Qnil)
+
 /**
  * raises a ruby exception if the status is an error
  * whenever possible, adds the custom message if not null

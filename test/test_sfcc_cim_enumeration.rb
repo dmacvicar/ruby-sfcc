@@ -7,7 +7,7 @@ class SfccCimEnumerationTest < SfccTestCase
   context "enumeration of instances" do
     setup do
       setup_cim_client
-      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "")
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2")
       @enm = @client.query(op, "select * from CIM_ComputerSystem", "wql")
     end
     
