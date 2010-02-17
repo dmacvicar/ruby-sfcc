@@ -56,6 +56,10 @@ ruby-like API to do CIM based management.
 
 == Links
 
+=== Documentation
+
+* http://rdoc.info/projects/dmacvicar/ruby-sfcc
+
 === Code Metrics
 
 * http://getcaliper.com/caliper/project?repo=git%3A%2F%2Fgithub.com%2Fdmacvicar%2Fruby-sfcc.git
