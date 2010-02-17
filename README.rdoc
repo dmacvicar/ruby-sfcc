@@ -54,6 +54,12 @@ ruby-like API to do CIM based management.
 
 * ObjectPath qualifier methods crash
 
+== Links
+
+=== Code Metrics
+
+* http://getcaliper.com/caliper/project?repo=git%3A%2F%2Fgithub.com%2Fdmacvicar%2Fruby-sfcc.git
+
 == Authors
 
 * Duncan Mac-Vicar P. <dmacvicar@suse.de>

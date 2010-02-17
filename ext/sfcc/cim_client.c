@@ -65,6 +65,8 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
  *
  * return the available class names for the given
  * +object_path+ and +flags+
+ *
+ * The following flag is supported: Flags::DeepInheritance.
  */
 static VALUE class_names(int argc, VALUE *argv, VALUE self)
 {
