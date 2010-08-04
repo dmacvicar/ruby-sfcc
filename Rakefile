@@ -1,32 +1,48 @@
-$: << File.join(File.dirname(__FILE__), "test")
-require 'rubygems'
-gem 'hoe', '>= 2.1.0'
-require 'hoe'
+require "rake"
+require "rake/rdoctask"
+require "rake/testtask"
 
-task :default => [:compile, :docs, :test]
+$LOAD_PATH.unshift File.expand_path("../lib", __FILE__)
+require "sfcc"
 
-Hoe.plugin :yard
-
-HOE = Hoe.spec 'sfcc' do
-  developer('Duncan Mac-Vicar P.', 'dmacvicar@suse.de')
-  self.summary = "WBEM client for ruby based on the sblim-sfcc library"
-  self.description = "ruby-sfcc allows to access a CIMOM either with the WBEM protocol or by using the SfcbLocal interface provided by the sblim-sfcb CIMOM implementation from the sblim project."
-  self.readme_file = ['README', ENV['HLANG'], 'rdoc'].compact.join('.')
-  self.history_file = ['CHANGELOG', ENV['HLANG'], 'rdoc'].compact.join('.')
-  self.extra_rdoc_files = FileList['*.rdoc']
-  self.clean_globs = [
-    'lib/sfcc/*.{o,so,bundle,a,log,dll}',
-  ]
- 
-  %w{ rake-compiler }.each do |dep|
-    self.extra_dev_deps << [dep, '>= 0']
-  end
-  self.extra_deps << ['shoulda', '>= 0']
-  self.extra_deps << ['yard', '>= 0']
-  self.spec_extras = { :extensions => ["ext/sfcc/extconf.rb"] }
+task :build do
+  system "gem build sfcc.gemspec"
 end
 
+task :install => :build do
+  system "sudo gem install sfcc-#{Sfcc::VERSION}.gem"
+end
 
+Rake::TestTask.new do |t|
+  t.libs << "test"
+  t.test_files = FileList['test/test*.rb']
+  t.verbose = true
+end
+
+extra_docs = ['README*', 'CHANGELOG*']
+
+begin
+ require 'yard'
+  YARD::Rake::YardocTask.new(:doc) do |t|
+    t.files   = ['lib/**/*.h', 'lib/**/*.c', 'lib/**/*.rb', *extra_docs]
+  end
+rescue LoadError
+  STDERR.puts "Install yard if you want prettier docs"
+  Rake::RDocTask.new(:doc) do |rdoc|
+    if File.exist?("VERSION.yml")
+      config = File.read("VERSION")
+      version = "#{config[:major]}.#{config[:minor]}.#{config[:patch]}"
+    else
+      version = ""
+    end
+    rdoc.rdoc_dir = "doc"
+    rdoc.title = "sfcc #{version}"
+    extra_docs.each { |ex| rdoc.rdoc_files.include ex }
+  end
+end
+
+task :default => [:compile, :doc, :test]
 gem 'rake-compiler', '>= 0.4.1'
 require 'rake/extensiontask'
 Rake::ExtensionTask.new('sfcc')
+
