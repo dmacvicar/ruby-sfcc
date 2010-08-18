@@ -3,7 +3,7 @@ require "rake/rdoctask"
 require "rake/testtask"
 
 $LOAD_PATH.unshift File.expand_path("../lib", __FILE__)
-require "sfcc"
+require "sfcc/version"
 
 task :build do
   system "gem build sfcc.gemspec"

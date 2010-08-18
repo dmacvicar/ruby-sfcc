@@ -1,11 +1,9 @@
-
+require 'sfcc/version'
 require "sfcc.so" # native
 require 'enumerator'
 require 'uri'
 
 module Sfcc
-
-  VERSION = "0.1.1"
 
   module Flags
     LocalOnly          = 1
