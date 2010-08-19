@@ -16,7 +16,14 @@
 #include <CimClientLib/cmcimacs.h>
 
 #include "ruby.h"
-#include "st.h"
+
+#include <ruby.h>
+#ifdef HAVE_RUBY_ST_H
+# include <ruby/st.h>
+#else
+# include <st.h>
+#endif
+
 #include <unistd.h>
 #include <stdlib.h>
 
