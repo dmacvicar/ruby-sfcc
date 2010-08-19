@@ -1,3 +1,9 @@
+== 0.1.2
+
+* build with ruby 1.9
+* allow creation of object path with only namespace argument
+* Hoe no longer required for building
+* Gemfile/bundler (1.x) support
 
 == 0.1.1
 
