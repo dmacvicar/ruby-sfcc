@@ -1,0 +1,6 @@
+.bundle
+.yardoc
+*.rbc
+*.so
+tmp
+doc
