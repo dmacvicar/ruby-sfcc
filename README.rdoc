@@ -10,6 +10,22 @@ ruby-sfcc provides the SBLIM client API ( http://sblim.wiki.sourceforge.net/Sfcc
 You can use it to connect to any CIMOM talking CIM-XML, but it can take advantage of
 sfcb CIMOM by connecting using a native interface.
 
+== Requirements
+
+=== Ruby interpreters
+
+ruby-sfcc has been built and the testsuite ran against:
+  
+  * ruby 1.8.7
+  * ruby 1.9.2
+  * rubinius HEAD (what will be 1.1 soon)
+  
+=== sblim
+
+ruby-sfcc has been built and the testsuite ran against:
+
+* sblim-sfcc 2.2.1
+
 == Quick Start
 
 You can create a gem by running rake gem.
