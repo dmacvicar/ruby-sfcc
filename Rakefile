@@ -1,5 +1,4 @@
 require "rake"
-require "rake/rdoctask"
 require "rake/testtask"
 
 $LOAD_PATH.unshift File.expand_path("../lib", __FILE__)
@@ -28,6 +27,7 @@ begin
     t.files   = ['lib/**/*.h', 'lib/**/*.c', 'lib/**/*.rb', *extra_docs]
   end
 rescue LoadError
+  require 'rake/rdoctask'
   STDERR.puts "Install yard if you want prettier docs"
   Rake::RDocTask.new(:doc) do |rdoc|
     if File.exist?("VERSION.yml")
