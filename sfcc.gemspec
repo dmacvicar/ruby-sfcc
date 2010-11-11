@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency("mocha", [">= 0.9"])
   s.add_development_dependency("yard", [">= 0.5"])
   s.add_development_dependency("shoulda", [">= 0"])
+  s.extensions	<< 'ext/sfcc/extconf.rb'
 
   s.files        = Dir.glob("lib/**/*.rb") + Dir.glob("ext/**/*.{rb,h,c}") + %w(CHANGELOG.rdoc README.rdoc)
   s.require_path = 'lib'
