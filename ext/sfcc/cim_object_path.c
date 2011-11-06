@@ -18,7 +18,7 @@ static VALUE set_namespace(VALUE self, VALUE val)
   CMPIObjectPath *ptr = NULL;
   CMPIStatus status;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  status = ptr->ft->setNameSpace(ptr, StringValuePtr(val));
+  status = ptr->ft->setNameSpace(ptr, to_charptr(val));
   if (!status.rc)
     return val;
   sfcc_rb_raise_if_error(status, "Can't set namespace");
@@ -55,7 +55,7 @@ static VALUE set_hostname(VALUE self, VALUE val)
   CMPIObjectPath *ptr = NULL;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
   CMPIStatus status;
-  status = ptr->ft->setHostname(ptr, StringValuePtr(val));
+  status = ptr->ft->setHostname(ptr, to_charptr(val));
   if (!status.rc)
     return val;
   sfcc_rb_raise_if_error(status, "Can't set hostname");
@@ -90,7 +90,7 @@ static VALUE set_class_name(VALUE self, VALUE val)
 {
   CMPIObjectPath *ptr = NULL;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  ptr->ft->setClassName(ptr, StringValuePtr(val));
+  ptr->ft->setClassName(ptr, to_charptr(val));
   return val;
 }
 
@@ -121,8 +121,7 @@ static VALUE add_key(VALUE self, VALUE name, VALUE value)
   CMPIData data;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
   data = sfcc_value_to_cimdata(value);
-  name = sfcc_stringify(name); /* ensure String type */
-  ptr->ft->addKey(ptr, StringValuePtr(name), &data.value, data.type);
+  ptr->ft->addKey(ptr, to_charptr(name), &data.value, data.type);
   return value;
 }
 
@@ -138,12 +137,11 @@ static VALUE key(VALUE self, VALUE name)
   CMPIStatus status;
   CMPIData data;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  name = sfcc_stringify(name); /* ensure String type */
-  data = ptr->ft->getKey(ptr, StringValuePtr(name), &status);
+  data = ptr->ft->getKey(ptr, to_charptr(name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve key '%s'", StringValuePtr(name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve key '%s'", to_charptr(name));
   return Qnil;
 }
 
@@ -262,11 +260,11 @@ static VALUE class_qualifier(VALUE self, VALUE qualifier_name)
   CMPIData data;
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  data = ptr->ft->getClassQualifier(ptr, StringValuePtr(qualifier_name), &status);
+  data = ptr->ft->getClassQualifier(ptr, to_charptr(qualifier_name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve class qualifier '%s'", StringValuePtr(qualifier_name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve class qualifier '%s'", to_charptr(qualifier_name));
   return Qnil;
 }
 
@@ -283,12 +281,12 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
   CMPIData data;
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  data = ptr->ft->getPropertyQualifier(ptr, StringValuePtr(property_name),
-                                       StringValuePtr(qualifier_name), &status);
+  data = ptr->ft->getPropertyQualifier(ptr, to_charptr(property_name),
+                                       to_charptr(qualifier_name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s' for property '%s'", StringValuePtr(qualifier_name), StringValuePtr(property_name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s' for property '%s'", to_charptr(qualifier_name), to_charptr(property_name));
   return Qnil;
 }
 
@@ -305,12 +303,12 @@ static VALUE method_qualifier(VALUE self, VALUE method_name, VALUE qualifier_nam
   CMPIData data;
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMPIObjectPath, ptr);
-  data = ptr->ft->getMethodQualifier(ptr, StringValuePtr(method_name),
-                                       StringValuePtr(qualifier_name), &status);
+  data = ptr->ft->getMethodQualifier(ptr, to_charptr(method_name),
+                                       to_charptr(qualifier_name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve method qualifier '%s' for method '%s'", StringValuePtr(qualifier_name), StringValuePtr(method_name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve method qualifier '%s' for method '%s'", to_charptr(qualifier_name), to_charptr(method_name));
   return Qnil;
 }
 
@@ -331,13 +329,13 @@ static VALUE parameter_qualifier(VALUE self,
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMPIObjectPath, ptr);
   data = ptr->ft->getParameterQualifier(ptr,
-                                        StringValuePtr(method_name),
-                                        StringValuePtr(parameter_name),
-                                        StringValuePtr(qualifier_name), &status);
+                                        to_charptr(method_name),
+                                        to_charptr(parameter_name),
+                                        to_charptr(qualifier_name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve parameter qualifier '%s' for '%s'/'%s'", StringValuePtr(qualifier_name), StringValuePtr(method_name), StringValuePtr(parameter_name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve parameter qualifier '%s' for '%s'/'%s'", to_charptr(qualifier_name), to_charptr(method_name), to_charptr(parameter_name));
   return Qnil;
 }
 
@@ -374,8 +372,7 @@ static VALUE new(int argc, VALUE *argv, VALUE self)
 
   rb_scan_args(argc, argv, "11", &namespace, &class_name);
 
-  ptr = newCMPIObjectPath(NIL_P(namespace) ? NULL : StringValuePtr(namespace),
-                          NIL_P(class_name) ? NULL : StringValuePtr(class_name),
+  ptr = newCMPIObjectPath(to_charptr(namespace), to_charptr(class_name),
                           &status);
 
   newop = ptr->ft->clone(ptr, &status);

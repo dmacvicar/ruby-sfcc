@@ -306,8 +306,8 @@ static VALUE query(VALUE self,
 
   CMPIEnumeration *enm = client->ft->execQuery(client,
                                                op,
-                                               StringValuePtr(query),
-                                               StringValuePtr(lang),
+                                               to_charptr(query),
+                                               to_charptr(lang),
                                                &status);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
@@ -471,10 +471,10 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
 
   enm = client->ft->associators(client,
                                 op,
-                                NIL_P(assoc_class) ? NULL : StringValuePtr(assoc_class),
-                                NIL_P(result_class) ? NULL : StringValuePtr(result_class),
-                                NIL_P(role) ? NULL : StringValuePtr(role),
-                                NIL_P(result_role) ? NULL : StringValuePtr(result_role),
+                                to_charptr(assoc_class),
+                                to_charptr(result_class),
+                                to_charptr(role),
+                                to_charptr(result_role),
                                 NUM2INT(flags), props, &status);
   free(props);
   if (enm && !status.rc ) {
@@ -548,10 +548,10 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
 
   enm = client->ft->associatorNames(client,
                                     op,
-                                    NIL_P(assoc_class) ? NULL : StringValuePtr(assoc_class),
-                                    NIL_P(result_class) ? NULL : StringValuePtr(result_class),
-                                    NIL_P(role) ? NULL : StringValuePtr(role),
-                                    NIL_P(result_role) ? NULL : StringValuePtr(result_role),
+                                    to_charptr(assoc_class),
+                                    to_charptr(result_class),
+                                    to_charptr(role),
+                                    to_charptr(result_role),
                                     &status);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL));
@@ -619,8 +619,8 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
 
   enm = client->ft->references(client,
                                op,
-                               NIL_P(result_class) ? NULL : StringValuePtr(result_class),
-                               NIL_P(role) ? NULL : StringValuePtr(role),
+                               to_charptr(result_class),
+                               to_charptr(role),
                                NUM2INT(flags), props, &status);
   free(props);
   if (enm && !status.rc ) {
@@ -675,8 +675,8 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
 
   enm = client->ft->referenceNames(client,
                                    op,
-                                   NIL_P(result_class) ? NULL : StringValuePtr(result_class),
-                                   NIL_P(role) ? NULL : StringValuePtr(role),
+                                   to_charptr(result_class),
+                                   to_charptr(role),
                                    &status);
   if (enm && !status.rc ) {
     rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, &status));
@@ -712,7 +712,7 @@ static VALUE invoke_method(VALUE self,
   CMPIObjectPath *op = NULL;
   CMPIArgs *cmpiargsout;
   VALUE method_name_str;
-  char *method_name_cstr;
+  const char *method_name_cstr;
   CMPIData ret;
   Check_Type(argin, T_HASH);
 
@@ -722,7 +722,7 @@ static VALUE invoke_method(VALUE self,
   Data_Get_Struct(object_path, CMPIObjectPath, op);
 
   method_name_str = rb_funcall(method_name, rb_intern("to_s"), 0);
-  method_name_cstr = StringValuePtr(method_name_str);
+  method_name_cstr = to_charptr(method_name_str);
   ret = ptr->ft->invokeMethod(ptr,
                               op,
                               method_name_cstr,
@@ -762,11 +762,11 @@ static VALUE set_property(VALUE self,
   Data_Get_Struct(self, CMCIClient, ptr);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
   data = sfcc_value_to_cimdata(value);
-  status = ptr->ft->setProperty(ptr, op, StringValuePtr(name), &data.value, data.type);
+  status = ptr->ft->setProperty(ptr, op, to_charptr(name), &data.value, data.type);
 
   if ( !status.rc )
     return value;
-  sfcc_rb_raise_if_error(status, "Can't set property '%s'", StringValuePtr(name));
+  sfcc_rb_raise_if_error(status, "Can't set property '%s'", to_charptr(name));
   return Qnil;
 }
 
@@ -789,11 +789,11 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
 
   Data_Get_Struct(self, CMCIClient, ptr);
   Data_Get_Struct(object_path, CMPIObjectPath, op);
-  data = ptr->ft->getProperty(ptr, op, StringValuePtr(name), &status);
+  data = ptr->ft->getProperty(ptr, op, to_charptr(name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", StringValuePtr(name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", to_charptr(name));
   return Qnil;
 }
 
@@ -801,11 +801,11 @@ static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE us
 {
   CMCIClient *client = NULL;
   CMPIStatus status = {CMPI_RC_OK, NULL};
-  client = cmciConnect(NIL_P(host) ? NULL : StringValuePtr(host),
-                       NIL_P(scheme) ? NULL : StringValuePtr(scheme),
-                       NIL_P(port) ? NULL : StringValuePtr(port),
-                       NIL_P(user) ? NULL : StringValuePtr(user),
-                       NIL_P(pwd) ? NULL : StringValuePtr(pwd),
+  client = cmciConnect(to_charptr(host),
+                       to_charptr(scheme),
+                       to_charptr(port),
+                       to_charptr(user),
+                       to_charptr(pwd),
                        &status);
   if ( !status.rc )
     return Sfcc_wrap_cim_client(client);

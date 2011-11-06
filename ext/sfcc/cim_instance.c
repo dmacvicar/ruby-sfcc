@@ -20,11 +20,11 @@ static VALUE property(VALUE self, VALUE name)
   CMPIStatus status;
   CMPIData data;
   Data_Get_Struct(self, CMPIInstance, ptr);
-  data = ptr->ft->getProperty(ptr, StringValuePtr(name), &status);
+  data = ptr->ft->getProperty(ptr, to_charptr(name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", StringValuePtr(name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", to_charptr(name));
   return Qnil;
 }
 
@@ -92,7 +92,7 @@ static VALUE set_property(VALUE self, VALUE name, VALUE value)
   CMPIData data;
   Data_Get_Struct(self, CMPIInstance, ptr);
   data = sfcc_value_to_cimdata(value);
-  ptr->ft->setProperty(ptr, StringValuePtr(name), &data.value, data.type);
+  ptr->ft->setProperty(ptr, to_charptr(name), &data.value, data.type);
 
   return value;
 }
@@ -163,11 +163,11 @@ static VALUE qualifier(VALUE self, VALUE name)
   CMPIData data;
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMPIInstance, ptr);
-  data = ptr->ft->getQualifier(ptr, StringValuePtr(name), &status);
+  data = ptr->ft->getQualifier(ptr, to_charptr(name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve qualifier '%s'", StringValuePtr(name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve qualifier '%s'", to_charptr(name));
   return Qnil;
 }
 
@@ -236,12 +236,12 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
   CMPIData data;
   memset(&status, 0, sizeof(CMPIStatus));
   Data_Get_Struct(self, CMPIInstance, ptr);
-  data = ptr->ft->getPropertyQualifier(ptr, StringValuePtr(property_name),
-                                        StringValuePtr(qualifier_name), &status);
+  data = ptr->ft->getPropertyQualifier(ptr, to_charptr(property_name),
+                                        to_charptr(qualifier_name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);
 
-  sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s'", StringValuePtr(qualifier_name));
+  sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s'", to_charptr(qualifier_name));
   return Qnil;
 }
 
@@ -265,10 +265,10 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
   CMPIData data;
   Data_Get_Struct(self, CMPIInstance, ptr);
 
-  num_props = ptr->ft->getPropertyQualifierCount(ptr, StringValuePtr(property_name), &status);
+  num_props = ptr->ft->getPropertyQualifierCount(ptr, to_charptr(property_name), &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
-      data = ptr->ft->getPropertyQualifierAt(ptr, StringValuePtr(property_name), k, &property_qualifier_name, &status);
+      data = ptr->ft->getPropertyQualifierAt(ptr, to_charptr(property_name), k, &property_qualifier_name, &status);
       if (!status.rc) {
         rb_yield_values(2, (property_qualifier_name ? rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
       }
@@ -294,7 +294,7 @@ static VALUE property_qualifier_count(VALUE self, VALUE property_name)
 {
   CMPIInstance *ptr = NULL;
   Data_Get_Struct(self, CMPIInstance, ptr);
-  return UINT2NUM(ptr->ft->getPropertyQualifierCount(ptr, StringValuePtr(property_name), NULL));
+  return UINT2NUM(ptr->ft->getPropertyQualifierCount(ptr, to_charptr(property_name), NULL));
 }
 
 /**

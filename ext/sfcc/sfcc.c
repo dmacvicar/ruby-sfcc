@@ -119,7 +119,7 @@ char ** sfcc_value_array_to_string_array(VALUE array)
   if ( !NIL_P(array) && RARRAY_LEN(array) > 0 ) {
     ret = (char**) malloc(RARRAY_LEN(array)*sizeof(char*));
     for (; i < RARRAY_LEN(array); ++i)
-      ret[i] = StringValuePtr(*(RARRAY_PTR(array) + i));
+      ret[i] = to_charptr(*(RARRAY_PTR(array) + i));
   }
   else
     ret = NULL;
@@ -218,7 +218,7 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
   CMPIData data;
   CMPIArgs *args = (CMPIArgs *)extra;
   VALUE key_str = rb_funcall(key, rb_intern("to_s"), 0);
-  char *key_cstr = StringValuePtr(key_str);
+  char *key_cstr = to_charptr(key_str);
   data = sfcc_value_to_cimdata(value);
   status = args->ft->addArg(args, key_cstr, &data.value, data.type);
 
@@ -226,7 +226,7 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
     return ST_CONTINUE;
   }
 
-  sfcc_rb_raise_if_error(status, "Can't add argument '%s'", StringValuePtr(key));
+  sfcc_rb_raise_if_error(status, "Can't add argument '%s'", to_charptr(key));
   return ST_STOP;
 }
 
@@ -299,7 +299,7 @@ CMPIData sfcc_value_to_cimdata(VALUE value)
     break;
   case T_STRING:
     data.type = CMPI_string;
-    data.value.string = newCMPIString(StringValuePtr(value), NULL);
+    data.value.string = newCMPIString(to_charptr(value), NULL);
     break;
   case T_TRUE:
     data.type = CMPI_boolean;
@@ -334,10 +334,35 @@ CMPIData sfcc_value_to_cimdata(VALUE value)
       data.state = CMPI_badValue;
       data.type = CMPI_null;
       VALUE cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
-      const char *class_name = StringValuePtr(cname);
+      const char *class_name = to_charptr(cname);
       rb_raise(rb_eTypeError, "unsupported data data type: %s", class_name);
       return data;
     }
   }
   return data;
+}
+
+/*
+ * target_charptr
+ * Convert target type to const char *
+ */
+
+const char *
+to_charptr(VALUE v)
+{
+  const char *str;
+  if (SYMBOL_P(v)) {
+    str = rb_id2name(SYM2ID(v));
+  }
+  else if (TYPE(v) == T_STRING) {
+    str = StringValuePtr(v);
+  }
+  else if (v == Qnil) {
+    str = NULL;
+  }
+  else {
+    VALUE v_s = rb_funcall(v, rb_intern("to_s"), 0 );
+    str = StringValuePtr(v_s);
+  }
+  return str;
 }

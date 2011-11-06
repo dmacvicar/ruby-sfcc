@@ -30,7 +30,7 @@ static VALUE new(VALUE klass, VALUE value)
 {
   CMPIStatus status;
   CMPIString *newstr = NULL;
-  CMPIString *ptr = newCMPIString(StringValuePtr(value),
+  CMPIString *ptr = newCMPIString(to_charptr(value),
                                   &status);
   newstr = ptr->ft->clone(ptr, &status);
   ptr->ft->release(ptr);
