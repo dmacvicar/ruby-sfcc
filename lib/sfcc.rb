@@ -78,20 +78,23 @@ module Sfcc
         when Hash
           params.merge!(args)
         when String
-          uri = URI.parse(arg)
+          uri = URI.parse(args)
+	  return Client.connect uri
         when URI
-          params[:host] = uri.host
-          params[:scheme] = uri.scheme
-          params[:port] = uri.port
-          params[:user] = uri.user
-          params[:password] = uri.password          
+          params[:host] = args.host
+          params[:scheme] = args.scheme
+          params[:port] = args.port
+          params[:user] = args.user
+          params[:password] = args.password          
+	else
+	  raise "Bad argument #{args.inspect}:#{args.class}"
         end
 
         native_connect(params[:host],
                        params[:scheme],
-                       params[:port],
+                       params[:port].to_s,
                        params[:user],
-                       params[:password]);
+                       params[:password])
       end
     end
 
