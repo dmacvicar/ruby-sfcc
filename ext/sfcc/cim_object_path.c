@@ -121,6 +121,7 @@ static VALUE add_key(VALUE self, VALUE name, VALUE value)
   CMPIData data;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
   data = sfcc_value_to_cimdata(value);
+  name = sfcc_stringify(name); /* ensure String type */
   ptr->ft->addKey(ptr, StringValuePtr(name), &data.value, data.type);
   return value;
 }
@@ -137,6 +138,7 @@ static VALUE key(VALUE self, VALUE name)
   CMPIStatus status;
   CMPIData data;
   Data_Get_Struct(self, CMPIObjectPath, ptr);
+  name = sfcc_stringify(name); /* ensure String type */
   data = ptr->ft->getKey(ptr, StringValuePtr(name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data);

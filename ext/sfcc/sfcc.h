@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+extern VALUE sfcc_stringify(VALUE v);
 extern VALUE mSfcc;
 extern VALUE mSfccCim;
 
