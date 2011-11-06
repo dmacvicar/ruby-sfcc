@@ -128,7 +128,7 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
     return rbenm;
   }
 
-  sfcc_rb_raise_if_error(status, "Can't get classes");
+  sfcc_rb_raise_if_error(status, "Can't get classes, try increasing maxMsgLen in sfcb.cfg ?");
   return Qnil;
 }
 
