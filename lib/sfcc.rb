@@ -77,7 +77,7 @@ module Sfcc
         case args
         when Hash
           params.merge!(args)
-        when String
+        when ::String
           uri = URI.parse(args)
 	  return Client.connect uri
         when URI
