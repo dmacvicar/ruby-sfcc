@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-%w(../lib).each do |path|
+%w(../ext/sfcc ../lib).each do |path|
   $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), path)))
 end
 
