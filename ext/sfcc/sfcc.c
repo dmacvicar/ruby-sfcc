@@ -111,13 +111,13 @@ void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...)
   rb_raise(sfcc_status_exception(status), error);
 }
 
-char ** sfcc_value_array_to_string_array(VALUE array)
+const char ** sfcc_value_array_to_string_array(VALUE array)
 {
-  char **ret;
+  const char **ret;
   int i = 0;
 
   if ( !NIL_P(array) && RARRAY_LEN(array) > 0 ) {
-    ret = (char**) malloc(RARRAY_LEN(array)*sizeof(char*));
+    ret = (const char**) malloc(RARRAY_LEN(array)*sizeof(char*));
     for (; i < RARRAY_LEN(array); ++i)
       ret[i] = to_charptr(*(RARRAY_PTR(array) + i));
   }
@@ -218,7 +218,7 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
   CMPIData data;
   CMPIArgs *args = (CMPIArgs *)extra;
   VALUE key_str = rb_funcall(key, rb_intern("to_s"), 0);
-  char *key_cstr = to_charptr(key_str);
+  const char *key_cstr = to_charptr(key_str);
   data = sfcc_value_to_cimdata(value);
   status = args->ft->addArg(args, key_cstr, &data.value, data.type);
 

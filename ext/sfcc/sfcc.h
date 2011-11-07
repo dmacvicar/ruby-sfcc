@@ -72,7 +72,7 @@ void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...);
  * you need to deallocate the array yourself. But don't deallocate
  * the elements.
  */
-inline char ** sfcc_value_array_to_string_array(VALUE array);
+inline const char ** sfcc_value_array_to_string_array(VALUE array);
 
 /**
  * converts a ruby hash to a CIM args object
