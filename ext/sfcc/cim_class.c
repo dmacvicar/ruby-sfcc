@@ -12,8 +12,10 @@ static void
 dealloc(struct mark_struct *ms)
 {
   fprintf(stderr, "Sfcc_dealloc_cim_class %p, enum %p\n", ms, ms->cmpi_object);
+#if 0
   SFCC_DEC_REFCOUNT(((CMPIConstClass *)ms->cmpi_object));
   free(ms);
+#endif
 }
 
 /**

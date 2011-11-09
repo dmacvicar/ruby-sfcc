@@ -14,8 +14,10 @@ static void
 dealloc(struct mark_struct *ms)
 {
   fprintf(stderr, "Sfcc_dealloc_cim_enumeration %p, enum %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
+#if 0
   SFCC_DEC_REFCOUNT(((CMPIEnumeration *)ms->cmpi_object));
   free(ms);
+#endif
 }
 
 /**
