@@ -9,3 +9,4 @@ mkmf.log
 *.gem
 *~
 *.o
+Gemfile.lock
