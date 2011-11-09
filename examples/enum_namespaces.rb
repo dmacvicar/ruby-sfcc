@@ -25,3 +25,11 @@ client = Sfcc::Cim::Client.connect('http://wsman:secret@localhost:5988')
     end
   end
 end
+
+client = nil
+
+sleep 5
+
+GC.start
+
+sleep 5
