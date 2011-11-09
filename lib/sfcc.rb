@@ -164,6 +164,12 @@ module Sfcc
     end
 
     class ObjectPath
+      def [] name
+	self.key(name)
+      end
+      def method_missing name, *args
+	self[name]
+      end
     end
 
     class Enumeration

@@ -10,7 +10,7 @@ require 'sfcc'
 #
 # modeled along 'EnumNamespaces' from YaWN (http://pywbem.wiki.sourceforge.net/YAWN)
 
-client = Sfcc::Cim::Client.connect('http://localhost:5988')
+client = Sfcc::Cim::Client.connect('http://wsman:secret@localhost:5988')
 
 ['CIM_Namespace', '__Namespace'].each do |classname|
   ['root/cimv2', 'Interop', 'interop', 'root', 'root/interop'].each do |namespace|
@@ -18,8 +18,8 @@ client = Sfcc::Cim::Client.connect('http://localhost:5988')
 #    puts "Checking #{op}"
     begin
       client.instance_names(op).each do |path|
-	n = path[:Name]
-	puts "Namespace: #{path['Name']}"
+	n = path.Name
+	puts "Namespace: #{path.Name}"
       end
     rescue Sfcc::Cim::ErrorInvalidClass, Sfcc::Cim::ErrorInvalidNamespace
     end
