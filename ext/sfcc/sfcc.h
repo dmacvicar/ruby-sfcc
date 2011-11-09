@@ -94,4 +94,8 @@ inline VALUE sfcc_cimdata_to_value(CMPIData data);
  */
 inline CMPIData sfcc_value_to_cimdata(VALUE value);
 
+struct mark_struct {
+  void *cmpi_object;
+  VALUE ruby_value;
+};
 #endif

@@ -4,9 +4,18 @@
 #include "cim_object_path.h"
 
 static void
-dealloc(CMPIEnumeration *enm)
+mark(struct mark_struct *ms)
 {
-  SFCC_DEC_REFCOUNT(enm);
+/*  fprintf(stderr, "Sfcc_mark_cim_enumeration %p, enum %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value); */
+  rb_gc_mark(ms->ruby_value);
+}
+
+static void
+dealloc(struct mark_struct *ms)
+{
+/*  fprintf(stderr, "Sfcc_dealloc_cim_enumeration %p, enum %p\n", ms, ms->cmpi_object); */
+  SFCC_DEC_REFCOUNT(((CMPIEnumeration *)ms->cmpi_object));
+  free(ms);
 }
 
 /**
@@ -21,9 +30,11 @@ dealloc(CMPIEnumeration *enm)
 static VALUE each(VALUE self)
 {
   CMPIStatus status;
+  struct mark_struct *obj = NULL;
   CMPIEnumeration *ptr = NULL;
   CMPIData next;
-  Data_Get_Struct(self, CMPIEnumeration, ptr);
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIEnumeration *)obj->cmpi_object;
 
   CMPIEnumeration *tmp = ptr->ft->clone(ptr, &status);
   
@@ -45,10 +56,15 @@ static VALUE each(VALUE self)
 }
 
 VALUE
-Sfcc_wrap_cim_enumeration(CMPIEnumeration *enm)
+Sfcc_wrap_cim_enumeration(CMPIEnumeration *enm, VALUE client)
 {
+  struct mark_struct *obj = (struct mark_struct *)malloc(sizeof (struct mark_struct));
+  obj->cmpi_object = enm;
+  obj->ruby_value = client;
+  rb_gc_mark(client);
+/*  fprintf(stderr, "Sfcc_wrap_cim_enumeration %p, enum %p, client %p\n", obj, enm, (void *)client); */
   SFCC_INC_REFCOUNT(enm);
-  return Data_Wrap_Struct(cSfccCimEnumeration, NULL, dealloc, enm);
+  return Data_Wrap_Struct(cSfccCimEnumeration, mark, dealloc, obj);
 }
 
 VALUE cSfccCimEnumeration;
