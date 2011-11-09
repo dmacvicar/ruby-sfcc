@@ -7,6 +7,6 @@
 void init_cim_object_path();
 
 extern VALUE cSfccCimObjectPath;
-VALUE Sfcc_wrap_cim_object_path(CMPIObjectPath *object_path);
+VALUE Sfcc_wrap_cim_object_path(CMPIObjectPath *object_path, VALUE client);
 
 #endif

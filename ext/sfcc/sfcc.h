@@ -82,12 +82,12 @@ inline CMPIArgs* sfcc_hash_to_cimargs(VALUE hash);
 /**
  * converts a CIM args object to a hash
  */
-inline VALUE sfcc_cimargs_to_hash(CMPIArgs *args);
+inline VALUE sfcc_cimargs_to_hash(CMPIArgs *args, VALUE client);
 
 /**
  * converts CMPIData to ruby VALUE
  */
-inline VALUE sfcc_cimdata_to_value(CMPIData data);
+inline VALUE sfcc_cimdata_to_value(CMPIData data, VALUE client);
 
 /**
  * convert ruby VALUE to CMPIData

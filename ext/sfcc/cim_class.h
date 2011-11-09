@@ -7,6 +7,6 @@
 void init_cim_class();
 
 extern VALUE cSfccCimClass;
-VALUE Sfcc_wrap_cim_class(CMPIConstClass *cimclass);
+VALUE Sfcc_wrap_cim_class(CMPIConstClass *cimclass, VALUE client);
 
 #endif

@@ -5,13 +5,14 @@ static void
 mark(struct mark_struct *ms)
 {
   fprintf(stderr, "Sfcc_mark_object_path %p, path %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
-  rb_gc_mark(ms->ruby_value);
+  if (!NIL_P(ms->ruby_value))
+    rb_gc_mark(ms->ruby_value);
 }
 
 static void
 dealloc(struct mark_struct *ms)
 {
-  fprintf(stderr, "Sfcc_dealloc_object_path %p, path %p\n", ms, ms->cmpi_object);
+  fprintf(stderr, "Sfcc_dealloc_object_path %p, path %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
   SFCC_DEC_REFCOUNT(((CMPIObjectPath *)ms->cmpi_object));
   free(ms);
 }
@@ -164,7 +165,7 @@ static VALUE key(VALUE self, VALUE name)
   ptr = (CMPIObjectPath *)obj->cmpi_object;
   data = ptr->ft->getKey(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, obj->ruby_value);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve key '%s'", to_charptr(name));
   return Qnil;
@@ -197,7 +198,7 @@ static VALUE each_key(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getKeyAt(ptr, k, &key_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, rb_str_intern(CIMSTR_2_RUBYSTR(key_name)), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, rb_str_intern(CIMSTR_2_RUBYSTR(key_name)), sfcc_cimdata_to_value(data, obj->ruby_value));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);
@@ -299,7 +300,7 @@ static VALUE class_qualifier(VALUE self, VALUE qualifier_name)
   ptr = (CMPIObjectPath *)obj->cmpi_object;
   data = ptr->ft->getClassQualifier(ptr, to_charptr(qualifier_name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, obj->ruby_value);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve class qualifier '%s'", to_charptr(qualifier_name));
   return Qnil;
@@ -323,7 +324,7 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
   data = ptr->ft->getPropertyQualifier(ptr, to_charptr(property_name),
                                        to_charptr(qualifier_name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, obj->ruby_value);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s' for property '%s'", to_charptr(qualifier_name), to_charptr(property_name));
   return Qnil;
@@ -347,7 +348,7 @@ static VALUE method_qualifier(VALUE self, VALUE method_name, VALUE qualifier_nam
   data = ptr->ft->getMethodQualifier(ptr, to_charptr(method_name),
                                        to_charptr(qualifier_name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, obj->ruby_value);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve method qualifier '%s' for method '%s'", to_charptr(qualifier_name), to_charptr(method_name));
   return Qnil;
@@ -376,7 +377,7 @@ static VALUE parameter_qualifier(VALUE self,
                                         to_charptr(parameter_name),
                                         to_charptr(qualifier_name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, obj->ruby_value);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve parameter qualifier '%s' for '%s'/'%s'", to_charptr(qualifier_name), to_charptr(method_name), to_charptr(parameter_name));
   return Qnil;
@@ -424,7 +425,7 @@ static VALUE new(int argc, VALUE *argv, VALUE self)
   ptr->ft->release(ptr);
 
   if (!status.rc)
-    return Sfcc_wrap_cim_object_path(newop,self);
+    return Sfcc_wrap_cim_object_path(newop, Qnil);
   sfcc_rb_raise_if_error(status, "Can't create object path");
   return Qnil;
 }
@@ -435,7 +436,7 @@ Sfcc_wrap_cim_object_path(CMPIObjectPath *object_path, VALUE client)
   struct mark_struct *obj = (struct mark_struct *)malloc(sizeof (struct mark_struct));
   obj->cmpi_object = object_path;
   obj->ruby_value = client;
-  rb_gc_mark(client);
+  mark(obj);
   SFCC_INC_REFCOUNT(object_path);
   return Data_Wrap_Struct(cSfccCimObjectPath, mark, dealloc, obj);
 }

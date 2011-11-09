@@ -2,9 +2,18 @@
 #include "cim_class.h"
 
 static void
-dealloc(CMPIConstClass *cimclass)
+mark(struct mark_struct *ms)
 {
-  SFCC_DEC_REFCOUNT(cimclass);
+  fprintf(stderr, "Sfcc_mark_cim_class %p, enum %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
+  rb_gc_mark(ms->ruby_value);
+}
+
+static void
+dealloc(struct mark_struct *ms)
+{
+  fprintf(stderr, "Sfcc_dealloc_cim_class %p, enum %p\n", ms, ms->cmpi_object);
+  SFCC_DEC_REFCOUNT(((CMPIConstClass *)ms->cmpi_object));
+  free(ms);
 }
 
 /**
@@ -15,9 +24,11 @@ dealloc(CMPIConstClass *cimclass)
  */
 static VALUE class_name(VALUE self)
 {
-  CMPIConstClass *cimclass = NULL;
+  struct mark_struct *obj;
+  CMPIConstClass *cimclass;
   CMPIString *classname;
-  Data_Get_Struct(self, CMPIConstClass, cimclass);
+  Data_Get_Struct(self, struct mark_struct, obj);
+  cimclass = (CMPIConstClass *)obj->cmpi_object;
   classname = cimclass->ft->getClassName(cimclass, NULL);
   return rb_str_new2(classname->ft->getCharPtr(classname, NULL));
 }
@@ -30,14 +41,16 @@ static VALUE class_name(VALUE self)
  */
 static VALUE property(VALUE self, VALUE name)
 {
-  CMPIConstClass *ptr = NULL;
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
   CMPIStatus status;
   CMPIData data;
   memset(&status, 0, sizeof(CMPIStatus));
-  Data_Get_Struct(self, CMPIConstClass, ptr);
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
   data = ptr->ft->getProperty(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, obj->ruby_value);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", to_charptr(name));
   return Qnil;
@@ -55,20 +68,22 @@ static VALUE property(VALUE self, VALUE name)
  */
 static VALUE each_property(VALUE self)
 {
-  CMPIConstClass *ptr = NULL;
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
   CMPIStatus status;
   int k=0;
   int num_props=0;
-  CMPIString *property_name = NULL;
+  CMPIString *property_name;
   CMPIData data;
-  Data_Get_Struct(self, CMPIConstClass, ptr);
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
 
   num_props = ptr->ft->getPropertyCount(ptr, &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropertyAt(ptr, k, &property_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_name ? rb_str_intern(rb_str_new2(property_name->ft->getCharPtr(property_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_name ? rb_str_intern(rb_str_new2(property_name->ft->getCharPtr(property_name, NULL))) : Qnil), sfcc_cimdata_to_value(data, obj->ruby_value));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property #%d", k);
@@ -90,7 +105,10 @@ static VALUE each_property(VALUE self)
  */
 static VALUE property_count(VALUE self)
 {
-  CMPIConstClass *ptr = NULL;
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
   Data_Get_Struct(self, CMPIConstClass, ptr);
   return UINT2NUM(ptr->ft->getPropertyCount(ptr, NULL));
 }
@@ -103,14 +121,16 @@ static VALUE property_count(VALUE self)
  */
 static VALUE qualifier(VALUE self, VALUE name)
 {
-  CMPIConstClass *ptr = NULL;
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
   CMPIStatus status;
   CMPIData data;
   memset(&status, 0, sizeof(CMPIStatus));
-  Data_Get_Struct(self, CMPIConstClass, ptr);
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
   data = ptr->ft->getQualifier(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, obj->ruby_value);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve qualifier '%s'", to_charptr(name));
   return Qnil;
@@ -128,20 +148,22 @@ static VALUE qualifier(VALUE self, VALUE name)
  */
 static VALUE each_qualifier(VALUE self)
 {
-  CMPIConstClass *ptr = NULL;
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
   CMPIStatus status;
   int k=0;
   int num_props=0;
-  CMPIString *qualifier_name = NULL;
+  CMPIString *qualifier_name;
   CMPIData data;
-  Data_Get_Struct(self, CMPIConstClass, ptr);
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
 
   num_props = ptr->ft->getQualifierCount(ptr, &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
       data = ptr->ft->getQualifierAt(ptr, k, &qualifier_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (qualifier_name ? rb_str_intern(rb_str_new2(qualifier_name->ft->getCharPtr(qualifier_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (qualifier_name ? rb_str_intern(rb_str_new2(qualifier_name->ft->getCharPtr(qualifier_name, NULL))) : Qnil), sfcc_cimdata_to_value(data, obj->ruby_value));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve qualifier #%d", k);
@@ -163,8 +185,10 @@ static VALUE each_qualifier(VALUE self)
  */
 static VALUE qualifier_count(VALUE self)
 {
-  CMPIConstClass *ptr = NULL;
-  Data_Get_Struct(self, CMPIConstClass, ptr);
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
   return UINT2NUM(ptr->ft->getQualifierCount(ptr, NULL));
 }
 
@@ -176,15 +200,17 @@ static VALUE qualifier_count(VALUE self)
  */
 static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier_name)
 {
-  CMPIConstClass *ptr = NULL;
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
   CMPIStatus status;
   CMPIData data;
   memset(&status, 0, sizeof(CMPIStatus));
-  Data_Get_Struct(self, CMPIConstClass, ptr);
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
   data = ptr->ft->getPropertyQualifier(ptr, to_charptr(property_name),
                                         to_charptr(qualifier_name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, obj->ruby_value);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property_qualifier '%s'", to_charptr(qualifier_name));
   return Qnil;
@@ -202,20 +228,22 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
  */
 static VALUE each_property_qualifier(VALUE self, VALUE property_name)
 {
-  CMPIConstClass *ptr = NULL;
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
   CMPIStatus status;
   int k=0;
   int num_props=0;
-  CMPIString *property_qualifier_name = NULL;
+  CMPIString *property_qualifier_name;
   CMPIData data;
-  Data_Get_Struct(self, CMPIConstClass, ptr);
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
 
   num_props = ptr->ft->getPropertyQualifierCount(ptr, to_charptr(property_name), &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropertyQualifierAt(ptr, to_charptr(property_name), k, &property_qualifier_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_qualifier_name ? rb_str_intern(rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_qualifier_name ? rb_str_intern(rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL))) : Qnil), sfcc_cimdata_to_value(data, obj->ruby_value));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier #%d", k);
@@ -237,16 +265,23 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
  */
 static VALUE property_qualifier_count(VALUE self, VALUE property_name)
 {
-  CMPIConstClass *ptr = NULL;
-  Data_Get_Struct(self, CMPIConstClass, ptr);
+  struct mark_struct *obj;
+  CMPIConstClass *ptr;
+  Data_Get_Struct(self, struct mark_struct, obj);
+  ptr = (CMPIConstClass *)obj->cmpi_object;
   return UINT2NUM(ptr->ft->getPropertyQualifierCount(ptr, to_charptr(property_name), NULL));
 }
 
 VALUE
-Sfcc_wrap_cim_class(CMPIConstClass *cimclass)
+Sfcc_wrap_cim_class(CMPIConstClass *cimclass, VALUE client)
 {
+  struct mark_struct *obj = (struct mark_struct *)malloc(sizeof (struct mark_struct));
+  obj->cmpi_object = cimclass;
+  obj->ruby_value = client;
+  mark(obj);
+/*  fprintf(stderr, "Sfcc_wrap_cim_class %p, class %p, client %p\n", obj, cimclass, (void *)client); */
   SFCC_INC_REFCOUNT(cimclass);
-  return Data_Wrap_Struct(cSfccCimClass, NULL, dealloc, cimclass);
+  return Data_Wrap_Struct(cSfccCimClass, mark, dealloc, obj);
 }
 
 VALUE cSfccCimClass;

@@ -127,7 +127,7 @@ const char ** sfcc_value_array_to_string_array(VALUE array)
   return ret;
 }
 
-VALUE sfcc_cimdata_to_value(CMPIData data)
+VALUE sfcc_cimdata_to_value(CMPIData data, VALUE client)
 {
   CMPIString *cimstr = NULL;
   VALUE rbval;
@@ -145,7 +145,7 @@ VALUE sfcc_cimdata_to_value(CMPIData data)
     if (!status.rc) {
       for (k = 0; k < n; ++k) {
         CMPIData element = data.value.array->ft->getElementAt(data.value.array, k, NULL);
-        rb_ary_push(rbarray, sfcc_cimdata_to_value(element));
+        rb_ary_push(rbarray, sfcc_cimdata_to_value(element, client));
       }
       return rbarray;
     }
@@ -155,13 +155,13 @@ VALUE sfcc_cimdata_to_value(CMPIData data)
   else if (data.type & CMPI_ENC) {    
     switch (data.type) {
     case CMPI_instance:
-      return data.value.inst ? Sfcc_wrap_cim_instance(data.value.inst->ft->clone(data.value.inst, NULL)) : Qnil;
+      return data.value.inst ? Sfcc_wrap_cim_instance(data.value.inst->ft->clone(data.value.inst, NULL), client) : Qnil;
     case CMPI_class:
-      return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
+      return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL), client) : Qnil;
     case CMPI_ref:
-      return data.value.ref ? Sfcc_wrap_cim_object_path(data.value.ref->ft->clone(data.value.ref, NULL)) : Qnil;
+      return data.value.ref ? Sfcc_wrap_cim_object_path(data.value.ref->ft->clone(data.value.ref, NULL), client) : Qnil;
     case CMPI_args:      
-      return data.value.args ? sfcc_cimargs_to_hash(data.value.args) : Qnil;
+      return data.value.args ? sfcc_cimargs_to_hash(data.value.args, client) : Qnil;
     case CMPI_filter:
       return Qnil;
     case CMPI_numericString:
@@ -238,7 +238,7 @@ CMPIArgs *sfcc_hash_to_cimargs(VALUE hash)
   return args;
 }
 
-VALUE sfcc_cimargs_to_hash(CMPIArgs *args)
+VALUE sfcc_cimargs_to_hash(CMPIArgs *args, VALUE client)
 {
   CMPIArgs *ptr = NULL;
   int i = 0;
@@ -269,7 +269,7 @@ VALUE sfcc_cimargs_to_hash(CMPIArgs *args)
       }
 
       if (!status.rc) {
-        rb_hash_aset(hash, rb_funcall(rb_str_new2(argname_cstr), rb_intern("to_sym"), 0), sfcc_cimdata_to_value(argdata));
+        rb_hash_aset(hash, rb_funcall(rb_str_new2(argname_cstr), rb_intern("to_sym"), 0), sfcc_cimdata_to_value(argdata, client));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve argument name");
