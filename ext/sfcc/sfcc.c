@@ -103,8 +103,10 @@ void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...)
   vsnprintf(orig_error, MAX_ERROR_BUFFER, msg, arg_list);
   va_end(arg_list);
 
-  if (status.msg)
+  if (status.msg) {
     snprintf(error, MAX_ERROR_BUFFER, "%s : %s", orig_error, status.msg->ft->getCharPtr(status.msg, NULL));
+    CMRelease(status.msg);
+  }
   else
     strcpy(error, orig_error);
 
