@@ -7,17 +7,16 @@ static void
 mark(struct mark_struct *ms)
 {
   fprintf(stderr, "Sfcc_mark_cim_enumeration %p, enum %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
-  rb_gc_mark(ms->ruby_value);
+  client_mark(ms->ruby_value);
 }
 
 static void
 dealloc(struct mark_struct *ms)
 {
   fprintf(stderr, "Sfcc_dealloc_cim_enumeration %p, enum %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
-#if 0
   SFCC_DEC_REFCOUNT(((CMPIEnumeration *)ms->cmpi_object));
+  client_sweep(ms->ruby_value);
   free(ms);
-#endif
 }
 
 /**

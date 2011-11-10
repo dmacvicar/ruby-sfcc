@@ -98,4 +98,9 @@ struct mark_struct {
   void *cmpi_object;
   VALUE ruby_value;
 };
+
+void client_mark(VALUE client);
+void client_sweep(VALUE client);
+
+
 #endif

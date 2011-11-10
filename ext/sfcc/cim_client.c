@@ -4,11 +4,35 @@
 #include "cim_class.h"
 #include "cim_instance.h"
 
-static void
-dealloc(CMCIClient *client)
+struct client_refcount {
+  CMCIClient *client;
+  int refcount;
+};
+
+void
+client_mark(VALUE self)
 {
-  fprintf(stderr, "Sfcc_dealloc_cim_client %p\n", client);
-/*  SFCC_DEC_REFCOUNT(client); */
+  struct client_refcount *c;
+  rb_gc_mark(self);
+  Data_Get_Struct(self, struct client_refcount, c);
+  c->refcount++;
+}
+
+void
+client_sweep(VALUE self)
+{
+  struct client_refcount *c;
+  Data_Get_Struct(self, struct client_refcount, c);
+  c->refcount--;
+}
+
+static void
+dealloc(struct client_refcount *c)
+{
+  fprintf(stderr, "Sfcc_dealloc_cim_client %p:%d\n", c->client, c->refcount);
+  if (c->refcount == 0) {
+    SFCC_DEC_REFCOUNT(c->client);
+  }
 }
 
 /**
@@ -29,6 +53,7 @@ dealloc(CMCIClient *client)
  */
 static VALUE get_class(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
   VALUE properties;
@@ -38,14 +63,14 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   CMPIConstClass *cimclass = NULL;
-  CMPIConstClass *cimclassnew = NULL;
   char **props;
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
 
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -71,6 +96,7 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
  */
 static VALUE class_names(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
 
@@ -82,7 +108,8 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "11", &object_path, &flags);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -111,6 +138,7 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
  */
 static VALUE classes(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
 
@@ -122,7 +150,8 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "11", &object_path, &flags);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -154,6 +183,7 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
  */
 static VALUE get_instance(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
   VALUE properties;
@@ -168,7 +198,8 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -198,20 +229,22 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
  */
 static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
 {
+  struct client_refcount *c;
   CMPIStatus status = {CMPI_RC_OK, NULL};
-  CMCIClient *ptr = NULL;
+  CMCIClient *client;
   struct mark_struct *obj;
   CMPIObjectPath *op = NULL;
   CMPIObjectPath *new_op = NULL;
   CMPIInstance *inst = NULL;
 
-  Data_Get_Struct(self, CMCIClient, ptr);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
   Data_Get_Struct(instance, struct mark_struct, obj);
-  instance = (CMPIInstance *)obj->cmpi_object;
+  inst = (CMPIInstance *)obj->cmpi_object;
 
-  new_op = ptr->ft->createInstance(ptr, op, inst, &status);
+  new_op = client->ft->createInstance(client, op, inst, &status);
 
   if (!status.rc)
     return Sfcc_wrap_cim_object_path(new_op, self);
@@ -237,6 +270,7 @@ static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
  */
 static VALUE set_instance(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE instance;
   VALUE flags;
@@ -252,11 +286,12 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "22", &object_path, &instance, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
   Data_Get_Struct(instance, struct mark_struct, obj);
-  instance = (CMPIInstance *)obj->cmpi_object;
+  inst = (CMPIInstance *)obj->cmpi_object;
 
   props = sfcc_value_array_to_string_array(properties);
 
@@ -276,12 +311,14 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
  */
 static VALUE delete_instance(VALUE self, VALUE object_path)
 {
+  struct client_refcount *c;
   CMPIStatus status = {CMPI_RC_OK, NULL};
   struct mark_struct *obj;
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -310,15 +347,16 @@ static VALUE query(VALUE self,
                    VALUE query,
                    VALUE lang)
 {
+  struct client_refcount *c;
   CMPIStatus status = {CMPI_RC_OK, NULL};
   struct mark_struct *obj;
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
-  VALUE rbenm = Qnil;
 
   CMPIEnumeration *enm = client->ft->execQuery(client,
                                                op,
@@ -341,13 +379,14 @@ static VALUE query(VALUE self,
  */
 static VALUE instance_names(VALUE self, VALUE object_path)
 {
+  struct client_refcount *c;
   CMPIStatus status = {CMPI_RC_OK, NULL};
   struct mark_struct *obj;
   CMPIObjectPath *op;
   CMCIClient *client;
-  VALUE rbenm = Qnil;
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -380,6 +419,7 @@ static VALUE instance_names(VALUE self, VALUE object_path)
  */
 static VALUE instances(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
   VALUE properties;
@@ -389,12 +429,12 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   char **props;
-  VALUE rbenm = Qnil;
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -458,6 +498,7 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
  */
 static VALUE associators(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE assoc_class;
   VALUE result_class;
@@ -472,14 +513,14 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
   CMCIClient *client = NULL;
   char **props;
   CMPIEnumeration *enm = NULL;
-  VALUE rbenm = Qnil;
 
   rb_scan_args(argc, argv, "16", &object_path,
                &assoc_class, &result_class,
                &role, &result_role, &flags, &properties);
 
   if (NIL_P(flags)) flags = INT2NUM(0);
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -541,6 +582,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
  */
 static VALUE associator_names(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE assoc_class;
   VALUE result_class;
@@ -552,13 +594,13 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   CMPIEnumeration *enm = NULL;
-  VALUE rbenm = Qnil;
 
   rb_scan_args(argc, argv, "14", &object_path,
                &assoc_class, &result_class,
                &role, &result_role);
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -608,6 +650,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
  */
 static VALUE references(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path;
   VALUE result_class;
   VALUE role;
@@ -620,14 +663,14 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
   CMCIClient *client = NULL;
   char **props;
   CMPIEnumeration *enm = NULL;
-  VALUE rbenm = Qnil;
 
   rb_scan_args(argc, argv, "14", &object_path,
                &result_class, &role,
                &flags, &properties);
 
   if (NIL_P(flags)) flags = INT2NUM(0);
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -671,6 +714,7 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
  */
 static VALUE reference_names(int argc, VALUE *argv, VALUE self)
 {
+  struct client_refcount *c;
   VALUE object_path = Qnil;
   VALUE result_class = Qnil;
   VALUE role = Qnil;
@@ -680,12 +724,12 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   CMPIObjectPath *op = NULL;
   CMCIClient *client = NULL;
   CMPIEnumeration *enm = NULL;
-  VALUE rbenm = Qnil;
 
   rb_scan_args(argc, argv, "12", &object_path,
                &result_class, &role);
 
-  Data_Get_Struct(self, CMCIClient, client);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
@@ -721,8 +765,9 @@ static VALUE invoke_method(VALUE self,
                            VALUE argin,
                            VALUE argout)
 {
+  struct client_refcount *c;
   CMPIStatus status = {CMPI_RC_OK, NULL};
-  CMCIClient *ptr = NULL;
+  CMCIClient *client;
   struct mark_struct *obj;
   CMPIObjectPath *op = NULL;
   CMPIArgs *cmpiargsout;
@@ -733,13 +778,14 @@ static VALUE invoke_method(VALUE self,
 
   cmpiargsout = newCMPIArgs(NULL);
 
-  Data_Get_Struct(self, CMCIClient, ptr);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
 
   method_name_str = rb_funcall(method_name, rb_intern("to_s"), 0);
   method_name_cstr = to_charptr(method_name_str);
-  ret = ptr->ft->invokeMethod(ptr,
+  ret = client->ft->invokeMethod(client,
                               op,
                               method_name_cstr,
                               sfcc_hash_to_cimargs(argin),
@@ -771,16 +817,18 @@ static VALUE set_property(VALUE self,
                           VALUE name,
                           VALUE value)
 {
+  struct client_refcount *c;
   CMPIStatus status = {CMPI_RC_OK, NULL};
-  CMCIClient *ptr = NULL;
+  CMCIClient *client;
   struct mark_struct *obj;
   CMPIObjectPath *op = NULL;
   CMPIData data;
-  Data_Get_Struct(self, CMCIClient, ptr);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
   data = sfcc_value_to_cimdata(value);
-  status = ptr->ft->setProperty(ptr, op, to_charptr(name), &data.value, data.type);
+  status = client->ft->setProperty(client, op, to_charptr(name), &data.value, data.type);
 
   if ( !status.rc )
     return value;
@@ -800,16 +848,18 @@ static VALUE set_property(VALUE self,
  */
 static VALUE property(VALUE self, VALUE object_path, VALUE name)
 {
-  CMCIClient *ptr = NULL;
+  struct client_refcount *c;
+  CMCIClient *client;
   struct mark_struct *obj;
   CMPIObjectPath *op = NULL;
   CMPIStatus status = {CMPI_RC_OK, NULL};
   CMPIData data;
 
-  Data_Get_Struct(self, CMCIClient, ptr);
+  Data_Get_Struct(self, struct client_refcount, c);
+  client = c->client;
   Data_Get_Struct(object_path, struct mark_struct, obj);
   op = (CMPIObjectPath *)obj->cmpi_object;
-  data = ptr->ft->getProperty(ptr, op, to_charptr(name), &status);
+  data = client->ft->getProperty(client, op, to_charptr(name), &status);
   if ( !status.rc )
     return sfcc_cimdata_to_value(data, self);
 
@@ -836,13 +886,16 @@ static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE us
 VALUE
 Sfcc_wrap_cim_client(CMCIClient *client)
 {
-  VALUE *ret = (VALUE *)malloc(sizeof(VALUE));
-  assert(client);
+  VALUE ret;
+  struct client_refcount *obj = (struct client_refcount *)malloc(sizeof(struct client_refcount));
+  assert(obj);
+  obj->client = client;
+  obj->refcount = 0;
+
   SFCC_INC_REFCOUNT(client);
-  *ret = Data_Wrap_Struct(cSfccCimClient, NULL, dealloc, client);
-  fprintf(stderr, "Sfcc_wrap_cim_client %p => %p\n", client, (void *)*ret);
-  rb_global_variable(ret);
-  return *ret;
+  ret = Data_Wrap_Struct(cSfccCimClient, NULL, dealloc, obj);
+  fprintf(stderr, "Sfcc_wrap_cim_client %p => %p\n", client, obj);
+  return ret;
 }
 
 VALUE cSfccCimClient;
