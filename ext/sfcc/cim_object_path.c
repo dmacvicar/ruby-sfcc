@@ -5,8 +5,7 @@ static void
 mark(struct mark_struct *ms)
 {
   fprintf(stderr, "Sfcc_mark_object_path %p, path %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
-  if (!NIL_P(ms->ruby_value))
-    client_mark(ms->ruby_value);
+  client_mark(ms->ruby_value);
 }
 
 static void
@@ -391,13 +390,16 @@ static VALUE parameter_qualifier(VALUE self,
  */
 static VALUE to_s(VALUE self)
 {
+  VALUE ret;
   struct mark_struct *obj;
   CMPIObjectPath *ptr;
   CMPIString *cimstr;
   Data_Get_Struct(self, struct mark_struct, obj);
   ptr = (CMPIObjectPath *)obj->cmpi_object;
   cimstr = ptr->ft->toString(ptr, NULL);
-  return CIMSTR_2_RUBYSTR(cimstr);
+  ret = CIMSTR_2_RUBYSTR(cimstr);
+  CMRelease(cimstr);
+  return ret;
 }
 
 /**
