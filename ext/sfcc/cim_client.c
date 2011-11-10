@@ -12,27 +12,38 @@ struct client_refcount {
 void
 client_mark(VALUE self)
 {
+  return;
   struct client_refcount *c;
+  if (NIL_P(self))
+    return;
   rb_gc_mark(self);
   Data_Get_Struct(self, struct client_refcount, c);
   c->refcount++;
+  fprintf(stderr, "client_mark %p:%d\n", c->client, c->refcount);	
 }
 
 void
 client_sweep(VALUE self)
 {
+  return;
   struct client_refcount *c;
+  if (NIL_P(self))
+    return;
   Data_Get_Struct(self, struct client_refcount, c);
   c->refcount--;
+  fprintf(stderr, "client_sweep %p:%d\n", c->client, c->refcount);	
 }
 
 static void
 dealloc(struct client_refcount *c)
 {
+  return;
   fprintf(stderr, "Sfcc_dealloc_cim_client %p:%d\n", c->client, c->refcount);
+#if 1
   if (c->refcount == 0) {
     SFCC_DEC_REFCOUNT(c->client);
   }
+#endif
 }
 
 /**

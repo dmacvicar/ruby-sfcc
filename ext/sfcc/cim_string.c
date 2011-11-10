@@ -3,6 +3,7 @@
 static void
 dealloc(CMPIString *string)
 {
+  return;
   fprintf(stderr, "dealloc(CMPIString %p\n", string);
 #if 1
   SFCC_DEC_REFCOUNT(string);

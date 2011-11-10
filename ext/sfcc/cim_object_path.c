@@ -4,6 +4,7 @@
 static void
 mark(struct mark_struct *ms)
 {
+  return;
   fprintf(stderr, "Sfcc_mark_object_path %p, path %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
   client_mark(ms->ruby_value);
 }
@@ -11,10 +12,11 @@ mark(struct mark_struct *ms)
 static void
 dealloc(struct mark_struct *ms)
 {
+  return;
   fprintf(stderr, "Sfcc_dealloc_object_path %p, path %p, client %p\n", ms, ms->cmpi_object, (void *)ms->ruby_value);
   SFCC_DEC_REFCOUNT(((CMPIObjectPath *)ms->cmpi_object));
   client_sweep(ms->ruby_value);
-  free(ms);
+/*  free(ms); */
 }
 
 /**
