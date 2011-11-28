@@ -129,6 +129,10 @@ module Sfcc
     end
     
     class Instance
+      def classname
+        self.object_path.classname
+      end
+
       # properties => Hash
       #
       # return a hash with all properties
