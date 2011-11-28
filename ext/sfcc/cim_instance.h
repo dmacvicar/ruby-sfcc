@@ -7,6 +7,6 @@
 void init_cim_instance();
 
 extern VALUE cSfccCimInstance;
-VALUE Sfcc_wrap_cim_instance(CMPIInstance *instance, VALUE client);
+VALUE Sfcc_wrap_cim_instance(CIMCInstance *instance);
 
 #endif

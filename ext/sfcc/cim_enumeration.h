@@ -7,6 +7,6 @@
 void init_cim_enumeration();
 
 extern VALUE cSfccCimEnumeration;
-VALUE Sfcc_wrap_cim_enumeration(CMPIEnumeration *enm, VALUE client);
+VALUE Sfcc_wrap_cim_enumeration(CIMCEnumeration *enm);
 
 #endif

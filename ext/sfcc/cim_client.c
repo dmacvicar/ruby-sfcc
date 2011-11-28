@@ -4,46 +4,11 @@
 #include "cim_class.h"
 #include "cim_instance.h"
 
-struct client_refcount {
-  CMCIClient *client;
-  int refcount;
-};
-
-void
-client_mark(VALUE self)
-{
-  return;
-  struct client_refcount *c;
-  if (NIL_P(self))
-    return;
-  rb_gc_mark(self);
-  Data_Get_Struct(self, struct client_refcount, c);
-  c->refcount++;
-  fprintf(stderr, "client_mark %p:%d\n", c->client, c->refcount);	
-}
-
-void
-client_sweep(VALUE self)
-{
-  return;
-  struct client_refcount *c;
-  if (NIL_P(self))
-    return;
-  Data_Get_Struct(self, struct client_refcount, c);
-  c->refcount--;
-  fprintf(stderr, "client_sweep %p:%d\n", c->client, c->refcount);	
-}
-
 static void
-dealloc(struct client_refcount *c)
+dealloc(CIMCClient *c)
 {
-  return;
-  fprintf(stderr, "Sfcc_dealloc_cim_client %p:%d\n", c->client, c->refcount);
-#if 1
-  if (c->refcount == 0) {
-    SFCC_DEC_REFCOUNT(c->client);
-  }
-#endif
+/*  fprintf(stderr, "Sfcc_dealloc_cim_client %p\n", c); */
+  c->ft->release(c);
 }
 
 /**
@@ -64,33 +29,29 @@ dealloc(struct client_refcount *c)
  */
 static VALUE get_class(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
-  CMPIConstClass *cimclass = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op = NULL;
+  CIMCClient *client = NULL;
+  CIMCClass *cimclass = NULL;
   char **props;
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
 
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   props = sfcc_value_array_to_string_array(properties);
   cimclass = client->ft->getClass(client, op, NUM2INT(flags), props, &status);
   free(props);
 
   if (!status.rc) {
-      return Sfcc_wrap_cim_class(cimclass, self);
+      return Sfcc_wrap_cim_class(cimclass);
   }
   sfcc_rb_raise_if_error(status, "Can't get class at %s", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return Qnil;
@@ -107,30 +68,23 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
  */
 static VALUE class_names(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
+  CIMCEnumeration *enm;
 
   rb_scan_args(argc, argv, "11", &object_path, &flags);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
-  CMPIEnumeration *enm = client->ft->enumClassNames(client, op, NUM2INT(flags), &status);
+  enm = client->ft->enumClassNames(client, op, NUM2INT(flags), &status);
   if (enm && !status.rc ) {
-#if 0
-    VALUE rbenm = Sfcc_wrap_cim_enumeration(enm->ft->clone(enm, NULL), self);
-    enm->ft->release(enm);
-#endif
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get class names");
@@ -149,26 +103,23 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
  */
 static VALUE classes(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
+  CIMCEnumeration *enm;
 
   rb_scan_args(argc, argv, "11", &object_path, &flags);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
-  CMPIEnumeration *enm = client->ft->enumClasses(client, op, NUM2INT(flags), &status);
+  enm = client->ft->enumClasses(client, op, NUM2INT(flags), &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get classes, try increasing maxMsgLen in sfcb.cfg ?");
@@ -194,25 +145,21 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
  */
 static VALUE get_instance(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
-  CMPIInstance *ciminstance = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
+  CIMCInstance *ciminstance;
   char **props;
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   props = sfcc_value_array_to_string_array(properties);
 
@@ -220,7 +167,7 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
   free(props);
 
   if (!status.rc)
-    return Sfcc_wrap_cim_instance(ciminstance, self);
+    return Sfcc_wrap_cim_instance(ciminstance);
 
   sfcc_rb_raise_if_error(status, "Can't get instance");
   return Qnil;
@@ -240,25 +187,20 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
  */
 static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
 {
-  struct client_refcount *c;
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  CMCIClient *client;
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMPIObjectPath *new_op = NULL;
-  CMPIInstance *inst = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCClient *client;
+  CIMCObjectPath *op;
+  CIMCObjectPath *new_op;
+  CIMCInstance *inst;
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
-  Data_Get_Struct(instance, struct mark_struct, obj);
-  inst = (CMPIInstance *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
+  Data_Get_Struct(instance, CIMCInstance, inst);
 
   new_op = client->ft->createInstance(client, op, inst, &status);
 
   if (!status.rc)
-    return Sfcc_wrap_cim_object_path(new_op, self);
+    return Sfcc_wrap_cim_object_path(new_op);
 
   sfcc_rb_raise_if_error(status, "Can't create instance");
   return Qnil;
@@ -281,28 +223,23 @@ static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
  */
 static VALUE set_instance(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE instance;
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMPIInstance *inst = NULL;
-  CMCIClient *client = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCInstance *inst;
+  CIMCClient *client;
   char **props;
 
   rb_scan_args(argc, argv, "22", &object_path, &instance, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
-  Data_Get_Struct(instance, struct mark_struct, obj);
-  inst = (CMPIInstance *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
+  Data_Get_Struct(instance, CIMCInstance, inst);
 
   props = sfcc_value_array_to_string_array(properties);
 
@@ -322,16 +259,12 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
  */
 static VALUE delete_instance(VALUE self, VALUE object_path)
 {
-  struct client_refcount *c;
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   status = client->ft->deleteInstance(client, op);
   sfcc_rb_raise_if_error(status, "Can't delete instance '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
@@ -358,24 +291,21 @@ static VALUE query(VALUE self,
                    VALUE query,
                    VALUE lang)
 {
-  struct client_refcount *c;
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
+  CIMCEnumeration *enm;
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
-  CMPIEnumeration *enm = client->ft->execQuery(client,
-                                               op,
-                                               to_charptr(query),
-                                               to_charptr(lang),
-                                               &status);
+  enm = client->ft->execQuery(client,
+                              op,
+                              to_charptr(query),
+                              to_charptr(lang),
+                              &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get instances from query");
@@ -390,21 +320,18 @@ static VALUE query(VALUE self,
  */
 static VALUE instance_names(VALUE self, VALUE object_path)
 {
-  struct client_refcount *c;
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op;
-  CMCIClient *client;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
+  CIMCEnumeration *enm;
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
-  CMPIEnumeration *enm = client->ft->enumInstanceNames(client, op, &status);
+  enm = client->ft->enumInstanceNames(client, op, &status);
 
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
   sfcc_rb_raise_if_error(status, "Can't get instance names");
   return Qnil;
@@ -430,33 +357,30 @@ static VALUE instance_names(VALUE self, VALUE object_path)
  */
 static VALUE instances(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
+  CIMCEnumeration *enm;
   char **props;
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   props = sfcc_value_array_to_string_array(properties);
 
-  CMPIEnumeration *enm = client->ft->enumInstances(client, op, NUM2INT(flags), props, &status);
+  enm = client->ft->enumInstances(client, op, NUM2INT(flags), props, &status);
 
   free(props);
 
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get instances");
@@ -509,7 +433,6 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
  */
 static VALUE associators(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE assoc_class;
   VALUE result_class;
@@ -518,22 +441,19 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
   char **props;
-  CMPIEnumeration *enm = NULL;
+  CIMCEnumeration *enm;
 
   rb_scan_args(argc, argv, "16", &object_path,
                &assoc_class, &result_class,
                &role, &result_role, &flags, &properties);
 
   if (NIL_P(flags)) flags = INT2NUM(0);
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   props = sfcc_value_array_to_string_array(properties);
 
@@ -546,7 +466,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
                                 NUM2INT(flags), props, &status);
   free(props);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get associators for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
@@ -593,27 +513,23 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
  */
 static VALUE associator_names(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE assoc_class;
   VALUE result_class;
   VALUE role;
   VALUE result_role;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
-  CMPIEnumeration *enm = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
+  CIMCEnumeration *enm;
 
   rb_scan_args(argc, argv, "14", &object_path,
                &assoc_class, &result_class,
                &role, &result_role);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   enm = client->ft->associatorNames(client,
                                     op,
@@ -623,7 +539,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
                                     to_charptr(result_role),
                                     &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
   sfcc_rb_raise_if_error(status, "Can't get associator names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return Qnil;
@@ -661,29 +577,25 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
  */
 static VALUE references(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path;
   VALUE result_class;
   VALUE role;
   VALUE flags;
   VALUE properties;
 
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
   char **props;
-  CMPIEnumeration *enm = NULL;
+  CIMCEnumeration *enm;
 
   rb_scan_args(argc, argv, "14", &object_path,
                &result_class, &role,
                &flags, &properties);
 
   if (NIL_P(flags)) flags = INT2NUM(0);
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   props = sfcc_value_array_to_string_array(properties);
 
@@ -694,7 +606,7 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
                                NUM2INT(flags), props, &status);
   free(props);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
   sfcc_rb_raise_if_error(status, "Can't get references for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return Qnil;
@@ -725,24 +637,20 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
  */
 static VALUE reference_names(int argc, VALUE *argv, VALUE self)
 {
-  struct client_refcount *c;
   VALUE object_path = Qnil;
   VALUE result_class = Qnil;
   VALUE role = Qnil;
   
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMCIClient *client = NULL;
-  CMPIEnumeration *enm = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCObjectPath *op;
+  CIMCClient *client;
+  CIMCEnumeration *enm;
 
   rb_scan_args(argc, argv, "12", &object_path,
                &result_class, &role);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   enm = client->ft->referenceNames(client,
                                    op,
@@ -750,7 +658,7 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
                                    to_charptr(role),
                                    &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm, self);
+    return Sfcc_wrap_cim_enumeration(enm);
   }
   sfcc_rb_raise_if_error(status, "Can't get reference names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return Qnil;
@@ -776,23 +684,19 @@ static VALUE invoke_method(VALUE self,
                            VALUE argin,
                            VALUE argout)
 {
-  struct client_refcount *c;
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  CMCIClient *client;
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMPIArgs *cmpiargsout;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCClient *client;
+  CIMCObjectPath *op;
+  CIMCArgs *cimcargsout;
   VALUE method_name_str;
   const char *method_name_cstr;
-  CMPIData ret;
+  CIMCData ret;
   Check_Type(argin, T_HASH);
 
-  cmpiargsout = newCMPIArgs(NULL);
+  cimcargsout = cimcEnv->ft->newArgs(cimcEnv, NULL);
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   method_name_str = rb_funcall(method_name, rb_intern("to_s"), 0);
   method_name_cstr = to_charptr(method_name_str);
@@ -800,14 +704,14 @@ static VALUE invoke_method(VALUE self,
                               op,
                               method_name_cstr,
                               sfcc_hash_to_cimargs(argin),
-                              cmpiargsout,
+                              cimcargsout,
                               &status);
   if (!status.rc) {
-    if (cmpiargsout && ! NIL_P(argout)) {
+    if (cimcargsout && ! NIL_P(argout)) {
       Check_Type(argout, T_HASH);
-      rb_funcall(argout, rb_intern("merge!"), 1, sfcc_cimargs_to_hash(cmpiargsout, self));
+      rb_funcall(argout, rb_intern("merge!"), 1, sfcc_cimargs_to_hash(cimcargsout));
     }
-    return sfcc_cimdata_to_value(ret, self);
+    return sfcc_cimdata_to_value(ret);
   }
   sfcc_rb_raise_if_error(status, "Can't invoke method '%s'", method_name_cstr);
   return Qnil;
@@ -828,16 +732,12 @@ static VALUE set_property(VALUE self,
                           VALUE name,
                           VALUE value)
 {
-  struct client_refcount *c;
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  CMCIClient *client;
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMPIData data;
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCClient *client;
+  CIMCObjectPath *op;
+  CIMCData data;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
   data = sfcc_value_to_cimdata(value);
   status = client->ft->setProperty(client, op, to_charptr(name), &data.value, data.type);
 
@@ -859,20 +759,16 @@ static VALUE set_property(VALUE self,
  */
 static VALUE property(VALUE self, VALUE object_path, VALUE name)
 {
-  struct client_refcount *c;
-  CMCIClient *client;
-  struct mark_struct *obj;
-  CMPIObjectPath *op = NULL;
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  CMPIData data;
+  CIMCClient *client;
+  CIMCObjectPath *op = NULL;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCData data;
 
-  Data_Get_Struct(self, struct client_refcount, c);
-  client = c->client;
-  Data_Get_Struct(object_path, struct mark_struct, obj);
-  op = (CMPIObjectPath *)obj->cmpi_object;
+  Data_Get_Struct(self, CIMCClient, client);
+  Data_Get_Struct(object_path, CIMCObjectPath, op);
   data = client->ft->getProperty(client, op, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data, self);
+    return sfcc_cimdata_to_value(data);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", to_charptr(name));
   return Qnil;
@@ -880,9 +776,10 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
 
 static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE user, VALUE pwd)
 {
-  CMCIClient *client = NULL;
-  CMPIStatus status = {CMPI_RC_OK, NULL};
-  client = cmciConnect(to_charptr(host),
+  CIMCClient *client;
+  CIMCStatus status = {CMPI_RC_OK, NULL};
+  client = cimcEnv->ft->connect(cimcEnv,
+                       to_charptr(host),
                        to_charptr(scheme),
                        to_charptr(port),
                        to_charptr(user),
@@ -895,18 +792,9 @@ static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE us
 }
 
 VALUE
-Sfcc_wrap_cim_client(CMCIClient *client)
+Sfcc_wrap_cim_client(CIMCClient *client)
 {
-  VALUE ret;
-  struct client_refcount *obj = (struct client_refcount *)malloc(sizeof(struct client_refcount));
-  assert(obj);
-  obj->client = client;
-  obj->refcount = 0;
-
-  SFCC_INC_REFCOUNT(client);
-  ret = Data_Wrap_Struct(cSfccCimClient, NULL, dealloc, obj);
-  fprintf(stderr, "Sfcc_wrap_cim_client %p => %p\n", client, obj);
-  return ret;
+  return Data_Wrap_Struct(cSfccCimClient, NULL, dealloc, client);
 }
 
 VALUE cSfccCimClient;
