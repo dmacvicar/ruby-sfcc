@@ -84,10 +84,10 @@ static VALUE hostname(VALUE self)
 
 /**
  * call-seq:
- *   class_name=(ns)
+ *   classname=(ns)
  * Set/replace the class name component
  */
-static VALUE set_class_name(VALUE self, VALUE val)
+static VALUE set_classname(VALUE self, VALUE val)
 {
   CIMCObjectPath *ptr;
   Data_Get_Struct(self, CIMCObjectPath, ptr);
@@ -97,11 +97,11 @@ static VALUE set_class_name(VALUE self, VALUE val)
 
 /**
  * call-seq:
- *   class_name()
+ *   classname()
  *
  * Get the class name component
  */
-static VALUE class_name(VALUE self)
+static VALUE classname(VALUE self)
 {
   CIMCObjectPath *ptr;
   CIMCString *cimstr;
@@ -406,8 +406,8 @@ void init_cim_object_path()
   rb_define_method(klass, "namespace", namespace, 0);
   rb_define_method(klass, "hostname=", set_hostname, 1);
   rb_define_method(klass, "hostname", hostname, 0);
-  rb_define_method(klass, "class_name=", set_class_name, 1);
-  rb_define_method(klass, "class_name", class_name, 0);
+  rb_define_method(klass, "classname=", set_classname, 1);
+  rb_define_method(klass, "classname", classname, 0);
   rb_define_method(klass, "add_key", add_key, 2);
   rb_define_method(klass, "key", key, 1);
   rb_define_method(klass, "each_key", each_key, 0);
