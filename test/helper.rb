@@ -2,8 +2,10 @@ require 'rubygems'
 require 'test/unit'
 require 'shoulda'
 require 'tempfile'
- 
-%w(../lib ../ext).each do |path|
+
+tmpdir = "../tmp/#{RUBY_PLATFORM}/sfcc/#{RUBY_VERSION}"
+
+%w(../lib tmpdir).each do |path|
   $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), path)))
 end
  
