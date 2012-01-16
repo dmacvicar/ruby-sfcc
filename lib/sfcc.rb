@@ -165,6 +165,10 @@ module Sfcc
       def to_s
         object_path.to_s
       end
+
+      def method_missing name, *args
+	self.object_path[name]
+      end
     end
 
     class ObjectPath

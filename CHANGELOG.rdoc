@@ -1,3 +1,12 @@
+== 0.3.1
+
+* simplify properties access for Instance and ObjectPath
+
+== 0.3.0
+
+* use sfcc 'new' api
+* link against libcimcclient
+
 == 0.2.0
 
 * fix Client.connect for URI
