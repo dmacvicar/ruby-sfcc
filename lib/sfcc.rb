@@ -167,7 +167,7 @@ module Sfcc
       end
 
       def method_missing name, *args
-	self.object_path[name]
+	self.property name
       end
     end
 
