@@ -37,7 +37,7 @@ void Init_sfcc()
    * SBLIM sfcc CIMC API
    */
   mSfccCim= rb_define_module_under(mSfcc, "Cim");
-  
+
   /**
    * alloc CimcEnvironment once, store as const
    */
@@ -180,7 +180,7 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
     sfcc_rb_raise_if_error(status, "Can't retrieve array size");
     return Qnil;
   }
-  else if (data.type & CMPI_ENC) {    
+  else if (data.type & CMPI_ENC) {
     switch (data.type) {
     case CMPI_instance:
       return data.value.inst ? Sfcc_wrap_cim_instance(data.value.inst->ft->clone(data.value.inst, NULL)) : Qnil;
@@ -188,7 +188,7 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
       return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
     case CMPI_ref:
       return data.value.ref ? Sfcc_wrap_cim_object_path(data.value.ref->ft->clone(data.value.ref, NULL)) : Qnil;
-    case CMPI_args:      
+    case CMPI_args:
       return data.value.args ? sfcc_cimargs_to_hash(data.value.args) : Qnil;
     case CMPI_filter:
       return Qnil;
@@ -340,7 +340,7 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
     data.value.Long = NUM2INT(value);
     break;
 /* not yet supported
-  case T_BIGNUM:       
+  case T_BIGNUM:
     break;
   case T_FLOAT:
     break;
@@ -353,7 +353,7 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
   case T_DATA:
   default:
     if (CLASS_OF(value) == cSfccCimString) {
-      Data_Get_Struct(value, CIMCString, data.value.string);  
+      Data_Get_Struct(value, CIMCString, data.value.string);
       data.type = CMPI_string;
     }
     else {
