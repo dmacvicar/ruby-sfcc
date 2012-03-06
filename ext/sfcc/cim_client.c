@@ -774,16 +774,29 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
   return Qnil;
 }
 
-static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE user, VALUE pwd)
+static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE user, VALUE pwd,
+                     VALUE verify, VALUE trust_store, VALUE cert_file, VALUE key_file)
 {
   CIMCClient *client;
   CIMCStatus status = {CMPI_RC_OK, NULL};
-  client = cimcEnv->ft->connect(cimcEnv,
+  /*
+   * CIMCClient* (*connect2)
+   * (CIMCEnv *ce, const char *hn, const char *scheme, const char *port, const char *user, const char *pwd, 
+   * int verifyMode, const char * trustStore,
+   * const char * certFile, const char * keyFile,
+   * CIMCStatus *rc);
+   */
+  
+  client = cimcEnv->ft->connect2(cimcEnv,
                        to_charptr(host),
                        to_charptr(scheme),
                        to_charptr(port),
                        to_charptr(user),
                        to_charptr(pwd),
+                       (verify == Qfalse)?0:1,
+                       to_charptr(trust_store),
+                       to_charptr(cert_file),
+                       to_charptr(key_file),
                        &status);
   if ( !status.rc )
     return Sfcc_wrap_cim_client(client);
@@ -809,7 +822,7 @@ void init_cim_client()
   VALUE klass = rb_define_class_under(cimc, "Client", rb_cObject);
   cSfccCimClient = klass;
 
-  rb_define_singleton_method(klass, "native_connect", connect, 5);
+  rb_define_singleton_method(klass, "native_connect", connect, 9);
   rb_define_method(klass, "get_class", get_class, -1);
   rb_define_method(klass, "class_names", class_names, -1);
   rb_define_method(klass, "classes", classes, -1);
