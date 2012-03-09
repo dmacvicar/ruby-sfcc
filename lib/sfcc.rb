@@ -101,7 +101,13 @@ module Sfcc
         case args
         when Hash
           params.merge!(args)
-          self.uri_to_params(URI.parse(params[:uri]), params) if params[:uri]
+          uri = params[:uri]
+          case uri
+          when URI
+            self.uri_to_params(uri, params)
+          else
+            self.uri_to_params(URI.parse(uri.to_s), params)
+          end
         when ::String
           uri = URI.parse(args)
 	  return Client.connect uri
