@@ -1,8 +1,12 @@
 require 'mkmf'
 # $CFLAGS = "#{$CFLAGS} -Werror"
 
-have_library('cmpisfcc', 'NewCIMCEnv')
-#find_header 'cimc.h', '/usr/include/cimc'
-find_header 'cmci.h', '/usr/include/CimClientLib'
-create_makefile('sfcc')
+unless have_library('cimcclient', 'NewCIMCEnv')
+  STDERR.puts "Cannot find NewCIMCEnv() in libcimcclient"
+  STDERR.puts "Is sblim-sfcc-devel installed ?"
+  exit 1
+end
 
+find_header 'cimc.h', '/usr/include/cimc'
+find_header 'cmcimacs.h', '/usr/include/CimClientLib'
+create_makefile('sfcc')

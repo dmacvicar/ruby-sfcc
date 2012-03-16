@@ -1,12 +1,12 @@
 
-#include "sfcc.h"
 #include "cim_enumeration.h"
 #include "cim_object_path.h"
 
 static void
-dealloc(CMPIEnumeration *enm)
+dealloc(CIMCEnumeration *enm)
 {
-  SFCC_DEC_REFCOUNT(enm);
+//  fprintf(stderr, "Sfcc_dealloc_cim_enumeration %p\n", enm);
+  enm->ft->release(enm);
 }
 
 /**
@@ -20,22 +20,20 @@ dealloc(CMPIEnumeration *enm)
  */
 static VALUE each(VALUE self)
 {
-  CMPIStatus status;
-  CMPIEnumeration *ptr = NULL;
-  CMPIData next;
-  Data_Get_Struct(self, CMPIEnumeration, ptr);
+  CIMCStatus status;
+  CIMCEnumeration *ptr, *tmp;
+  CIMCData next;
+  Data_Get_Struct(self, CIMCEnumeration, ptr);
 
-  CMPIEnumeration *tmp = ptr->ft->clone(ptr, &status);
-  
+  /* clone, since getNext() changes the Enumeration */
+  tmp = ptr->ft->clone(ptr, &status);
+
   if (!status.rc) {
     while (tmp->ft->hasNext(tmp, NULL)) {
+      VALUE value;
       next = tmp->ft->getNext(tmp, NULL);
-      VALUE cimclass = sfcc_cimdata_to_value(next);
-      /* Strange sfcc bug, if I clone the enum, I get a NULL
-         class afterwards in the copy */
-      if (NIL_P(cimclass))
-        continue;
-      rb_yield(cimclass);
+      value = sfcc_cimdata_to_value(next);
+      rb_yield(value);
     }
   }
 
@@ -45,9 +43,8 @@ static VALUE each(VALUE self)
 }
 
 VALUE
-Sfcc_wrap_cim_enumeration(CMPIEnumeration *enm)
+Sfcc_wrap_cim_enumeration(CIMCEnumeration *enm)
 {
-  SFCC_INC_REFCOUNT(enm);
   return Data_Wrap_Struct(cSfccCimEnumeration, NULL, dealloc, enm);
 }
 

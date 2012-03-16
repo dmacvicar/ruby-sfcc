@@ -7,6 +7,6 @@
 void init_cim_string();
 
 extern VALUE cSfccCimString;
-VALUE Sfcc_wrap_cim_string(CMPIString *string);
+VALUE Sfcc_wrap_cim_string(CIMCString *string);
 
 #endif

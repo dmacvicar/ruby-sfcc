@@ -4,3 +4,9 @@
 *.so
 tmp
 doc
+Makefile
+mkmf.log
+*.gem
+*~
+*.o
+Gemfile.lock
