@@ -3,10 +3,6 @@
 
 #include "sfcc.h"
 
-#include <CimClientLib/cmci.h>
-#include <CimClientLib/native.h>
-#include <CimClientLib/cmcimacs.h>
-
 #include "cim_string.h"
 #include "cim_object_path.h"
 #include "cim_enumeration.h"
@@ -16,9 +12,23 @@
 
 VALUE mSfcc;
 VALUE mSfccCim;
+CIMCEnv *cimcEnv;
+
+static void
+Exit_sfcc(CIMCEnv *env)
+{
+/*  fprintf(stderr, "Sfcc_dealloc_cimcEnv %p\n", env); */
+  if (env) env->ft->release(env);
+}
 
 void Init_sfcc()
 {
+  const char *conn;
+  VALUE cEnvironment; /* class */
+  VALUE value; /* wrapped value */
+  int rc;
+  char *msg;
+
   /**
    * SBLIM sfcc ruby API
    */
@@ -28,6 +38,22 @@ void Init_sfcc()
    */
   mSfccCim= rb_define_module_under(mSfcc, "Cim");
 
+  /**
+   * alloc CimcEnvironment once, store as const
+   */
+  cEnvironment = rb_define_class_under(mSfccCim, "CimcEnvironment", rb_cObject);
+  conn = getenv("RUBY_SFCC_CONNECTION"); /* "SfcbLocal" or "XML" */
+  if (!conn) conn = "XML";
+  cimcEnv = NewCIMCEnv(conn,0,&rc,&msg);
+  if (!cimcEnv) {
+    rb_raise(rb_eLoadError, "Cannot local %s cim client library. %d:%s", conn, rc, msg ? msg : "");
+  }
+  value = Data_Wrap_Struct(cEnvironment, NULL, Exit_sfcc, cimcEnv);
+  rb_define_const(mSfccCim, "CIMC_ENV", value);
+
+  /**
+   * Init other sub-classes
+   */
   init_cim_string();
   init_cim_object_path();
   init_cim_enumeration();
@@ -36,7 +62,7 @@ void Init_sfcc()
   init_cim_client();
 }
 
-static VALUE sfcc_status_exception(CMPIStatus status)
+static VALUE sfcc_status_exception(CIMCStatus status)
 {
   switch (status.rc)
   {
@@ -90,7 +116,7 @@ static VALUE sfcc_status_exception(CMPIStatus status)
 
 #define MAX_ERROR_BUFFER 255
 
-void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...)
+void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...)
 {
   va_list arg_list;
   char orig_error[MAX_ERROR_BUFFER];
@@ -103,8 +129,10 @@ void sfcc_rb_raise_if_error(CMPIStatus status, const char *msg, ...)
   vsnprintf(orig_error, MAX_ERROR_BUFFER, msg, arg_list);
   va_end(arg_list);
 
-  if (status.msg)
+  if (status.msg) {
     snprintf(error, MAX_ERROR_BUFFER, "%s : %s", orig_error, status.msg->ft->getCharPtr(status.msg, NULL));
+    CMRelease(status.msg);
+  }
   else
     strcpy(error, orig_error);
 
@@ -119,7 +147,7 @@ char ** sfcc_value_array_to_string_array(VALUE array)
   if ( !NIL_P(array) && RARRAY_LEN(array) > 0 ) {
     ret = (char**) malloc(RARRAY_LEN(array)*sizeof(char*));
     for (; i < RARRAY_LEN(array); ++i)
-      ret[i] = StringValuePtr(*(RARRAY_PTR(array) + i));
+      ret[i] = (char *)to_charptr(*(RARRAY_PTR(array) + i));
   }
   else
     ret = NULL;
@@ -127,11 +155,11 @@ char ** sfcc_value_array_to_string_array(VALUE array)
   return ret;
 }
 
-VALUE sfcc_cimdata_to_value(CMPIData data)
+VALUE sfcc_cimdata_to_value(CIMCData data)
 {
-  CMPIString *cimstr = NULL;
+  CIMCString *cimstr = NULL;
   VALUE rbval;
-  CMPIStatus status;
+  CIMCStatus status;
 
   if (data.type & CMPI_ARRAY) {
     int k = 0;
@@ -144,7 +172,7 @@ VALUE sfcc_cimdata_to_value(CMPIData data)
     n = data.value.array->ft->getSize(data.value.array, &status);
     if (!status.rc) {
       for (k = 0; k < n; ++k) {
-        CMPIData element = data.value.array->ft->getElementAt(data.value.array, k, NULL);
+        CIMCData element = data.value.array->ft->getElementAt(data.value.array, k, NULL);
         rb_ary_push(rbarray, sfcc_cimdata_to_value(element));
       }
       return rbarray;
@@ -152,7 +180,7 @@ VALUE sfcc_cimdata_to_value(CMPIData data)
     sfcc_rb_raise_if_error(status, "Can't retrieve array size");
     return Qnil;
   }
-  else if (data.type & CMPI_ENC) {    
+  else if (data.type & CMPI_ENC) {
     switch (data.type) {
     case CMPI_instance:
       return data.value.inst ? Sfcc_wrap_cim_instance(data.value.inst->ft->clone(data.value.inst, NULL)) : Qnil;
@@ -160,7 +188,7 @@ VALUE sfcc_cimdata_to_value(CMPIData data)
       return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
     case CMPI_ref:
       return data.value.ref ? Sfcc_wrap_cim_object_path(data.value.ref->ft->clone(data.value.ref, NULL)) : Qnil;
-    case CMPI_args:      
+    case CMPI_args:
       return data.value.args ? sfcc_cimargs_to_hash(data.value.args) : Qnil;
     case CMPI_filter:
       return Qnil;
@@ -214,11 +242,11 @@ VALUE sfcc_cimdata_to_value(CMPIData data)
 /* callback to add each hash element to a CMPIArgs */
 static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
 {
-  CMPIStatus status;
-  CMPIData data;
-  CMPIArgs *args = (CMPIArgs *)extra;
+  CIMCStatus status;
+  CIMCData data;
+  CIMCArgs *args = (CIMCArgs *)extra;
   VALUE key_str = rb_funcall(key, rb_intern("to_s"), 0);
-  char *key_cstr = StringValuePtr(key_str);
+  const char *key_cstr = to_charptr(key_str);
   data = sfcc_value_to_cimdata(value);
   status = args->ft->addArg(args, key_cstr, &data.value, data.type);
 
@@ -226,41 +254,39 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
     return ST_CONTINUE;
   }
 
-  sfcc_rb_raise_if_error(status, "Can't add argument '%s'", StringValuePtr(key));
+  sfcc_rb_raise_if_error(status, "Can't add argument '%s'", to_charptr(key));
   return ST_STOP;
 }
 
-CMPIArgs *sfcc_hash_to_cimargs(VALUE hash)
+CIMCArgs *sfcc_hash_to_cimargs(VALUE hash)
 {
-  CMPIArgs *args;
-  args = newCMPIArgs(NULL);
+  CIMCArgs *args;
+  args = cimcEnv->ft->newArgs(cimcEnv, NULL);
   rb_hash_foreach(hash, hash_to_cimargs_iterator, (VALUE)args);
   return args;
 }
 
-VALUE sfcc_cimargs_to_hash(CMPIArgs *args)
+VALUE sfcc_cimargs_to_hash(CIMCArgs *args)
 {
-  CMPIArgs *ptr = NULL;
   int i = 0;
   int n = 0;
   VALUE hash;
-  CMPIString *argname;
-  CMPIData argdata;
-  CMPIStatus status;
+  CIMCString *argname;
+  CIMCData argdata;
+  CIMCStatus status;
   char *argname_cstr = NULL;
 
-  //Data_Get_Struct(args, CMPIArgs, ptr);
-  ptr = args;
-  if (!ptr) {
+  //Data_Get_Struct(value, CIMCArgs, args);
+  if (!args) {
     rb_raise(rb_eRuntimeError, "Can't retrieve args pointer");
     return Qnil;
   }
-  n = ptr->ft->getArgCount(ptr, NULL);
+  n = args->ft->getArgCount(args, NULL);
   hash = rb_hash_new();
 
   for (; i < n; ++i) {
     argname = NULL;
-    argdata = ptr->ft->getArgAt(ptr, i, &argname, &status);
+    argdata = args->ft->getArgAt(args, i, &argname, &status);
     if (!status.rc && argdata.state == CMPI_goodValue ) {
       argname_cstr = argname->ft->getCharPtr(argname, &status);
       if (!argname_cstr) {
@@ -284,10 +310,10 @@ VALUE sfcc_cimargs_to_hash(CMPIArgs *args)
   return hash;
 }
 
-CMPIData sfcc_value_to_cimdata(VALUE value)
+CIMCData sfcc_value_to_cimdata(VALUE value)
 {
-  CMPIData data;
-  memset(&data, 0, sizeof(CMPIData));
+  CIMCData data;
+  memset(&data, 0, sizeof(CIMCData));
   data.state = CMPI_goodValue;
   data.type = CMPI_null;
 
@@ -299,7 +325,7 @@ CMPIData sfcc_value_to_cimdata(VALUE value)
     break;
   case T_STRING:
     data.type = CMPI_string;
-    data.value.string = newCMPIString(StringValuePtr(value), NULL);
+    data.value.string = cimcEnv->ft->newString(cimcEnv, to_charptr(value), NULL);
     break;
   case T_TRUE:
     data.type = CMPI_boolean;
@@ -314,7 +340,7 @@ CMPIData sfcc_value_to_cimdata(VALUE value)
     data.value.Long = NUM2INT(value);
     break;
 /* not yet supported
-  case T_BIGNUM:       
+  case T_BIGNUM:
     break;
   case T_FLOAT:
     break;
@@ -327,17 +353,44 @@ CMPIData sfcc_value_to_cimdata(VALUE value)
   case T_DATA:
   default:
     if (CLASS_OF(value) == cSfccCimString) {
-      Data_Get_Struct(value, CMPIString, data.value.string);  
+      Data_Get_Struct(value, CIMCString, data.value.string);
       data.type = CMPI_string;
     }
     else {
+      VALUE cname;
+      const char *class_name;
       data.state = CMPI_badValue;
       data.type = CMPI_null;
-      VALUE cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
-      const char *class_name = StringValuePtr(cname);
+      cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
+      class_name = to_charptr(cname);
       rb_raise(rb_eTypeError, "unsupported data data type: %s", class_name);
       return data;
     }
   }
   return data;
+}
+
+/*
+ * target_charptr
+ * Convert target type to const char *
+ */
+
+const char *
+to_charptr(VALUE v)
+{
+  const char *str;
+  if (SYMBOL_P(v)) {
+    str = rb_id2name(SYM2ID(v));
+  }
+  else if (TYPE(v) == T_STRING) {
+    str = StringValuePtr(v);
+  }
+  else if (v == Qnil) {
+    str = NULL;
+  }
+  else {
+    VALUE v_s = rb_funcall(v, rb_intern("to_s"), 0 );
+    str = StringValuePtr(v_s);
+  }
+  return str;
 }

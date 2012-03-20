@@ -1,3 +1,27 @@
+== 0.4.0
+
+* support https access
+* extend Client.connect API for https data
+* allow mix of uri and explicit paraters in Client.connect
+
+== 0.3.1
+
+* simplify properties access for Instance and ObjectPath
+
+== 0.3.0
+
+* use sfcc 'new' api
+* link against libcimcclient
+
+== 0.2.0
+
+* fix Client.connect for URI
+* transparently convert Ruby values to string whereever needed
+
+== 0.1.3
+
+* fix finding libcmpisfcc for sblim-sfcc-2.2.3
+
 == 0.1.2
 
 * build with ruby 1.9

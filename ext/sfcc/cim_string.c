@@ -1,9 +1,10 @@
 #include "cim_string.h"
 
 static void
-dealloc(CMPIString *string)
+dealloc(CIMCString *string)
 {
-  SFCC_DEC_REFCOUNT(string);
+/*  fprintf(stderr, "dealloc(CIMCString %p\n", string); */
+  string->ft->release(string);
 }
 
 /**
@@ -13,9 +14,9 @@ dealloc(CMPIString *string)
  */
 static VALUE to_s(VALUE self)
 {
-  CMPIString *ptr = NULL;
+  CIMCString *ptr = NULL;
   char *str = NULL;
-  Data_Get_Struct(self, CMPIString, ptr);
+  Data_Get_Struct(self, CIMCString, ptr);
   str = ptr->ft->getCharPtr(ptr, NULL);
   return str ? rb_str_new2(str) : Qnil;
 }
@@ -28,22 +29,17 @@ static VALUE to_s(VALUE self)
  */
 static VALUE new(VALUE klass, VALUE value)
 {
-  CMPIStatus status;
-  CMPIString *newstr = NULL;
-  CMPIString *ptr = newCMPIString(StringValuePtr(value),
-                                  &status);
-  newstr = ptr->ft->clone(ptr, &status);
-  ptr->ft->release(ptr);
+  CIMCStatus status;
+  CIMCString *ptr = cimcEnv->ft->newString(cimcEnv, to_charptr(value), &status);
   if (!status.rc)
-    return Sfcc_wrap_cim_string(newstr);
+    return Sfcc_wrap_cim_string(ptr);
   sfcc_rb_raise_if_error(status, "Can't create CIM string");
   return Qnil;
 }
 
 VALUE
-Sfcc_wrap_cim_string(CMPIString *string)
+Sfcc_wrap_cim_string(CIMCString *string)
 {
-  SFCC_INC_REFCOUNT(string);
   return Data_Wrap_Struct(cSfccCimString, NULL, dealloc, string);
 }
 
