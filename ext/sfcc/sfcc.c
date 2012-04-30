@@ -4,6 +4,7 @@
 #include "sfcc.h"
 
 #include "cim_string.h"
+#include "cim_data.h"
 #include "cim_object_path.h"
 #include "cim_enumeration.h"
 #include "cim_class.h"
@@ -55,6 +56,7 @@ void Init_sfcc()
    * Init other sub-classes
    */
   init_cim_string();
+  init_cim_data();
   init_cim_object_path();
   init_cim_enumeration();
   init_cim_class();
@@ -195,10 +197,12 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
     case CMPI_numericString:
     case CMPI_booleanString:
     case CMPI_dateTimeString:
-    case CMPI_classNameString:
+    //case CMPI_classNameString:
       break;
     case CMPI_string:
       return data.value.string ? rb_str_new2((char*)data.value.string->ft->getCharPtr(data.value.string, NULL)) : Qnil;
+    case CMPI_chars:
+      return data.value.chars ? rb_str_new2(data.value.chars) : Qnil;
     case CMPI_charsptr:
       return data.value.chars ? rb_str_new((char*)data.value.dataPtr.ptr, data.value.dataPtr.length) : Qnil;
     case CMPI_dateTime:
@@ -355,8 +359,11 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
     if (CLASS_OF(value) == cSfccCimString) {
       Data_Get_Struct(value, CIMCString, data.value.string);
       data.type = CMPI_string;
-    }
-    else {
+    }else if (CLASS_OF(value) == cSfccCimData) {
+        CIMCData *tmp;
+        Data_Get_Struct(value, CIMCData, tmp);
+        data = *tmp;
+    }else {
       VALUE cname;
       const char *class_name;
       data.state = CMPI_badValue;

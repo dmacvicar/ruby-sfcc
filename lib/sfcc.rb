@@ -51,11 +51,14 @@ module Sfcc
     class ErrorMethodNotAvailable < Sfcc::Cim::Error; end
     # The specified extrinsic Method does not exist
     class ErrorMethodNotFound < Sfcc::Cim::Error; end
-    
+
     class ErrorDoNotUnload < RuntimeError; end
     class ErrorErrorSystem < RuntimeError; end
     class ErrorRcError < RuntimeError; end
     
+    class Data
+    end
+
     class Client
     private
       def self.uri_to_params(uri, params)
