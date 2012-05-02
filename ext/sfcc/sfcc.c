@@ -363,6 +363,12 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
         CIMCData *tmp;
         Data_Get_Struct(value, CIMCData, tmp);
         data = *tmp;
+    }else if (CLASS_OF(value) == cSfccCimInstance) {
+        Data_Get_Struct(value, CIMCInstance, data.value.inst);
+        data.type = CMPI_instance;
+    }else if (CLASS_OF(value) == cSfccCimObjectPath) {
+        Data_Get_Struct(value, CIMCObjectPath, data.value.ref);
+        data.type = CMPI_ref;
     }else {
       VALUE cname;
       const char *class_name;

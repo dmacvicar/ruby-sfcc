@@ -1,3 +1,8 @@
+== 0.4.2
+
+* added Data wrapped struct to allow passing types specifications to methods
+* support for passing refs and instances to client methods
+
 == 0.4.0
 
 * support https access
