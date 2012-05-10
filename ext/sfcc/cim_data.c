@@ -201,6 +201,7 @@ static void do_set_type(CIMCData *data, VALUE type)
             break;
     }
     if (data->type != (CIMCType) FIX2UINT(type)) {
+        dealloc(data);
         data->type = (CIMCType) FIX2UINT(type);
         data->state = CIMC_nullValue;
     }
@@ -336,6 +337,22 @@ static void do_set_value(CIMCData *data, VALUE value)
                     data->state = CIMC_badValue;
                     rb_raise(rb_eTypeError, "string value can be set only for"
                            " CIMC_string type");
+                }
+            }else if (CLASS_OF(value) == cSfccCimInstance) {
+                if (data->type & CIMC_instance) {
+                    Data_Get_Struct(value, CIMCInstance, data.value.inst);
+                }else {
+                    data->state = CIMC_badValue;
+                    rb_raise(rb_eTypeError, "instance can only be set for"
+                            " CIMC_instance type");
+                }
+            }else if (CLASS_OF(value) == cSfccCimObjectPath) {
+                if (data->type & CIMC_ref) {
+                    Data_Get_Struct(value, CIMCObjectPath, data.value.ref);
+                }else {
+                    data->state = CIMC_badValue;
+                    rb_raise(rb_eTypeError, "object path can only be set for"
+                            " CIMC_ref type");
                 }
             }else {
                 VALUE cname;

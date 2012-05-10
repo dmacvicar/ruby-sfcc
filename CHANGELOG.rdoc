@@ -1,3 +1,8 @@
+== 0.4.3
+
+* added support for refs and instances in Data wrapped type
+* fixed memory leak of Data type
+
 == 0.4.2
 
 * added Data wrapped struct to allow passing types specifications to methods
