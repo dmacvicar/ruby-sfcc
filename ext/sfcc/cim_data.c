@@ -1,6 +1,8 @@
 #include <string.h>
 #include <stdint.h>
 #include "cim_string.h"
+#include "cim_instance.h"
+#include "cim_object_path.h"
 #include "cim_data.h"
 
 VALUE cSfccCimData;
@@ -340,7 +342,7 @@ static void do_set_value(CIMCData *data, VALUE value)
                 }
             }else if (CLASS_OF(value) == cSfccCimInstance) {
                 if (data->type & CIMC_instance) {
-                    Data_Get_Struct(value, CIMCInstance, data.value.inst);
+                    Data_Get_Struct(value, CIMCInstance, data->value.inst);
                 }else {
                     data->state = CIMC_badValue;
                     rb_raise(rb_eTypeError, "instance can only be set for"
@@ -348,7 +350,7 @@ static void do_set_value(CIMCData *data, VALUE value)
                 }
             }else if (CLASS_OF(value) == cSfccCimObjectPath) {
                 if (data->type & CIMC_ref) {
-                    Data_Get_Struct(value, CIMCObjectPath, data.value.ref);
+                    Data_Get_Struct(value, CIMCObjectPath, data->value.ref);
                 }else {
                     data->state = CIMC_badValue;
                     rb_raise(rb_eTypeError, "object path can only be set for"
