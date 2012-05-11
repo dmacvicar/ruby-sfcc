@@ -342,7 +342,14 @@ static void do_set_value(CIMCData *data, VALUE value)
                 }
             }else if (CLASS_OF(value) == cSfccCimInstance) {
                 if (data->type & CIMC_instance) {
-                    Data_Get_Struct(value, CIMCInstance, data->value.inst);
+                    CIMCInstance *tmp;
+                    CIMCStatus rc;
+                    Data_Get_Struct(value, CIMCInstance, tmp);
+                    data->value.inst = tmp->ft->clone(tmp, &rc);
+                    if (!data->value.inst || rc.rc != CIMC_RC_OK) {
+                        data->state = CIMC_badValue;
+                        rb_raise(rb_eNoMemError, "failed to clone instance");
+                    }
                 }else {
                     data->state = CIMC_badValue;
                     rb_raise(rb_eTypeError, "instance can only be set for"
@@ -350,7 +357,14 @@ static void do_set_value(CIMCData *data, VALUE value)
                 }
             }else if (CLASS_OF(value) == cSfccCimObjectPath) {
                 if (data->type & CIMC_ref) {
-                    Data_Get_Struct(value, CIMCObjectPath, data->value.ref);
+                    CIMCObjectPath *tmp;
+                    CIMCStatus rc;
+                    Data_Get_Struct(value, CIMCObjectPath, tmp);
+                    data->value.ref = tmp->ft->clone(tmp, &rc);
+                    if (!data->value.ref || rc.rc != CIMC_RC_OK) {
+                        data->state = CIMC_badValue;
+                        rb_raise(rb_eNoMemError, "failed to clone object path");
+                    }
                 }else {
                     data->state = CIMC_badValue;
                     rb_raise(rb_eTypeError, "object path can only be set for"
