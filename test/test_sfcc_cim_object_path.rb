@@ -11,7 +11,7 @@ class SfccCimcObjectPathTest < SfccTestCase
     end
 
     should "have a nil class name" do
-      assert_nil @op.class_name
+      assert_nil @op.classname
     end
   end
   
@@ -50,13 +50,13 @@ class SfccCimcObjectPathTest < SfccTestCase
       end
     end
     
-    should "respond to class_name" do
-      assert_equal "Linux_OperatingSystem", @op.class_name
+    should "respond to classname" do
+      assert_equal "Linux_OperatingSystem", @op.classname
     end
     
     should "change its class name after setting it" do
-      @op.class_name = "BarClass"
-      assert_equal "BarClass", @op.class_name
+      @op.classname = "BarClass"
+      assert_equal "BarClass", @op.classname
     end
 
     should "respond to keys and set them" do
@@ -80,9 +80,9 @@ class SfccCimcObjectPathTest < SfccTestCase
     should "be able to set namespace and classname from other object path" do
       op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
       op2 = Sfcc::Cim::ObjectPath.new("root/cimv3", "FooBar")
-      assert_equal "Linux_OperatingSystem", op.class_name
+      assert_equal "Linux_OperatingSystem", op.classname
       op.set_namespace_from(op2)
-      assert_equal "FooBar", op2.class_name
+      assert_equal "FooBar", op2.classname
       assert_equal "root/cimv3", op2.namespace
     end
     
