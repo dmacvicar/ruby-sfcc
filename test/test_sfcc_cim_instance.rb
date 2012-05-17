@@ -51,16 +51,6 @@ class SfccCimInstanceTest < SfccTestCase
       assert_equal "newname", @instance.property("Name")
     end
 
-    should "be able to set and retrieve stringproperties" do
-      assert_raises Sfcc::Cim::ErrorNoSuchProperty do
-        @instance.property("foobar");
-      end
-      assert_nothing_raised do
-        @instance.set_property("Name", "newname");
-      end
-      assert_equal "newname", @instance.property("Name")
-    end
-
     should "be able to enumerate qualifiers" do
       @instance.each_qualifier do |k, v|
         assert_not_nil(k)
