@@ -5,7 +5,7 @@
 static void
 dealloc(CIMCEnumeration *enm)
 {
-//  fprintf(stderr, "Sfcc_dealloc_cim_enumeration %p\n", enm);
+/*  fprintf(stderr, "Sfcc_dealloc_cim_enumeration %p\n", enm); */
   enm->ft->release(enm);
 }
 

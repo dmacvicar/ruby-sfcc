@@ -276,7 +276,7 @@ VALUE sfcc_cimargs_to_hash(CIMCArgs *args)
   CIMCStatus status;
   char *argname_cstr = NULL;
 
-  //Data_Get_Struct(value, CIMCArgs, args);
+  /* Data_Get_Struct(value, CIMCArgs, args); */
   if (!args) {
     rb_raise(rb_eRuntimeError, "Can't retrieve args pointer");
     return Qnil;
