@@ -156,7 +156,7 @@ static VALUE each_property(VALUE self)
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property #%d", k);
-      } 
+      }
       if (property_name) CMRelease(property_name);
     }
   }
@@ -230,7 +230,7 @@ static VALUE each_qualifier(VALUE self)
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve qualifier #%d", k);
-      } 
+      }
       if (qualifier_name) CMRelease(qualifier_name);
     }
   }
@@ -304,7 +304,7 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier #%d", k);
-      } 
+      }
       if (property_qualifier_name) CMRelease(property_qualifier_name);
     }
   }

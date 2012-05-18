@@ -1,5 +1,5 @@
-require File.join(File.dirname(__FILE__), 'helper')
-require 'pp'
+require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
+#require 'pp'
 
 class SfccCimcClass < SfccTestCase
 
@@ -22,7 +22,7 @@ class SfccCimcClass < SfccTestCase
       properties = @cimclass.properties
       assert !properties.empty?
       assert_equal properties.size, @cimclass.property_count
-      pp properties
+#      pp properties
     end
 
     should "be able to enumerate qualifiers" do
@@ -33,7 +33,7 @@ class SfccCimcClass < SfccTestCase
       qualifiers = @cimclass.qualifiers
       assert qualifiers.empty?
       assert_equal qualifiers.size, @cimclass.qualifier_count
-      pp qualifiers
+#      pp qualifiers
     end
 
     should "be able to enumerate qualifiers for a property" do
@@ -44,7 +44,7 @@ class SfccCimcClass < SfccTestCase
       qualifiers = @cimclass.property_qualifiers("Status")
       assert qualifiers.empty?
       assert_equal qualifiers.size, @cimclass.qualifier_count
-      pp qualifiers
+#      pp qualifiers
     end
     
   end

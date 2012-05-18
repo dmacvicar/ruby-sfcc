@@ -1,6 +1,5 @@
-
-require File.join(File.dirname(__FILE__), 'helper')
-require 'pp'
+require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
+#require 'pp'
 
 class SfccCimEnumerationTest < SfccTestCase
 
@@ -18,7 +17,17 @@ class SfccCimEnumerationTest < SfccTestCase
     should "be able to iterate twice" do
       assert !@enm.to_a.empty?
       assert !@enm.to_a.empty?
-    end    
+    end
+
+    should "have a size" do
+      assert @enm.size > 0
+      puts "Size #{@enm.size}"
+    end
+
+    should "have a simple type" do
+      assert @enm.simple_type > 0
+      puts "Type #{@enm.simple_type}"
+    end
   end   
 end            
 
