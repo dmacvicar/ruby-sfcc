@@ -202,9 +202,14 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
     case CIMC_charsptr:
       return data.value.chars ? rb_str_new((char*)data.value.dataPtr.ptr, data.value.dataPtr.length) : Qnil;
     case CIMC_dateTime:
-      cimstr = data.value.dateTime ? CMGetStringFormat(data.value.dateTime,NULL) : NULL;
-      rbval = cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
-      if (cimstr) CMRelease(cimstr);
+      if (data.value.dateTime) {
+        CIMCUint64 bintime;
+        bintime = data.value.dateTime->ft->getBinaryFormat(data.value.dateTime, NULL);
+        rbval = rb_time_new((time_t) (bintime / 1000000L), (time_t) (bintime % 1000000));
+      }
+      else {
+        rbval = Qnil;
+      }
       return rbval;
     }
   }
