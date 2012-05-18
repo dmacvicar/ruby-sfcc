@@ -353,7 +353,7 @@ static VALUE instance_names(VALUE self, VALUE object_path)
  * Property names.
  * Each returned Object MUST NOT include elements for any Properties
  * missing from this list
- * 
+ *
  */
 static VALUE instances(int argc, VALUE *argv, VALUE self)
 {
@@ -394,7 +394,7 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
  *              properties=nil)
  *
  * Enumerate instances associated with the Instance defined by the +object_path+
- * 
+ *
  * +object_path+ Source ObjectPath containing nameSpace, classname
  * and key components.
  *
@@ -481,7 +481,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
  *
  * Enumerate object paths associated with the Instance defined by the
  * +object_path+
- * 
+ *
  * +object_path+ Source ObjectPath containing nameSpace, classname
  * and key components.
  *
@@ -640,7 +640,7 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   VALUE object_path = Qnil;
   VALUE result_class = Qnil;
   VALUE role = Qnil;
-  
+
   CIMCStatus status = {CMPI_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
@@ -781,12 +781,12 @@ static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE us
   CIMCStatus status = {CMPI_RC_OK, NULL};
   /*
    * CIMCClient* (*connect2)
-   * (CIMCEnv *ce, const char *hn, const char *scheme, const char *port, const char *user, const char *pwd, 
+   * (CIMCEnv *ce, const char *hn, const char *scheme, const char *port, const char *user, const char *pwd,
    * int verifyMode, const char * trustStore,
    * const char * certFile, const char * keyFile,
    * CIMCStatus *rc);
    */
-  
+
   client = cimcEnv->ft->connect2(cimcEnv,
                        to_charptr(host),
                        to_charptr(scheme),
@@ -829,7 +829,7 @@ void init_cim_client()
   rb_define_method(klass, "get_instance", get_instance, -1);
   rb_define_method(klass, "create_instance", create_instance, 2);
   rb_define_method(klass, "set_instance", set_instance, -1);
-  rb_define_method(klass, "delete_instance", delete_instance, 1);  
+  rb_define_method(klass, "delete_instance", delete_instance, 1);
   rb_define_method(klass, "query", query, 3);
   rb_define_method(klass, "instance_names", instance_names, 1);
   rb_define_method(klass, "instances", instances, -1);

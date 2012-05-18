@@ -175,7 +175,7 @@ static VALUE each_key(VALUE self)
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);
-      } 
+      }
       if (key_name) CMRelease(key_name);
     }
   }
@@ -337,7 +337,7 @@ static VALUE method_qualifier(VALUE self, VALUE method_name, VALUE qualifier_nam
  * Get parameter qualifier value
  */
 static VALUE parameter_qualifier(VALUE self,
-                                 VALUE method_name, 
+                                 VALUE method_name,
                                  VALUE parameter_name,
                                  VALUE qualifier_name)
 {

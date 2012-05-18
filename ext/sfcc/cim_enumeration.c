@@ -58,5 +58,5 @@ void init_cim_enumeration()
   cSfccCimEnumeration = klass;
 
   rb_define_method(klass, "each", each, 0);
-  rb_include_module(klass, rb_const_get(rb_cObject, rb_intern("Enumerable"))); 
+  rb_include_module(klass, rb_const_get(rb_cObject, rb_intern("Enumerable")));
 }
