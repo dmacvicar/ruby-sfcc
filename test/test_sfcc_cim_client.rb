@@ -157,7 +157,12 @@ class SfccCimcClient < SfccTestCase
       end
       
       should "have every alement of type Cimc::Class" do
-        @classes.each { |c| assert_kind_of(Sfcc::Cim::Class, c) }
+        count = 0
+        @classes.each do |c|
+          count += 1
+          assert_kind_of(Sfcc::Cim::Class, c)
+        end
+        assert count > 0
       end            
     end
     
