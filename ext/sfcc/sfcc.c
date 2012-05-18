@@ -228,8 +228,8 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
   }
   else if (data.type & CIMC_REAL) {
     switch (data.type) {
-    case CIMC_real32: return LONG2NUM(data.value.real32);
-    case CIMC_real64: return LONG2NUM(data.value.real64);
+    case CIMC_real32: return rb_float_new(data.value.real32);
+    case CIMC_real64: return rb_float_new(data.value.real64);
     }
   }
   else if (data.type & CIMC_null ) {
