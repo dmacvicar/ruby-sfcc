@@ -1,5 +1,5 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
-require 'pp'
+# require 'pp'
 
 class SfccCimcClient < SfccTestCase
     
@@ -85,7 +85,7 @@ class SfccCimcClient < SfccTestCase
       associators = @client.associators(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
       associators.each { |assoc| assert_kind_of Sfcc::Cim::Instance, assoc }
-      pp associators
+#      pp associators
     end
 
     should "be able to get associator names for an instance" do
@@ -94,7 +94,7 @@ class SfccCimcClient < SfccTestCase
       associators = @client.associator_names(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
       associators.each { |assoc| assert_kind_of Sfcc::Cim::ObjectPath, assoc }
-      pp associators
+#      pp associators
     end
 
     should "be able to get references for an instance" do
@@ -103,7 +103,7 @@ class SfccCimcClient < SfccTestCase
       associators = @client.references(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
       associators.each { |assoc| assert_kind_of Sfcc::Cim::Instance, assoc }
-      pp associators
+#      pp associators
     end
 
     should "be able to get reference names for an instance" do
@@ -112,7 +112,7 @@ class SfccCimcClient < SfccTestCase
       associators = @client.reference_names(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
       associators.each { |assoc| assert_kind_of Sfcc::Cim::ObjectPath, assoc }
-      pp associators
+#      pp associators
     end
 
     should "be able to invoke methods using an object path" do

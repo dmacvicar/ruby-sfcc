@@ -1,5 +1,5 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
-require 'pp'
+#require 'pp'
 
 class SfccCimInstanceTest < SfccTestCase
 
@@ -61,7 +61,7 @@ class SfccCimInstanceTest < SfccTestCase
       qualifiers = @instance.qualifiers
       assert qualifiers.empty?
       assert_equal qualifiers.size, @instance.qualifier_count
-      pp qualifiers
+#      pp qualifiers
     end
     
     should "be able to enumerate qualifiers for a property" do
@@ -72,7 +72,7 @@ class SfccCimInstanceTest < SfccTestCase
       qualifiers = @instance.property_qualifiers("Status")
       assert qualifiers.empty?
       assert_equal qualifiers.size, @instance.qualifier_count
-      pp qualifiers
+#      pp qualifiers
     end
     
     
