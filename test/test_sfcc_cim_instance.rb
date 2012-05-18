@@ -35,10 +35,13 @@ class SfccCimInstanceTest < SfccTestCase
     end
 
     should "be able to iterate over properties" do
-      @instance.each_property do |name, value|              
-        puts "#{name} -> #{value}"
-        puts "---"
+      count = 0
+      @instance.each_property do |name, value|
+        count += 1
+        assert name
+        # value can be nil
       end
+      assert count > 0
     end
 
     should "be able to set and retrieve stringproperties" do

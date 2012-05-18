@@ -20,9 +20,12 @@ class SfccCimcClient < SfccTestCase
     
     should "allow for query" do
       result = @client.query(@op, "select * from CIM_OperatingSystem", "wql")
+      count = 0
       result.each do |instance|
-        puts "query result: #{instance}"
+        assert instance
+        count += 1
       end
+      assert count > 0
     end
     
     should "be able to get set properties using an object path" do
