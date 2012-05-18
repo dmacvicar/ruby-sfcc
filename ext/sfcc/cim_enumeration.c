@@ -21,23 +21,25 @@ dealloc(CIMCEnumeration *enm)
 static VALUE each(VALUE self)
 {
   CIMCStatus status;
-  CIMCEnumeration *ptr, *tmp;
-  CIMCData next;
+  CIMCEnumeration *ptr;
+  CIMCArray *ary;
+  CIMCData data;
   Data_Get_Struct(self, CIMCEnumeration, ptr);
 
-  /* clone, since getNext() changes the Enumeration */
-  tmp = ptr->ft->clone(ptr, &status);
-
+  /* since getNext() changes the Enumeration, we cannot iterate
+     use Array representation instead */
+  ary = ptr->ft->toArray(ptr, &status);
   if (!status.rc) {
-    while (tmp->ft->hasNext(tmp, NULL)) {
+    CIMCCount count = ary->ft->getSize(ary, NULL);
+    CIMCCount idx;
+    for (idx = 0; idx < count; ++idx) {
       VALUE value;
-      next = tmp->ft->getNext(tmp, NULL);
-      value = sfcc_cimdata_to_value(next);
+      data = ary->ft->getElementAt(ary, idx, NULL);
+      value = sfcc_cimdata_to_value(data);
       rb_yield(value);
     }
   }
 
-  tmp->ft->release(tmp);
   sfcc_rb_raise_if_error(status, "Can't iterate enumeration");
   return Qnil;
 }
