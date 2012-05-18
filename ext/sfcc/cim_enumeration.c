@@ -44,6 +44,57 @@ static VALUE each(VALUE self)
   return Qnil;
 }
 
+
+/**
+ * call-seq:
+ *   enumeration.size -> int
+ *
+ * returns the size (number of elements) of the enumeration
+ *
+ */
+static VALUE size(VALUE self)
+{
+  CIMCStatus status;
+  CIMCEnumeration *ptr;
+  CIMCArray *ary;
+  Data_Get_Struct(self, CIMCEnumeration, ptr);
+
+  ary = ptr->ft->toArray(ptr, &status);
+  if (!status.rc) {
+    CIMCCount count = ary->ft->getSize(ary, NULL);
+    return INT2NUM(count);
+  }
+
+  sfcc_rb_raise_if_error(status, "Can't get enumeration size");
+  return Qnil;
+}
+
+
+/**
+ * call-seq:
+ *   enumeration.simple_type -> int
+ *
+ * returns the element type of the enumeration elements
+ *
+ */
+static VALUE simple_type(VALUE self)
+{
+  CIMCStatus status;
+  CIMCEnumeration *ptr;
+  CIMCArray *ary;
+  Data_Get_Struct(self, CIMCEnumeration, ptr);
+
+  ary = ptr->ft->toArray(ptr, &status);
+  if (!status.rc) {
+    CIMCType type = ary->ft->getSimpleType(ary, NULL);
+    return INT2NUM(type);
+  }
+  
+  sfcc_rb_raise_if_error(status, "Can't get enumeration type");
+  return Qnil;
+}
+
+
 VALUE
 Sfcc_wrap_cim_enumeration(CIMCEnumeration *enm)
 {
@@ -60,5 +111,7 @@ void init_cim_enumeration()
   cSfccCimEnumeration = klass;
 
   rb_define_method(klass, "each", each, 0);
+  rb_define_method(klass, "size", size, 0);
+  rb_define_method(klass, "simple_type", simple_type, 0);
   rb_include_module(klass, rb_const_get(rb_cObject, rb_intern("Enumerable")));
 }
