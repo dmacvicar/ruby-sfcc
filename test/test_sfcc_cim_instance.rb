@@ -1,6 +1,5 @@
-
-require File.join(File.dirname(__FILE__), 'helper')
-require 'pp'
+require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
+#require 'pp'
 
 class SfccCimInstanceTest < SfccTestCase
 
@@ -35,20 +34,13 @@ class SfccCimInstanceTest < SfccTestCase
     end
 
     should "be able to iterate over properties" do
-      @instance.each_property do |name, value|              
-        puts "#{name} -> #{value}"
-        puts "---"
+      count = 0
+      @instance.each_property do |name, value|
+        count += 1
+        assert name
+        # value can be nil
       end
-    end
-
-    should "be able to set and retrieve stringproperties" do
-      assert_raises Sfcc::Cim::ErrorNoSuchProperty do
-        @instance.property("foobar");
-      end
-      assert_nothing_raised do
-        @instance.set_property("Name", "newname");
-      end
-      assert_equal "newname", @instance.property("Name")
+      assert count > 0
     end
 
     should "be able to set and retrieve stringproperties" do
@@ -69,7 +61,7 @@ class SfccCimInstanceTest < SfccTestCase
       qualifiers = @instance.qualifiers
       assert qualifiers.empty?
       assert_equal qualifiers.size, @instance.qualifier_count
-      pp qualifiers
+#      pp qualifiers
     end
     
     should "be able to enumerate qualifiers for a property" do
@@ -80,7 +72,7 @@ class SfccCimInstanceTest < SfccTestCase
       qualifiers = @instance.property_qualifiers("Status")
       assert qualifiers.empty?
       assert_equal qualifiers.size, @instance.qualifier_count
-      pp qualifiers
+#      pp qualifiers
     end
     
     

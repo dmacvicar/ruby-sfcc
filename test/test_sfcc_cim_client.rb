@@ -1,5 +1,5 @@
-require File.join(File.dirname(__FILE__), 'helper')
-require 'pp'
+require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
+# require 'pp'
 
 class SfccCimcClient < SfccTestCase
     
@@ -20,9 +20,12 @@ class SfccCimcClient < SfccTestCase
     
     should "allow for query" do
       result = @client.query(@op, "select * from CIM_OperatingSystem", "wql")
+      count = 0
       result.each do |instance|
-        puts "query result: #{instance}"
+        assert instance
+        count += 1
       end
+      assert count > 0
     end
     
     should "be able to get set properties using an object path" do
@@ -82,7 +85,7 @@ class SfccCimcClient < SfccTestCase
       associators = @client.associators(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
       associators.each { |assoc| assert_kind_of Sfcc::Cim::Instance, assoc }
-      pp associators
+#      pp associators
     end
 
     should "be able to get associator names for an instance" do
@@ -91,7 +94,7 @@ class SfccCimcClient < SfccTestCase
       associators = @client.associator_names(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
       associators.each { |assoc| assert_kind_of Sfcc::Cim::ObjectPath, assoc }
-      pp associators
+#      pp associators
     end
 
     should "be able to get references for an instance" do
@@ -100,7 +103,7 @@ class SfccCimcClient < SfccTestCase
       associators = @client.references(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
       associators.each { |assoc| assert_kind_of Sfcc::Cim::Instance, assoc }
-      pp associators
+#      pp associators
     end
 
     should "be able to get reference names for an instance" do
@@ -109,7 +112,7 @@ class SfccCimcClient < SfccTestCase
       associators = @client.reference_names(op, 'CIM_RunningOS').to_a
       assert !associators.empty?
       associators.each { |assoc| assert_kind_of Sfcc::Cim::ObjectPath, assoc }
-      pp associators
+#      pp associators
     end
 
     should "be able to invoke methods using an object path" do
@@ -154,7 +157,12 @@ class SfccCimcClient < SfccTestCase
       end
       
       should "have every alement of type Cimc::Class" do
-        @classes.each { |c| assert_kind_of(Sfcc::Cim::Class, c) }
+        count = 0
+        @classes.each do |c|
+          count += 1
+          assert_kind_of(Sfcc::Cim::Class, c)
+        end
+        assert count > 0
       end            
     end
     

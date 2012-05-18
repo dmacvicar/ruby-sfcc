@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), 'helper')
+require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
 require 'pp'
 
 class BasicTest < SfccTestCase
@@ -27,10 +27,13 @@ class BasicTest < SfccTestCase
       
       should "allow for query" do
         result = @client.query(@op, "select * from CIM_ComputerSystem", "wql")
+        count = 0
         result.each do |instance|
-          puts instance
+          assert instance
+          count += 1
         end
-          end
+        assert count > 0
+      end
             
       context "class names" do
         setup do

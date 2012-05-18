@@ -1,6 +1,5 @@
-
-require File.join(File.dirname(__FILE__), 'helper')
-require 'pp'
+require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
+#require 'pp'
 
 class SfccCimcObjectPathTest < SfccTestCase
 
@@ -11,7 +10,7 @@ class SfccCimcObjectPathTest < SfccTestCase
     end
 
     should "have a nil class name" do
-      assert_nil @op.class_name
+      assert_nil @op.classname
     end
   end
   
@@ -50,13 +49,13 @@ class SfccCimcObjectPathTest < SfccTestCase
       end
     end
     
-    should "respond to class_name" do
-      assert_equal "Linux_OperatingSystem", @op.class_name
+    should "respond to classname" do
+      assert_equal "Linux_OperatingSystem", @op.classname
     end
     
     should "change its class name after setting it" do
-      @op.class_name = "BarClass"
-      assert_equal "BarClass", @op.class_name
+      @op.classname = "BarClass"
+      assert_equal "BarClass", @op.classname
     end
 
     should "respond to keys and set them" do
@@ -80,17 +79,19 @@ class SfccCimcObjectPathTest < SfccTestCase
     should "be able to set namespace and classname from other object path" do
       op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
       op2 = Sfcc::Cim::ObjectPath.new("root/cimv3", "FooBar")
-      assert_equal "Linux_OperatingSystem", op.class_name
+      assert_equal "Linux_OperatingSystem", op.classname
       op.set_namespace_from(op2)
-      assert_equal "FooBar", op2.class_name
+      assert_equal "FooBar", op2.classname
       assert_equal "root/cimv3", op2.namespace
     end
     
     should "be able to retrieve qualifiers" do
-      # CRASH? CIMOM?
-      #op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
-      # assert_equal "2.17.1", @op.class_qualifier("Version")
-      #assert_equal "Number", op.property_qualifier("NumberOfUsers", "Description")
+      op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
+      # sfcc does not implement ObjectPath#class_qualifier, ObjectPath#property_qualifier
+      assert_raise Sfcc::Cim::ErrorNotSupported do
+        assert_equal "2.17.1", @op.class_qualifier("Version")
+        assert_equal "Number", op.property_qualifier("NumberOfUsers", "Description")
+      end
     end    
   end
 end
