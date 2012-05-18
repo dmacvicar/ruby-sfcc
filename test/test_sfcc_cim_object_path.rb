@@ -87,10 +87,12 @@ class SfccCimcObjectPathTest < SfccTestCase
     end
     
     should "be able to retrieve qualifiers" do
-      # sfcc does not implement ObjectPath#class_qualifier, ObjectPath#property_qualifier
       op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
-      assert_equal "2.17.1", @op.class_qualifier("Version")
-      assert_equal "Number", op.property_qualifier("NumberOfUsers", "Description")
+      # sfcc does not implement ObjectPath#class_qualifier, ObjectPath#property_qualifier
+      assert_raise Sfcc::Cim::ErrorNotSupported do
+        assert_equal "2.17.1", @op.class_qualifier("Version")
+        assert_equal "Number", op.property_qualifier("NumberOfUsers", "Description")
+      end
     end    
   end
 end
