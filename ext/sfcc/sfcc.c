@@ -66,49 +66,49 @@ static VALUE sfcc_status_exception(CIMCStatus status)
 {
   switch (status.rc)
   {
-  case CMPI_RC_ERR_FAILED:
+  case CIMC_RC_ERR_FAILED:
     return rb_const_get(mSfccCim, rb_intern("ErrorFailed"));
-  case CMPI_RC_ERR_ACCESS_DENIED:
+  case CIMC_RC_ERR_ACCESS_DENIED:
     return rb_const_get(mSfccCim, rb_intern("ErrorAcessDenied"));
-  case CMPI_RC_ERR_INVALID_NAMESPACE:
+  case CIMC_RC_ERR_INVALID_NAMESPACE:
     return rb_const_get(mSfccCim, rb_intern("ErrorInvalidNamespace"));
-  case CMPI_RC_ERR_INVALID_PARAMETER:
+  case CIMC_RC_ERR_INVALID_PARAMETER:
     return rb_const_get(mSfccCim, rb_intern("ErrorInvalidParameter"));
-  case CMPI_RC_ERR_INVALID_CLASS:
+  case CIMC_RC_ERR_INVALID_CLASS:
     return rb_const_get(mSfccCim, rb_intern("ErrorInvalidClass"));
-  case CMPI_RC_ERR_NOT_FOUND:
+  case CIMC_RC_ERR_NOT_FOUND:
     return rb_const_get(mSfccCim, rb_intern("ErrorNotFound"));
-  case CMPI_RC_ERR_NOT_SUPPORTED:
+  case CIMC_RC_ERR_NOT_SUPPORTED:
     return rb_const_get(mSfccCim, rb_intern("ErrorNotSupported"));
-  case CMPI_RC_ERR_CLASS_HAS_CHILDREN:
+  case CIMC_RC_ERR_CLASS_HAS_CHILDREN:
     return rb_const_get(mSfccCim, rb_intern("ErrorClassHasChildren"));
-  case CMPI_RC_ERR_CLASS_HAS_INSTANCES:
+  case CIMC_RC_ERR_CLASS_HAS_INSTANCES:
     return rb_const_get(mSfccCim, rb_intern("ErrorClassHasInstances"));
-  case CMPI_RC_ERR_INVALID_SUPERCLASS:
+  case CIMC_RC_ERR_INVALID_SUPERCLASS:
     return rb_const_get(mSfccCim, rb_intern("ErrorInvalidSuperClass"));
-  case CMPI_RC_ERR_ALREADY_EXISTS:
+  case CIMC_RC_ERR_ALREADY_EXISTS:
     return rb_const_get(mSfccCim, rb_intern("ErrorAlreadyExists"));
-  case CMPI_RC_ERR_NO_SUCH_PROPERTY:
+  case CIMC_RC_ERR_NO_SUCH_PROPERTY:
     return rb_const_get(mSfccCim, rb_intern("ErrorNoSuchProperty"));
-  case CMPI_RC_ERR_TYPE_MISMATCH:
+  case CIMC_RC_ERR_TYPE_MISMATCH:
     return rb_const_get(mSfccCim, rb_intern("ErrorTypeMismatch"));
-  case CMPI_RC_ERR_QUERY_LANGUAGE_NOT_SUPPORTED:
+  case CIMC_RC_ERR_QUERY_LANGUAGE_NOT_SUPPORTED:
     return rb_const_get(mSfccCim, rb_intern("ErrorQueryLanguageNotSupported"));
-  case CMPI_RC_ERR_INVALID_QUERY:
+  case CIMC_RC_ERR_INVALID_QUERY:
     return rb_const_get(mSfccCim, rb_intern("ErrorInvalidQuery"));
-  case CMPI_RC_ERR_METHOD_NOT_AVAILABLE:
+  case CIMC_RC_ERR_METHOD_NOT_AVAILABLE:
     return rb_const_get(mSfccCim, rb_intern("ErrorMethodNotAvailable"));
-  case CMPI_RC_ERR_METHOD_NOT_FOUND:
+  case CIMC_RC_ERR_METHOD_NOT_FOUND:
     return rb_const_get(mSfccCim, rb_intern("ErrorMethodNotFound"));
-  case CMPI_RC_DO_NOT_UNLOAD:
+  case CIMC_RC_DO_NOT_UNLOAD:
     return rb_const_get(mSfccCim, rb_intern("ErrorDoNotUnload"));
-  case CMPI_RC_NEVER_UNLOAD:
+  case CIMC_RC_NEVER_UNLOAD:
     return rb_const_get(mSfccCim, rb_intern("ErrorNeverUnload"));
-  case CMPI_RC_ERROR_SYSTEM:
+  case CIMC_RC_ERROR_SYSTEM:
     return rb_const_get(mSfccCim, rb_intern("ErrorSystem"));
-  case CMPI_RC_ERROR:
+  case CIMC_RC_ERROR:
     return rb_const_get(mSfccCim, rb_intern("ErrorRcError"));
-  case CMPI_RC_OK:
+  case CIMC_RC_OK:
   default:
     return Qnil;
   }
@@ -161,7 +161,7 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
   VALUE rbval;
   CIMCStatus status;
 
-  if (data.type & CMPI_ARRAY) {
+  if (data.type & CIMC_ARRAY) {
     int k = 0;
     int n = 0;
     VALUE rbarray = rb_ary_new();
@@ -180,59 +180,59 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
     sfcc_rb_raise_if_error(status, "Can't retrieve array size");
     return Qnil;
   }
-  else if (data.type & CMPI_ENC) {
+  else if (data.type & CIMC_ENC) {
     switch (data.type) {
-    case CMPI_instance:
+    case CIMC_instance:
       return data.value.inst ? Sfcc_wrap_cim_instance(data.value.inst->ft->clone(data.value.inst, NULL)) : Qnil;
-    case CMPI_class:
+    case CIMC_class:
       return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
-    case CMPI_ref:
+    case CIMC_ref:
       return data.value.ref ? Sfcc_wrap_cim_object_path(data.value.ref->ft->clone(data.value.ref, NULL)) : Qnil;
-    case CMPI_args:
+    case CIMC_args:
       return data.value.args ? sfcc_cimargs_to_hash(data.value.args) : Qnil;
-    case CMPI_filter:
+    case CIMC_filter:
       return Qnil;
-    case CMPI_numericString:
-    case CMPI_booleanString:
-    case CMPI_dateTimeString:
-    case CMPI_classNameString:
+    case CIMC_numericString:
+    case CIMC_booleanString:
+    case CIMC_dateTimeString:
+    case CIMC_classNameString:
       break;
-    case CMPI_string:
+    case CIMC_string:
       return data.value.string ? rb_str_new2((char*)data.value.string->ft->getCharPtr(data.value.string, NULL)) : Qnil;
-    case CMPI_charsptr:
+    case CIMC_charsptr:
       return data.value.chars ? rb_str_new((char*)data.value.dataPtr.ptr, data.value.dataPtr.length) : Qnil;
-    case CMPI_dateTime:
+    case CIMC_dateTime:
       cimstr = data.value.dateTime ? CMGetStringFormat(data.value.dateTime,NULL) : NULL;
       rbval = cimstr ? rb_str_new2(cimstr->ft->getCharPtr(cimstr, NULL)) : Qnil;
       if (cimstr) CMRelease(cimstr);
       return rbval;
     }
   }
-  else if (data.type & CMPI_SIMPLE) {
+  else if (data.type & CIMC_SIMPLE) {
     switch (data.type) {
-    case CMPI_boolean: return data.value.boolean ? Qtrue : Qfalse;
-    case CMPI_char16: return UINT2NUM(data.value.char16);
+    case CIMC_boolean: return data.value.boolean ? Qtrue : Qfalse;
+    case CIMC_char16: return UINT2NUM(data.value.char16);
     }
   }
-  else if (data.type & CMPI_INTEGER) {
+  else if (data.type & CIMC_INTEGER) {
     switch (data.type) {
-    case CMPI_uint8: return UINT2NUM(data.value.uint8);
-    case CMPI_sint8: return INT2NUM(data.value.sint8);
-    case CMPI_uint16: return UINT2NUM(data.value.uint16);
-    case CMPI_sint16: return INT2NUM(data.value.sint16);
-    case CMPI_uint32: return UINT2NUM(data.value.uint32);
-    case CMPI_sint32: return INT2NUM(data.value.sint32);
-    case CMPI_uint64: return UINT2NUM(data.value.uint64);
-    case CMPI_sint64: return INT2NUM(data.value.sint64);
+    case CIMC_uint8: return UINT2NUM(data.value.uint8);
+    case CIMC_sint8: return INT2NUM(data.value.sint8);
+    case CIMC_uint16: return UINT2NUM(data.value.uint16);
+    case CIMC_sint16: return INT2NUM(data.value.sint16);
+    case CIMC_uint32: return UINT2NUM(data.value.uint32);
+    case CIMC_sint32: return INT2NUM(data.value.sint32);
+    case CIMC_uint64: return UINT2NUM(data.value.uint64);
+    case CIMC_sint64: return INT2NUM(data.value.sint64);
     }
   }
-  else if (data.type & CMPI_REAL) {
+  else if (data.type & CIMC_REAL) {
     switch (data.type) {
-    case CMPI_real32: return LONG2NUM(data.value.real32);
-    case CMPI_real64: return LONG2NUM(data.value.real64);
+    case CIMC_real32: return LONG2NUM(data.value.real32);
+    case CIMC_real64: return LONG2NUM(data.value.real64);
     }
   }
-  else if (data.type & CMPI_null ) {
+  else if (data.type & CIMC_null ) {
     return Qnil;
   }
   rb_raise(rb_eTypeError, "unsupported data data type %d", data.type);
@@ -287,7 +287,7 @@ VALUE sfcc_cimargs_to_hash(CIMCArgs *args)
   for (; i < n; ++i) {
     argname = NULL;
     argdata = args->ft->getArgAt(args, i, &argname, &status);
-    if (!status.rc && argdata.state == CMPI_goodValue ) {
+    if (!status.rc && argdata.state == CIMC_goodValue ) {
       argname_cstr = argname->ft->getCharPtr(argname, &status);
       if (!argname_cstr) {
         rb_raise(rb_eRuntimeError, "Can't retrieve argument name");
@@ -314,29 +314,29 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
 {
   CIMCData data;
   memset(&data, 0, sizeof(CIMCData));
-  data.state = CMPI_goodValue;
-  data.type = CMPI_null;
+  data.state = CIMC_goodValue;
+  data.type = CIMC_null;
 
   switch (TYPE(value))
   {
   case T_NIL:
-    data.type = CMPI_null;
-    data.state = CMPI_nullValue;
+    data.type = CIMC_null;
+    data.state = CIMC_nullValue;
     break;
   case T_STRING:
-    data.type = CMPI_string;
+    data.type = CIMC_string;
     data.value.string = cimcEnv->ft->newString(cimcEnv, to_charptr(value), NULL);
     break;
   case T_TRUE:
-    data.type = CMPI_boolean;
+    data.type = CIMC_boolean;
     data.value.boolean = 1;
     break;
   case T_FALSE:
-    data.type = CMPI_boolean;
+    data.type = CIMC_boolean;
     data.value.boolean = 0;
     break;
   case T_FIXNUM:
-    data.type = CMPI_sint64;
+    data.type = CIMC_sint64;
     data.value.Long = NUM2INT(value);
     break;
 /* not yet supported
@@ -354,13 +354,13 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
   default:
     if (CLASS_OF(value) == cSfccCimString) {
       Data_Get_Struct(value, CIMCString, data.value.string);
-      data.type = CMPI_string;
+      data.type = CIMC_string;
     }
     else {
       VALUE cname;
       const char *class_name;
-      data.state = CMPI_badValue;
-      data.type = CMPI_null;
+      data.state = CIMC_badValue;
+      data.type = CIMC_null;
       cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
       class_name = to_charptr(cname);
       rb_raise(rb_eTypeError, "unsupported data data type: %s", class_name);

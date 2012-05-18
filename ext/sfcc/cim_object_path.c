@@ -269,7 +269,7 @@ static VALUE class_qualifier(VALUE self, VALUE qualifier_name)
       return sfcc_cimdata_to_value(data);
   }
   else {
-    status.rc = CMPI_RC_ERR_NOT_SUPPORTED;
+    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
     status.msg = NULL;
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve class qualifier '%s'", to_charptr(qualifier_name));
@@ -296,7 +296,7 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
       return sfcc_cimdata_to_value(data);
   }
   else {
-    status.rc = CMPI_RC_ERR_NOT_SUPPORTED;
+    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
     status.msg = NULL;
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s' for property '%s'", to_charptr(qualifier_name), to_charptr(property_name));
@@ -323,7 +323,7 @@ static VALUE method_qualifier(VALUE self, VALUE method_name, VALUE qualifier_nam
       return sfcc_cimdata_to_value(data);
   }
   else {
-    status.rc = CMPI_RC_ERR_NOT_SUPPORTED;
+    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
     status.msg = NULL;
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve method qualifier '%s' for method '%s'", to_charptr(qualifier_name), to_charptr(method_name));
@@ -355,7 +355,7 @@ static VALUE parameter_qualifier(VALUE self,
       return sfcc_cimdata_to_value(data);
   }
   else {
-    status.rc = CMPI_RC_ERR_NOT_SUPPORTED;
+    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
     status.msg = NULL;
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve parameter qualifier '%s' for '%s'/'%s'", to_charptr(qualifier_name), to_charptr(method_name), to_charptr(parameter_name));

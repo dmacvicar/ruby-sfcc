@@ -33,7 +33,7 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
   CIMCClass *cimclass = NULL;
@@ -71,7 +71,7 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
   VALUE object_path;
   VALUE flags;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
@@ -106,7 +106,7 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   VALUE object_path;
   VALUE flags;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
@@ -149,7 +149,7 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCInstance *ciminstance;
@@ -187,7 +187,7 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
  */
 static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
 {
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCClient *client;
   CIMCObjectPath *op;
   CIMCObjectPath *new_op;
@@ -228,7 +228,7 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCInstance *inst;
   CIMCClient *client;
@@ -259,7 +259,7 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
  */
 static VALUE delete_instance(VALUE self, VALUE object_path)
 {
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
 
@@ -291,7 +291,7 @@ static VALUE query(VALUE self,
                    VALUE query,
                    VALUE lang)
 {
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
@@ -320,7 +320,7 @@ static VALUE query(VALUE self,
  */
 static VALUE instance_names(VALUE self, VALUE object_path)
 {
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
@@ -361,7 +361,7 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
@@ -441,7 +441,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   char **props;
@@ -519,7 +519,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
   VALUE role;
   VALUE result_role;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
@@ -583,7 +583,7 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
   VALUE flags;
   VALUE properties;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   char **props;
@@ -641,7 +641,7 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   VALUE result_class = Qnil;
   VALUE role = Qnil;
 
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
@@ -684,7 +684,7 @@ static VALUE invoke_method(VALUE self,
                            VALUE argin,
                            VALUE argout)
 {
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCClient *client;
   CIMCObjectPath *op;
   CIMCArgs *cimcargsout;
@@ -732,7 +732,7 @@ static VALUE set_property(VALUE self,
                           VALUE name,
                           VALUE value)
 {
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCClient *client;
   CIMCObjectPath *op;
   CIMCData data;
@@ -761,7 +761,7 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
 {
   CIMCClient *client;
   CIMCObjectPath *op = NULL;
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCData data;
 
   Data_Get_Struct(self, CIMCClient, client);
@@ -778,7 +778,7 @@ static VALUE connect(VALUE klass, VALUE host, VALUE scheme, VALUE port, VALUE us
                      VALUE verify, VALUE trust_store, VALUE cert_file, VALUE key_file)
 {
   CIMCClient *client;
-  CIMCStatus status = {CMPI_RC_OK, NULL};
+  CIMCStatus status = {CIMC_RC_OK, NULL};
   /*
    * CIMCClient* (*connect2)
    * (CIMCEnv *ce, const char *hn, const char *scheme, const char *port, const char *user, const char *pwd,
