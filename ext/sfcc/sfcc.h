@@ -61,7 +61,7 @@ inline VALUE sfcc_cimargs_to_hash(CIMCArgs *args, CIMCClient *client);
 /**
  * converts CIMCData to ruby VALUE
  */
-inline VALUE sfcc_cimdata_to_value(CIMCData data, CIMCClient *client);
+inline VALUE sfcc_cimdata_to_value(CIMCData *data, CIMCClient *client);
 
 /**
  * convert ruby VALUE to CIMCData

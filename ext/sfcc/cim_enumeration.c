@@ -39,7 +39,7 @@ static VALUE each(VALUE self)
     for (idx = 0; idx < count; ++idx) {
       VALUE value;
       data = ary->ft->getElementAt(ary, idx, NULL);
-      value = sfcc_cimdata_to_value(data, rse->client);
+      value = sfcc_cimdata_to_value(&data, rse->client);
       rb_yield(value);
     }
     return Qnil;
@@ -75,7 +75,7 @@ static VALUE to_a(VALUE self)
     for (idx = 0; idx < count; ++idx) {
       VALUE value;
       data = ary->ft->getElementAt(ary, idx, NULL);
-      value = sfcc_cimdata_to_value(data, rse->client);
+      value = sfcc_cimdata_to_value(&data, rse->client);
       rb_ary_store(array, idx, value);
     }
     return array;

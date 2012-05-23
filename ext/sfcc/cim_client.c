@@ -720,7 +720,7 @@ static VALUE invoke_method(VALUE self,
       Check_Type(argout, T_HASH);
       rb_funcall(argout, rb_intern("merge!"), 1, sfcc_cimargs_to_hash(cimcargsout, client));
     }
-    return sfcc_cimdata_to_value(ret, client);
+    return sfcc_cimdata_to_value(&ret, client);
   }
   sfcc_rb_raise_if_error(status, "Can't invoke method '%s'", method_name_cstr);
   return Qnil;
@@ -777,7 +777,7 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
   Data_Get_Struct(object_path, CIMCObjectPath, op);
   data = client->ft->getProperty(client, op, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data, client);
+    return sfcc_cimdata_to_value(&data, client);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", to_charptr(name));
   return Qnil;
