@@ -8,6 +8,7 @@
 #include "cim_enumeration.h"
 #include "cim_class.h"
 #include "cim_instance.h"
+#include "cim_data.h"
 #include "cim_client.h"
 
 VALUE mSfcc;
@@ -59,6 +60,7 @@ void Init_sfcc()
   init_cim_enumeration();
   init_cim_class();
   init_cim_instance();
+  init_cim_data();
   init_cim_client();
 }
 
