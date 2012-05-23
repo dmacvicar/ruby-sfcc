@@ -38,9 +38,44 @@ static VALUE each(VALUE self)
       value = sfcc_cimdata_to_value(data);
       rb_yield(value);
     }
+    return Qnil;
   }
 
   sfcc_rb_raise_if_error(status, "Can't iterate enumeration");
+  return Qnil;
+}
+
+
+/**
+ * call-seq:
+ *   enumeration.to_a -> Array
+ *
+ * returns an Array representation of the enumeration
+ *
+ */
+static VALUE to_a(VALUE self)
+{
+  CIMCStatus status;
+  CIMCEnumeration *ptr;
+  CIMCArray *ary;
+  Data_Get_Struct(self, CIMCEnumeration, ptr);
+
+  ary = ptr->ft->toArray(ptr, &status);
+  if (!status.rc) {
+    CIMCData data;
+    CIMCCount count = ary->ft->getSize(ary, NULL);
+    VALUE array = rb_ary_new2(count);
+    CIMCCount idx;
+    for (idx = 0; idx < count; ++idx) {
+      VALUE value;
+      data = ary->ft->getElementAt(ary, idx, NULL);
+      value = sfcc_cimdata_to_value(data);
+      rb_ary_store(array, idx, value);
+    }
+    return array;
+  }
+
+  sfcc_rb_raise_if_error(status, "Can't convert enumeration to Array");
   return Qnil;
 }
 
@@ -110,8 +145,9 @@ void init_cim_enumeration()
   VALUE klass = rb_define_class_under(cimc, "Enumeration", rb_cObject);
   cSfccCimEnumeration = klass;
 
+  rb_include_module(klass, rb_const_get(rb_cObject, rb_intern("Enumerable")));
   rb_define_method(klass, "each", each, 0);
+  rb_define_method(klass, "to_a", to_a, 0);
   rb_define_method(klass, "size", size, 0);
   rb_define_method(klass, "simple_type", simple_type, 0);
-  rb_include_module(klass, rb_const_get(rb_cObject, rb_intern("Enumerable")));
 }
