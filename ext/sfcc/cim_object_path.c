@@ -140,7 +140,7 @@ static VALUE key(VALUE self, VALUE name)
   Data_Get_Struct(self, CIMCObjectPath, ptr);
   data = ptr->ft->getKey(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, NULL);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve key '%s'", to_charptr(name));
   return Qnil;
@@ -171,7 +171,7 @@ static VALUE each_key(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getKeyAt(ptr, k, &key_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, rb_str_intern(CIMSTR_2_RUBYSTR(key_name)), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, rb_str_intern(CIMSTR_2_RUBYSTR(key_name)), sfcc_cimdata_to_value(data, NULL));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);
@@ -266,7 +266,7 @@ static VALUE class_qualifier(VALUE self, VALUE qualifier_name)
   if (ptr->ft->getClassQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getClassQualifier(ptr, to_charptr(qualifier_name), &status);
     if ( !status.rc )
-      return sfcc_cimdata_to_value(data);
+      return sfcc_cimdata_to_value(data, NULL);
   }
   else {
     status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
@@ -293,7 +293,7 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
     data = ptr->ft->getPropertyQualifier(ptr, to_charptr(property_name),
                                          to_charptr(qualifier_name), &status);
     if ( !status.rc )
-      return sfcc_cimdata_to_value(data);
+      return sfcc_cimdata_to_value(data, NULL);
   }
   else {
     status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
@@ -320,7 +320,7 @@ static VALUE method_qualifier(VALUE self, VALUE method_name, VALUE qualifier_nam
     data = ptr->ft->getMethodQualifier(ptr, to_charptr(method_name),
                                        to_charptr(qualifier_name), &status);
     if ( !status.rc )
-      return sfcc_cimdata_to_value(data);
+      return sfcc_cimdata_to_value(data, NULL);
   }
   else {
     status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
@@ -352,7 +352,7 @@ static VALUE parameter_qualifier(VALUE self,
                                           to_charptr(parameter_name),
                                           to_charptr(qualifier_name), &status);
     if ( !status.rc )
-      return sfcc_cimdata_to_value(data);
+      return sfcc_cimdata_to_value(data, NULL);
   }
   else {
     status.rc = CIMC_RC_ERR_NOT_SUPPORTED;

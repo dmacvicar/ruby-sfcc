@@ -8,8 +8,17 @@ static void
 dealloc(CIMCClient *c)
 {
 /*  fprintf(stderr, "Sfcc_dealloc_cim_client %p\n", c); */
-  c->ft->release(c);
+  /* CIMCClient pointers are kept also in Enumeration
+     and Instance wrappers and Ruby will try to de-allocate
+     them during exit()
+     So we have to prevent multiple deallocs */
+  if (c && c->ft) {
+    struct _CIMCClientFT *ft = c->ft;
+    c->ft = NULL;
+    ft->release(c);
+  }
 }
+
 
 /**
  * call-seq:
@@ -84,7 +93,7 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
 
   enm = client->ft->enumClassNames(client, op, NUM2INT(flags), &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get class names");
@@ -119,7 +128,7 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
 
   enm = client->ft->enumClasses(client, op, NUM2INT(flags), &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get classes, try increasing maxMsgLen in sfcb.cfg ?");
@@ -167,7 +176,7 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
   free(props);
 
   if (!status.rc)
-    return Sfcc_wrap_cim_instance(ciminstance);
+    return Sfcc_wrap_cim_instance(ciminstance, client);
 
   sfcc_rb_raise_if_error(status, "Can't get instance");
   return Qnil;
@@ -305,7 +314,7 @@ static VALUE query(VALUE self,
                               to_charptr(lang),
                               &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get instances from query");
@@ -331,7 +340,7 @@ static VALUE instance_names(VALUE self, VALUE object_path)
   enm = client->ft->enumInstanceNames(client, op, &status);
 
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
   sfcc_rb_raise_if_error(status, "Can't get instance names");
   return Qnil;
@@ -380,7 +389,7 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
   free(props);
 
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get instances");
@@ -466,7 +475,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
                                 NUM2INT(flags), props, &status);
   free(props);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
 
   sfcc_rb_raise_if_error(status, "Can't get associators for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
@@ -539,7 +548,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
                                     to_charptr(result_role),
                                     &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
   sfcc_rb_raise_if_error(status, "Can't get associator names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return Qnil;
@@ -606,7 +615,7 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
                                NUM2INT(flags), props, &status);
   free(props);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
   sfcc_rb_raise_if_error(status, "Can't get references for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return Qnil;
@@ -658,7 +667,7 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
                                    to_charptr(role),
                                    &status);
   if (enm && !status.rc ) {
-    return Sfcc_wrap_cim_enumeration(enm);
+    return Sfcc_wrap_cim_enumeration(enm, client);
   }
   sfcc_rb_raise_if_error(status, "Can't get reference names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
   return Qnil;
@@ -709,9 +718,9 @@ static VALUE invoke_method(VALUE self,
   if (!status.rc) {
     if (cimcargsout && ! NIL_P(argout)) {
       Check_Type(argout, T_HASH);
-      rb_funcall(argout, rb_intern("merge!"), 1, sfcc_cimargs_to_hash(cimcargsout));
+      rb_funcall(argout, rb_intern("merge!"), 1, sfcc_cimargs_to_hash(cimcargsout, client));
     }
-    return sfcc_cimdata_to_value(ret);
+    return sfcc_cimdata_to_value(ret, client);
   }
   sfcc_rb_raise_if_error(status, "Can't invoke method '%s'", method_name_cstr);
   return Qnil;
@@ -768,7 +777,7 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
   Data_Get_Struct(object_path, CIMCObjectPath, op);
   data = client->ft->getProperty(client, op, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, client);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", to_charptr(name));
   return Qnil;

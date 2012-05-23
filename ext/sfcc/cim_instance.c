@@ -1,12 +1,14 @@
 
 #include "cim_instance.h"
 #include "cim_object_path.h"
+#include "cim_client.h"
 
 static void
-dealloc(CIMCInstance *inst)
+dealloc(rb_sfcc_instance *rsi)
 {
 /*  fprintf(stderr, "Sfcc_dealloc_cim_instance %p\n", inst); */
-  inst->ft->release(inst);
+  rsi->inst->ft->release(rsi->inst);
+  free(rsi);
 }
 
 /**
@@ -20,10 +22,13 @@ static VALUE property(VALUE self, VALUE name)
   CIMCInstance *ptr;
   CIMCStatus status;
   CIMCData data;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  rb_sfcc_instance *rsi;
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
+
   data = ptr->ft->getProperty(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, rsi->client);
   sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", to_charptr(name));
   return Qnil;
 }
@@ -46,14 +51,16 @@ static VALUE each_property(VALUE self)
   int num_props=0;
   CIMCString *property_name = NULL;
   CIMCData data;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  rb_sfcc_instance *rsi;
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
 
   num_props = ptr->ft->getPropertyCount(ptr, &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropertyAt(ptr, k, &property_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_name ? rb_str_intern(rb_str_new2(property_name->ft->getCharPtr(property_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_name ? rb_str_intern(rb_str_new2(property_name->ft->getCharPtr(property_name, NULL))) : Qnil), sfcc_cimdata_to_value(data, rsi->client));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property #%d", k);
@@ -76,7 +83,10 @@ static VALUE each_property(VALUE self)
 static VALUE property_count(VALUE self)
 {
   CIMCInstance *ptr;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  rb_sfcc_instance *rsi;
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
+
   return UINT2NUM(ptr->ft->getPropertyCount(ptr, NULL));
 }
 
@@ -90,7 +100,9 @@ static VALUE set_property(VALUE self, VALUE name, VALUE value)
 {
   CIMCInstance *ptr;
   CIMCData data;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  rb_sfcc_instance *rsi;
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
   data = sfcc_value_to_cimdata(value);
   ptr->ft->setProperty(ptr, to_charptr(name), &data.value, data.type);
 
@@ -108,7 +120,9 @@ static VALUE object_path(VALUE self)
 {
   CIMCInstance *ptr;
   CIMCObjectPath *op;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  rb_sfcc_instance *rsi;
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
   op = ptr->ft->getObjectPath(ptr, NULL);
   return Sfcc_wrap_cim_object_path(op);
 }
@@ -133,8 +147,10 @@ static VALUE set_property_filter(VALUE self, VALUE property_list, VALUE keys)
   CIMCInstance *ptr;
   char **prop_a;
   char **key_a;
+  rb_sfcc_instance *rsi;
 
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
 
   prop_a = sfcc_value_array_to_string_array(property_list);
   key_a = sfcc_value_array_to_string_array(keys);
@@ -158,11 +174,14 @@ static VALUE qualifier(VALUE self, VALUE name)
   CIMCInstance *ptr;
   CIMCStatus status;
   CIMCData data;
+  rb_sfcc_instance *rsi;
   memset(&status, 0, sizeof(CIMCStatus));
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
+
   data = ptr->ft->getQualifier(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, rsi->client);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve qualifier '%s'", to_charptr(name));
   return Qnil;
@@ -186,14 +205,16 @@ static VALUE each_qualifier(VALUE self)
   int num_props=0;
   CIMCString *qualifier_name = NULL;
   CIMCData data;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  rb_sfcc_instance *rsi;
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
 
   num_props = ptr->ft->getQualifierCount(ptr, &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
       data = ptr->ft->getQualifierAt(ptr, k, &qualifier_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (qualifier_name ? rb_str_new2(qualifier_name->ft->getCharPtr(qualifier_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (qualifier_name ? rb_str_new2(qualifier_name->ft->getCharPtr(qualifier_name, NULL)) : Qnil), sfcc_cimdata_to_value(data, rsi->client));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve qualifier #%d", k);
@@ -216,7 +237,10 @@ static VALUE each_qualifier(VALUE self)
 static VALUE qualifier_count(VALUE self)
 {
   CIMCInstance *ptr;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  rb_sfcc_instance *rsi;
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
+
   return UINT2NUM(ptr->ft->getQualifierCount(ptr, NULL));
 }
 
@@ -231,12 +255,14 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
   CIMCInstance *ptr;
   CIMCStatus status;
   CIMCData data;
+  rb_sfcc_instance *rsi;
   memset(&status, 0, sizeof(CIMCStatus));
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
   data = ptr->ft->getPropertyQualifier(ptr, to_charptr(property_name),
                                         to_charptr(qualifier_name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(data, rsi->client);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s'", to_charptr(qualifier_name));
   return Qnil;
@@ -258,16 +284,18 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
   CIMCStatus status;
   int k=0;
   int num_props=0;
+  rb_sfcc_instance *rsi;
   CIMCString *property_qualifier_name = NULL;
   CIMCData data;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
 
   num_props = ptr->ft->getPropertyQualifierCount(ptr, to_charptr(property_name), &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropertyQualifierAt(ptr, to_charptr(property_name), k, &property_qualifier_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_qualifier_name ? rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL)) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_qualifier_name ? rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL)) : Qnil), sfcc_cimdata_to_value(data, rsi->client));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier #%d", k);
@@ -290,7 +318,10 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
 static VALUE property_qualifier_count(VALUE self, VALUE property_name)
 {
   CIMCInstance *ptr;
-  Data_Get_Struct(self, CIMCInstance, ptr);
+  rb_sfcc_instance *rsi;
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  ptr = rsi->inst;
+
   return UINT2NUM(ptr->ft->getPropertyQualifierCount(ptr, to_charptr(property_name), NULL));
 }
 
@@ -301,26 +332,57 @@ static VALUE property_qualifier_count(VALUE self, VALUE property_name)
  * Creates an instance from in +object_path+
  *
  */
-static VALUE new(VALUE klass, VALUE object_path)
+static VALUE new(int argc, VALUE *argv)
 {
   CIMCStatus status;
   CIMCInstance *ptr;
   CIMCObjectPath *op;
+  VALUE object_path;
+  CIMCClient *cl;
+  VALUE client;
 
+  rb_scan_args(argc, argv, "11", &object_path, &client);
+  
   Data_Get_Struct(object_path, CIMCObjectPath, op);
+  Data_Get_Struct(client, CIMCClient, cl);
   ptr = cimcEnv->ft->newInstance(cimcEnv, op, &status);
 
   if (!status.rc)
-    return Sfcc_wrap_cim_instance(ptr);
+    return Sfcc_wrap_cim_instance(ptr, cl);
   sfcc_rb_raise_if_error(status, "Can't create instance");
   return Qnil;
 }
 
-VALUE
-Sfcc_wrap_cim_instance(CIMCInstance *instance)
+
+/**
+ * call-seq:
+ *   instance.client -> Client
+ *
+ * returns the client associated with the instance
+ *
+ */
+static VALUE client(VALUE self)
 {
-  return Data_Wrap_Struct(cSfccCimInstance, NULL, dealloc, instance);
+  rb_sfcc_instance *rsi;
+
+  Data_Get_Struct(self, rb_sfcc_instance, rsi);
+  return Sfcc_wrap_cim_client(rsi->client);
 }
+
+
+VALUE
+Sfcc_wrap_cim_instance(CIMCInstance *instance, CIMCClient *client)
+{
+  rb_sfcc_instance *rsi = (rb_sfcc_instance *)malloc(sizeof(rb_sfcc_instance));
+  if (!rsi)
+    rb_raise(rb_eNoMemError, "Cannot alloc rb_sfcc_instance");
+
+  rsi->inst = instance;
+  rsi->client = client;
+
+  return Data_Wrap_Struct(cSfccCimInstance, NULL, dealloc, rsi);
+}
+
 
 VALUE cSfccCimInstance;
 void init_cim_instance()
@@ -334,7 +396,7 @@ void init_cim_instance()
   VALUE klass = rb_define_class_under(cimc, "Instance", rb_cObject);
   cSfccCimInstance = klass;
 
-  rb_define_singleton_method(klass, "new", new, 1);
+  rb_define_singleton_method(klass, "new", new, -1);
   rb_define_method(klass, "property", property, 1);
   rb_define_method(klass, "each_property", each_property, 0);
   rb_define_method(klass, "property_count", property_count, 0);
@@ -347,4 +409,5 @@ void init_cim_instance()
   rb_define_method(klass, "property_qualifier", property_qualifier, 2);
   rb_define_method(klass, "each_property_qualifier", each_property_qualifier, 1);
   rb_define_method(klass, "property_qualifier_count", property_qualifier_count, 1);
+  rb_define_method(klass, "client", client, 0);
 }

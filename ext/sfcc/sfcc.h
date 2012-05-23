@@ -56,12 +56,12 @@ inline CIMCArgs* sfcc_hash_to_cimargs(VALUE hash);
 /**
  * converts a CIM args object to a hash
  */
-inline VALUE sfcc_cimargs_to_hash(CIMCArgs *args);
+inline VALUE sfcc_cimargs_to_hash(CIMCArgs *args, CIMCClient *client);
 
 /**
  * converts CIMCData to ruby VALUE
  */
-inline VALUE sfcc_cimdata_to_value(CIMCData data);
+inline VALUE sfcc_cimdata_to_value(CIMCData data, CIMCClient *client);
 
 /**
  * convert ruby VALUE to CIMCData

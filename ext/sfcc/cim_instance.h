@@ -6,7 +6,12 @@
 
 void init_cim_instance();
 
+typedef struct {
+  CIMCInstance *inst;
+  CIMCClient *client;
+} rb_sfcc_instance;
+
 extern VALUE cSfccCimInstance;
-VALUE Sfcc_wrap_cim_instance(CIMCInstance *instance);
+VALUE Sfcc_wrap_cim_instance(CIMCInstance *instance, CIMCClient *client);
 
 #endif

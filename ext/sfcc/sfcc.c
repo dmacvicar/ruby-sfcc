@@ -155,9 +155,8 @@ char ** sfcc_value_array_to_string_array(VALUE array)
   return ret;
 }
 
-VALUE sfcc_cimdata_to_value(CIMCData data)
+VALUE sfcc_cimdata_to_value(CIMCData data, CIMCClient *client)
 {
-  CIMCString *cimstr = NULL;
   VALUE rbval;
   CIMCStatus status;
 
@@ -173,7 +172,7 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
     if (!status.rc) {
       for (k = 0; k < n; ++k) {
         CIMCData element = data.value.array->ft->getElementAt(data.value.array, k, NULL);
-        rb_ary_push(rbarray, sfcc_cimdata_to_value(element));
+        rb_ary_push(rbarray, sfcc_cimdata_to_value(element, client));
       }
       return rbarray;
     }
@@ -183,22 +182,20 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
   else if (data.type & CIMC_ENC) {
     switch (data.type) {
     case CIMC_instance:
-      return data.value.inst ? Sfcc_wrap_cim_instance(data.value.inst->ft->clone(data.value.inst, NULL)) : Qnil;
-    case CIMC_class:
-      return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
+      return data.value.inst ? Sfcc_wrap_cim_instance(data.value.inst->ft->clone(data.value.inst, NULL), client) : Qnil;
     case CIMC_ref:
       return data.value.ref ? Sfcc_wrap_cim_object_path(data.value.ref->ft->clone(data.value.ref, NULL)) : Qnil;
     case CIMC_args:
-      return data.value.args ? sfcc_cimargs_to_hash(data.value.args) : Qnil;
+      return data.value.args ? sfcc_cimargs_to_hash(data.value.args, client) : Qnil;
+    case CIMC_class:
+      return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
     case CIMC_filter:
       return Qnil;
-    case CIMC_numericString:
-    case CIMC_booleanString:
-    case CIMC_dateTimeString:
-    case CIMC_classNameString:
-      break;
+    case CIMC_enumeration:
+      return data.value.Enum ? Sfcc_wrap_cim_enumeration(data.value.Enum->ft->clone(data.value.Enum, NULL), client) : Qnil;
     case CIMC_string:
       return data.value.string ? rb_str_new2((char*)data.value.string->ft->getCharPtr(data.value.string, NULL)) : Qnil;
+    case CIMC_chars:
     case CIMC_charsptr:
       return data.value.chars ? rb_str_new((char*)data.value.dataPtr.ptr, data.value.dataPtr.length) : Qnil;
     case CIMC_dateTime:
@@ -211,6 +208,8 @@ VALUE sfcc_cimdata_to_value(CIMCData data)
         rbval = Qnil;
       }
       return rbval;
+    default:
+      rb_raise(rb_eTypeError, "Unhandled type 0x%04x", data.type);
     }
   }
   else if (data.type & CIMC_SIMPLE) {
@@ -271,7 +270,7 @@ CIMCArgs *sfcc_hash_to_cimargs(VALUE hash)
   return args;
 }
 
-VALUE sfcc_cimargs_to_hash(CIMCArgs *args)
+VALUE sfcc_cimargs_to_hash(CIMCArgs *args, CIMCClient *client)
 {
   int i = 0;
   int n = 0;
@@ -300,7 +299,7 @@ VALUE sfcc_cimargs_to_hash(CIMCArgs *args)
       }
 
       if (!status.rc) {
-        rb_hash_aset(hash, rb_funcall(rb_str_new2(argname_cstr), rb_intern("to_sym"), 0), sfcc_cimdata_to_value(argdata));
+        rb_hash_aset(hash, rb_funcall(rb_str_new2(argname_cstr), rb_intern("to_sym"), 0), sfcc_cimdata_to_value(argdata, client));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve argument name");
