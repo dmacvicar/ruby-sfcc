@@ -15,8 +15,9 @@ class SfccCimcClass < SfccTestCase
     end
 
     should "be able to enumerate properties" do
-      @cimclass.each_property do |k, v|
+      @cimclass.each_property do |k, d|
         assert_not_nil(k)
+        assert_kind_of(Sfcc::Cim::Data, d)
       end
       
       properties = @cimclass.properties
@@ -26,8 +27,9 @@ class SfccCimcClass < SfccTestCase
     end
 
     should "be able to enumerate qualifiers" do
-      @cimclass.each_qualifier do |k, v|
+      @cimclass.each_qualifier do |k, d|
         assert_not_nil(k)
+        assert_kind_of(Sfcc::Cim::Data, d)
       end
       
       qualifiers = @cimclass.qualifiers
@@ -37,8 +39,9 @@ class SfccCimcClass < SfccTestCase
     end
 
     should "be able to enumerate qualifiers for a property" do
-      @cimclass.each_property_qualifier("Status") do |k, v|
+      @cimclass.each_property_qualifier("Status") do |k, d|
         assert_not_nil(k)
+        assert_kind_of(Sfcc::Cim::Data, d)
       end
       
       qualifiers = @cimclass.property_qualifiers("Status")
