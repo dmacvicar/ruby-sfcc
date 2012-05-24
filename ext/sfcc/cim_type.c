@@ -17,6 +17,21 @@ dealloc(rb_sfcc_type *type)
 
 /**
  * call-seq:
+ *   to_i() -> Integer
+ *
+ * Integer representation of type
+ */
+static VALUE to_i(VALUE self)
+{
+  rb_sfcc_type *type;
+  Data_Get_Struct(self, rb_sfcc_type, type);
+
+  return INT2FIX(type->type);
+}
+
+
+/**
+ * call-seq:
  *   to_s() -> String
  *
  * String representation of type
@@ -112,6 +127,7 @@ void init_cim_type()
   cSfccCimType = klass;
 
   rb_define_method(klass, "to_s", to_s, 0);
+  rb_define_method(klass, "to_i", to_i, 0);
 
   /**
    * data on the CIM namespace
