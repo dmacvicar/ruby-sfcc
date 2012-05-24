@@ -61,6 +61,7 @@ void Init_sfcc()
   init_cim_class();
   init_cim_instance();
   init_cim_data();
+  init_cim_type();
   init_cim_client();
 }
 
