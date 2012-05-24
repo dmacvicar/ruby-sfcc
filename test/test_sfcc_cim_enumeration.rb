@@ -1,6 +1,5 @@
-
-require File.join(File.dirname(__FILE__), 'helper')
-require 'pp'
+require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
+#require 'pp'
 
 class SfccCimEnumerationTest < SfccTestCase
 
@@ -15,10 +14,26 @@ class SfccCimEnumerationTest < SfccTestCase
       assert cimom_running?
     end
 
+    should "be an enumeration" do
+      assert_kind_of(Sfcc::Cim::Enumeration, @enm)
+    end
+
     should "be able to iterate twice" do
       assert !@enm.to_a.empty?
       assert !@enm.to_a.empty?
-    end    
+    end
+
+    should "have a size" do
+      assert @enm.size > 0
+    end
+
+    should "have a simple type" do
+      assert @enm.simple_type > 0
+    end
+
+    should "has an array representation" do
+      assert_kind_of(Array, @enm.to_a)
+    end
   end   
 end            
 
