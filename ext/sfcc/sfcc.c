@@ -9,6 +9,7 @@
 #include "cim_class.h"
 #include "cim_instance.h"
 #include "cim_data.h"
+#include "cim_type.h"
 #include "cim_client.h"
 
 VALUE mSfcc;
