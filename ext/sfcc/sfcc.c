@@ -164,6 +164,15 @@ VALUE sfcc_cimdata_to_value(CIMCData *data, CIMCClient *client)
   VALUE rbval;
   CIMCStatus status;
 
+  if ((data->state != CIMC_goodValue)
+      && (data->state != CIMC_keyValue)) {
+    if (data->state & CIMC_nullValue)
+      return Qnil;
+    if (data->state & CIMC_notFound)
+      rb_raise(rb_eRuntimeError, "Value not found");
+    if (data->state & CIMC_badValue)
+      rb_raise(rb_eArgError, "Bad value");
+  }
   if (data->type & CIMC_ARRAY) {
     int k = 0;
     int n = 0;
