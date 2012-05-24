@@ -26,7 +26,6 @@ class SfccCimcData < SfccTestCase
       @cimclass.each_property do |k, d|
         assert_kind_of(Sfcc::Cim::Data, d)
         check_data d
-        puts "#{k}: #{d.type}"
       end
     end
 
