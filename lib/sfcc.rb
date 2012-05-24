@@ -213,7 +213,7 @@ module Sfcc
       end
 
       def method_missing name, *args
-	self.property name
+        self.property name
       end
     end
 
@@ -228,8 +228,36 @@ module Sfcc
 
     class Enumeration
     end
-    
-  end
-  
-end
 
+    class Data
+      def good?
+        state_is Good
+      end
+      def bad?
+        state_is Bad
+      end
+      def null?
+        state_is Null
+      end
+      def not_found?
+        state_is NotFound
+      end
+      def key?
+        state_is Key
+      end
+    end
+    
+    class Type
+      def array?
+        (self.to_i & Type::ARRAY) != 0
+      end
+      def integer?
+        (self.to_i & Type::INTEGER) != 0
+      end
+      def string?
+        self.to_i == Type::String
+      end
+    end
+  end # module Cim
+  
+end # module Sfcc

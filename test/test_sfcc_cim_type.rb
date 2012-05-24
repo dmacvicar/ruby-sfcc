@@ -20,6 +20,14 @@ class SfccCimcType < SfccTestCase
       @cimclass.each_property do |k, d|
         assert_kind_of(String, d.type.to_s)
         assert_kind_of(Integer, d.type.to_i)
+        if d.type.to_s =~ /\[\]/
+          assert d.type.array?
+        else
+          assert !d.type.array?
+          assert d.type.integer? if d.type.to_s =~ /int/
+          assert d.type.real? if d.type.to_s =~ /real/
+          assert d.type.string? if d.type.to_s =~ /string/
+        end
       end
     end
     
