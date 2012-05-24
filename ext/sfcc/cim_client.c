@@ -200,13 +200,13 @@ static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
   CIMCClient *client;
   CIMCObjectPath *op;
   CIMCObjectPath *new_op;
-  CIMCInstance *inst;
+  rb_sfcc_instance *inst;
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, CIMCObjectPath, op);
-  Data_Get_Struct(instance, CIMCInstance, inst);
+  Data_Get_Struct(instance, rb_sfcc_instance, inst);
 
-  new_op = client->ft->createInstance(client, op, inst, &status);
+  new_op = client->ft->createInstance(client, op, inst->inst, &status);
 
   if (!status.rc)
     return Sfcc_wrap_cim_object_path(new_op);
@@ -239,7 +239,7 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
 
   CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
-  CIMCInstance *inst;
+  rb_sfcc_instance *inst;
   CIMCClient *client;
   char **props;
 
@@ -248,11 +248,11 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, CIMCObjectPath, op);
-  Data_Get_Struct(instance, CIMCInstance, inst);
+  Data_Get_Struct(instance, rb_sfcc_instance, inst);
 
   props = sfcc_value_array_to_string_array(properties);
 
-  status = client->ft->setInstance(client, op, inst, NUM2INT(flags), props);
+  status = client->ft->setInstance(client, op, inst->inst, NUM2INT(flags), props);
   free(props);
 
   sfcc_rb_raise_if_error(status, "Can't set instance");

@@ -339,14 +339,18 @@ static VALUE new(int argc, VALUE *argv)
   CIMCObjectPath *op;
   VALUE object_path;
   CIMCClient *cl;
-  VALUE client;
+  VALUE client = Qnil;
 
   rb_scan_args(argc, argv, "11", &object_path, &client);
   
   Data_Get_Struct(object_path, CIMCObjectPath, op);
-  Data_Get_Struct(client, CIMCClient, cl);
+  if (NIL_P(client)) {
+    cl = NULL;
+  }
+  else {
+    Data_Get_Struct(client, CIMCClient, cl);
+  }
   ptr = cimcEnv->ft->newInstance(cimcEnv, op, &status);
-
   if (!status.rc)
     return Sfcc_wrap_cim_instance(ptr, cl);
   sfcc_rb_raise_if_error(status, "Can't create instance");
