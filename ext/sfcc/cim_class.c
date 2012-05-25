@@ -11,7 +11,7 @@ dealloc(CIMCClass *c)
 
 /**
  * call-seq:
- *   name()
+ *   name() -> String
  *
  * gets the class name
  */
@@ -26,7 +26,7 @@ static VALUE class_name(VALUE self)
 
 /**
  * call-seq:
- *   superclass_name()
+ *   superclass_name() -> String
  *
  * gets the superclass name
  */
@@ -42,7 +42,7 @@ static VALUE superclass_name(VALUE self)
 
 /**
  * call-seq:
- *   keys()
+ *   keys() -> Array
  *
  * gets the list of keys
  */
@@ -135,7 +135,7 @@ static VALUE property(VALUE self, VALUE name)
  *   end
  *
  * enumerates properties yielding the property name and
- * its data
+ * its Cim::Data
  *
  */
 static VALUE each_property(VALUE self)
@@ -169,14 +169,13 @@ static VALUE each_property(VALUE self)
 
 /**
  * call-seq:
- *   property_count()
+ *   property_count() -> Integer
  *
  * Gets the number of properties contained in this class
  */
 static VALUE property_count(VALUE self)
 {
   CIMCClass *ptr;
-  Data_Get_Struct(self, CIMCClass, ptr);
   Data_Get_Struct(self, CIMCClass, ptr);
   return UINT2NUM(ptr->ft->getPropertyCount(ptr, NULL));
 }
@@ -209,7 +208,7 @@ static VALUE qualifier(VALUE self, VALUE name)
  *   end
  *
  * enumerates properties yielding the qualifier name and
- * its data
+ * its Cim::Data
  *
  */
 static VALUE each_qualifier(VALUE self)
@@ -243,7 +242,7 @@ static VALUE each_qualifier(VALUE self)
 
 /**
  * call-seq:
- *   qualifier_count()
+ *   qualifier_count() -> Integer
  *
  * Gets the number of qualifiers in this class
  */
@@ -283,7 +282,7 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
  *   end
  *
  * enumerates properties yielding the property qualifier name and
- * its data
+ * its Cim::Data
  *
  */
 static VALUE each_property_qualifier(VALUE self, VALUE property_name)
@@ -317,7 +316,7 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
 
 /**
  * call-seq:
- *   property_qualifier_count(property_name)
+ *   property_qualifier_count(property_name) -> Integer
  *
  * Gets the number of qualifiers contained in this property
  */
