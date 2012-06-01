@@ -1,23 +1,41 @@
-Interface to SFCC
+= Interface to SFCC
+
+== Naming
+
+cmci* is legacy sfcc
+cimc* is sfcc
+cmpi* is sfcb provider interface
+
+== Sfcc Interface
+
+=== cimcEnv
 
 ext/sfcc/sfcc.c creates a cimcEnv via NewCIMCEnv()
   - this defines 'SfcbLocal' or 'XML'
   - default is 'XML'
   - can be overridden by setting RUBY_SFCC_CONNECTION environment
     variable
+  - gives the context for the SFCC library
 
-NewCIMCEnv() is defined in sfcc/cimc/cimcclient.c
-  if SfcbLocal
-    if /usr/lib64/sfcb exist, load /usr/lib64/sfcb/libcimcClientSfcbLocal.so
-    else load /usr/lib64/libcimcClientSfcbLocal.so
-  else
-    load /usr/lib64/libcimcClientXML.so
+  NewCIMCEnv() is defined in sfcc/cimc/cimcclient.c
+    if SfcbLocal
+      if /usr/lib64/sfcb exist, load /usr/lib64/sfcb/libcimcClientSfcbLocal.so
+      else load /usr/lib64/libcimcClientSfcbLocal.so
+    else
+      load /usr/lib64/libcimcClientXML.so
     
-libcimcClientSfcbLocal.so comes from sfcb
+  libcimcClientSfcbLocal.so comes from sfcb
 
-libcimcClientXML.so comes from sfcc, backend/cimxml/*
+  libcimcClientXML.so comes from sfcc, backend/cimxml/*
+
+For Ruby, the pointer to cimcEnv is stored as a wrapped struct in
+Sfcc::Cim::CIMC_ENV. This is done so we get a destructor call when the
+garbage collector cleans up Sfcc::Cim. Then cimcEnv is released.
+(Exit_sfcc() in ext/sfcc/sfcc.c)
 
 
-cmci* is legacy
-cimc* is sfcc
-cmpi* is sfcb provider i/f
+=== CIMCClient
+
+client = cimcEnv->ft->connect2(...)
+
+All other functions are in the function table of CIMCClient
