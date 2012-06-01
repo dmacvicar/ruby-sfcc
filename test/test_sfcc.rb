@@ -3,7 +3,7 @@ require 'pp'
 
 class BasicTest < SfccTestCase
 
-  context "a running CIMOM with no auth" do
+  context "a running CIMOM" do
     setup do
       setup_cim_client
     end
