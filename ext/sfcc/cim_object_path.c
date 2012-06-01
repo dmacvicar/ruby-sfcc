@@ -176,7 +176,7 @@ static VALUE each_key(VALUE self)
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);
       }
-      if (key_name) CMRelease(key_name);
+      if (key_name) key_name->ft->release(key_name);
     }
   }
   else {
@@ -375,7 +375,7 @@ static VALUE to_s(VALUE self)
   Data_Get_Struct(self, CIMCObjectPath, ptr);
   cimstr = ptr->ft->toString(ptr, NULL);
   ret = CIMSTR_2_RUBYSTR(cimstr);
-  CMRelease(cimstr);
+  cimstr->ft->release(cimstr);
   return ret;
 }
 

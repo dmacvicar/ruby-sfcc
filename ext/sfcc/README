@@ -1,0 +1,23 @@
+Interface to SFCC
+
+ext/sfcc/sfcc.c creates a cimcEnv via NewCIMCEnv()
+  - this defines 'SfcbLocal' or 'XML'
+  - default is 'XML'
+  - can be overridden by setting RUBY_SFCC_CONNECTION environment
+    variable
+
+NewCIMCEnv() is defined in sfcc/cimc/cimcclient.c
+  if SfcbLocal
+    if /usr/lib64/sfcb exist, load /usr/lib64/sfcb/libcimcClientSfcbLocal.so
+    else load /usr/lib64/libcimcClientSfcbLocal.so
+  else
+    load /usr/lib64/libcimcClientXML.so
+    
+libcimcClientSfcbLocal.so comes from sfcb
+
+libcimcClientXML.so comes from sfcc, backend/cimxml/*
+
+
+cmci* is legacy
+cimc* is sfcc
+cmpi* is sfcb provider i/f

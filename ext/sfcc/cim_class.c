@@ -158,7 +158,7 @@ static VALUE each_property(VALUE self)
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property #%d", k);
       }
-      if (property_name) CMRelease(property_name);
+      if (property_name) property_name->ft->release(property_name);
     }
   }
   else {
@@ -231,7 +231,7 @@ static VALUE each_qualifier(VALUE self)
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve qualifier #%d", k);
       }
-      if (qualifier_name) CMRelease(qualifier_name);
+      if (qualifier_name) qualifier_name->ft->release(qualifier_name);
     }
   }
   else {
@@ -305,7 +305,7 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier #%d", k);
       }
-      if (property_qualifier_name) CMRelease(property_qualifier_name);
+      if (property_qualifier_name) property_qualifier_name->ft->release(property_qualifier_name);
     }
   }
   else {

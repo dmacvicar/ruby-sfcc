@@ -135,7 +135,7 @@ void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...)
 
   if (status.msg) {
     snprintf(error, MAX_ERROR_BUFFER, "%s : %s", orig_error, status.msg->ft->getCharPtr(status.msg, NULL));
-    CMRelease(status.msg);
+    status.msg->ft->release(status.msg);
   }
   else
     strcpy(error, orig_error);

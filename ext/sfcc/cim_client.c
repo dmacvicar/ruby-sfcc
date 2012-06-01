@@ -46,6 +46,8 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   CIMCObjectPath *op = NULL;
   CIMCClient *client = NULL;
   CIMCClass *cimclass = NULL;
+  CIMCString *ops;
+
   char **props;
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
@@ -62,7 +64,8 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   if (!status.rc) {
       return Sfcc_wrap_cim_class(cimclass);
   }
-  sfcc_rb_raise_if_error(status, "Can't get class at %s", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  ops = op->ft->toString(op, NULL);
+  sfcc_rb_raise_if_error(status, "Can't get class at %s", ops->ft->getCharPtr(ops, NULL));
   return Qnil;
 }
 
@@ -271,12 +274,16 @@ static VALUE delete_instance(VALUE self, VALUE object_path)
   CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
+  CIMCString *ops;
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   status = client->ft->deleteInstance(client, op);
-  sfcc_rb_raise_if_error(status, "Can't delete instance '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  if (!status.rc) {
+    ops = op->ft->toString(op, NULL);
+    sfcc_rb_raise_if_error(status, "Can't delete instance '%s'", ops->ft->getCharPtr(ops, NULL));
+  }
   return Qnil;
 }
 
@@ -453,6 +460,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
   CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
+  CIMCString *ops;
   char **props;
   CIMCEnumeration *enm;
 
@@ -478,7 +486,8 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
     return Sfcc_wrap_cim_enumeration(enm, client);
   }
 
-  sfcc_rb_raise_if_error(status, "Can't get associators for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  ops = op->ft->toString(op, NULL);
+  sfcc_rb_raise_if_error(status, "Can't get associators for '%s'", ops->ft->getCharPtr(ops, NULL));
   return Qnil;
 }
 
@@ -532,6 +541,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
+  CIMCString *ops;
 
   rb_scan_args(argc, argv, "14", &object_path,
                &assoc_class, &result_class,
@@ -550,7 +560,8 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, client);
   }
-  sfcc_rb_raise_if_error(status, "Can't get associator names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  ops = op->ft->toString(op, NULL);
+  sfcc_rb_raise_if_error(status, "Can't get associator names for '%s'", ops->ft->getCharPtr(ops, NULL));
   return Qnil;
 }
 
@@ -595,6 +606,7 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
   CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCObjectPath *op;
   CIMCClient *client;
+  CIMCString *ops;
   char **props;
   CIMCEnumeration *enm;
 
@@ -617,7 +629,8 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, client);
   }
-  sfcc_rb_raise_if_error(status, "Can't get references for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  ops = op->ft->toString(op, NULL);
+  sfcc_rb_raise_if_error(status, "Can't get references for '%s'", ops->ft->getCharPtr(ops, NULL));
   return Qnil;
 }
 
@@ -654,6 +667,7 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   CIMCObjectPath *op;
   CIMCClient *client;
   CIMCEnumeration *enm;
+  CIMCString *ops;
 
   rb_scan_args(argc, argv, "12", &object_path,
                &result_class, &role);
@@ -669,7 +683,8 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, client);
   }
-  sfcc_rb_raise_if_error(status, "Can't get reference names for '%s'", CMGetCharsPtr(CMObjectPathToString(op, NULL), NULL));
+  ops = op->ft->toString(op, NULL);
+  sfcc_rb_raise_if_error(status, "Can't get reference names for '%s'", ops->ft->getCharPtr(ops, NULL));
   return Qnil;
 }
 

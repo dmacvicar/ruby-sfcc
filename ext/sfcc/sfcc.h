@@ -7,7 +7,6 @@
 #include <cimc/cimc.h>
 #include <cimc/cimcdt.h>
 #include <cimc/cimcft.h>
-#include <CimClientLib/cmcimacs.h>
         
 #include "ruby.h"
 
