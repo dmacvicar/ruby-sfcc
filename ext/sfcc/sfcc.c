@@ -10,6 +10,7 @@
 #include "cim_instance.h"
 #include "cim_data.h"
 #include "cim_type.h"
+#include "cim_flags.h"
 #include "cim_client.h"
 
 VALUE mSfcc;
@@ -63,6 +64,7 @@ void Init_sfcc()
   init_cim_instance();
   init_cim_data();
   init_cim_type();
+  init_cim_flags();
   init_cim_client();
 }
 
@@ -411,3 +413,31 @@ to_charptr(VALUE v)
   }
   return str;
 }
+
+/**
+ * converts a CIMCArray to rbArray
+ */
+
+VALUE
+sfcc_cimcarray_to_rubyarray(CIMCArray *array)
+{
+  CIMCCount size;
+  CIMCCount i;
+  CIMCStatus st = { 0, NULL };
+  VALUE ary;
+  if (!array)
+    rb_raise(rb_eArgError, "Cannot convert NULL array");
+  size = array->ft->getSize(array, &st);
+  sfcc_rb_raise_if_error(st, "Can't get array size");
+  ary = rb_ary_new2(size);
+  for (i = 0; i < size; ++i) {
+    CIMCData data;
+    VALUE value;
+    array->ft->getElementAt(array,i,&st);
+    sfcc_rb_raise_if_error(st, "Can't get array element %d of %d", i, size);
+    value = sfcc_cimdata_to_value(&data, NULL);
+    rb_ary_store(ary,i,value);
+  }
+  return ary;
+}
+
