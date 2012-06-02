@@ -18,10 +18,15 @@ dealloc(CIMCClass *c)
 static VALUE class_name(VALUE self)
 {
   CIMCClass *cimclass;
-  const char *classname;
+  CIMCString *name;
+  CIMCStatus status = { 0 };
   Data_Get_Struct(self, CIMCClass, cimclass);
-  classname = cimclass->ft->getCharClassName(cimclass);
-  return rb_str_new2(classname);
+  name = cimclass->ft->getClassName(cimclass, &status);
+  if ( !status.rc )
+    return CIMSTR_2_RUBYSTR(name);
+
+  sfcc_rb_raise_if_error(status, "Can't retrieve class name");
+  return Qnil;
 }
 
 /**
@@ -53,6 +58,9 @@ static VALUE keys(VALUE self)
   CIMCArray *keylist;
   Data_Get_Struct(self, CIMCClass, cimclass);
   keylist = cimclass->ft->getKeyList(cimclass);
+  if (!keylist)
+    return Qnil;
+  
   ret = sfcc_cimcarray_to_rubyarray(keylist);
   keylist->ft->release(keylist);
   return ret;
@@ -116,7 +124,7 @@ static VALUE is_indication(VALUE self)
 static VALUE property(VALUE self, VALUE name)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   CIMCData data;
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClass, ptr);
@@ -141,7 +149,7 @@ static VALUE property(VALUE self, VALUE name)
 static VALUE each_property(VALUE self)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   int k=0;
   int num_props=0;
   CIMCString *property_name;
@@ -189,7 +197,7 @@ static VALUE property_count(VALUE self)
 static VALUE qualifier(VALUE self, VALUE name)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   CIMCData data;
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClass, ptr);
@@ -214,7 +222,7 @@ static VALUE qualifier(VALUE self, VALUE name)
 static VALUE each_qualifier(VALUE self)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   int k=0;
   int num_props=0;
   CIMCString *qualifier_name;
@@ -262,7 +270,7 @@ static VALUE qualifier_count(VALUE self)
 static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier_name)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   CIMCData data;
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClass, ptr);
@@ -288,7 +296,7 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
 static VALUE each_property_qualifier(VALUE self, VALUE property_name)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   int k=0;
   int num_props=0;
   CIMCString *property_qualifier_name;
