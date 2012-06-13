@@ -3,15 +3,15 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
 
 class SfccCimcClass < SfccTestCase
 
-  context "a CIM environment and client" do
+  context "with a Cim::Class it" do
     setup do
       setup_cim_client
       op = Sfcc::Cim::ObjectPath.new("root/cimv2", "CIM_ComputerSystem")
       @cimclass = @client.get_class(op, Sfcc::Cim::Flags::IncludeQualifiers|Sfcc::Cim::Flags::IncludeClassOrigin)
     end
     
-    should "be running" do
-      assert cimom_running?
+    should "have a name" do
+      @cimclass.class_name
     end
     
     should "get a class" do
