@@ -41,6 +41,10 @@ static VALUE superclass_name(VALUE self)
   const char *classname;
   Data_Get_Struct(self, CIMCClass, cimclass);
   classname = cimclass->ft->getCharSuperClassName(cimclass);
+  if (!classname) {
+    rb_raise(rb_eArgError, "Cannot retrieve superclass name");
+    return Qnil;
+  }
   return rb_str_new2(classname);
 }
 
