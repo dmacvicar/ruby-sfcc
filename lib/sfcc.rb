@@ -5,13 +5,6 @@ require 'uri'
 
 module Sfcc
 
-  module Flags
-    LocalOnly          = 1
-    DeepInheritance    = 2
-    IncludeQualifiers  = 4
-    IncludeClassOrigin = 8
-  end
-    
   module Cim
 
     # Base class for errors

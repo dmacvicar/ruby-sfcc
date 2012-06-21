@@ -7,7 +7,7 @@ class SfccCimcClass < SfccTestCase
     setup do
       setup_cim_client
       op = Sfcc::Cim::ObjectPath.new("root/cimv2", "CIM_ComputerSystem")
-      @cimclass = @client.get_class(op, Sfcc::Cim::Flags::IncludeQualifiers|Sfcc::Cim::Flags::IncludeClassOrigin)
+      @cimclass = @client.get_class(op, Sfcc::Flags::IncludeQualifiers|Sfcc::Flags::IncludeClassOrigin)
     end
     
     should "have a name" do

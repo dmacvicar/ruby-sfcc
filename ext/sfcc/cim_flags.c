@@ -9,12 +9,11 @@ VALUE cSfccCimFlags;
 void init_cim_flags()
 {
   VALUE sfcc = rb_define_module("Sfcc");
-  VALUE cimc = rb_define_module_under(sfcc, "Cim");
 
   /**
    * data on the CIM namespace
    */
-  VALUE klass = rb_define_class_under(cimc, "Flags", rb_cObject);
+  VALUE klass = rb_define_class_under(sfcc, "Flags", rb_cObject);
   cSfccCimFlags = klass;
 
   rb_define_const(klass, "LocalOnly",          INT2FIX(CIMC_FLAG_LocalOnly));
