@@ -712,9 +712,9 @@ static VALUE invoke_method(VALUE self,
   CIMCClient *client;
   CIMCObjectPath *op;
   CIMCArgs *cimcargsout;
-  VALUE method_name_str;
   const char *method_name_cstr;
   CIMCData ret;
+
   Check_Type(argin, T_HASH);
 
   cimcargsout = cimcEnv->ft->newArgs(cimcEnv, NULL);
@@ -722,8 +722,7 @@ static VALUE invoke_method(VALUE self,
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, CIMCObjectPath, op);
 
-  method_name_str = rb_funcall(method_name, rb_intern("to_s"), 0);
-  method_name_cstr = to_charptr(method_name_str);
+  method_name_cstr = to_charptr(method_name);
   ret = client->ft->invokeMethod(client,
                               op,
                               method_name_cstr,
