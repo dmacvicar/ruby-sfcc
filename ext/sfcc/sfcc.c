@@ -370,12 +370,35 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
     break;
   case T_FLOAT:
     break;
-  case T_ARRAY:
-    break;
   case T_HASH:
     break;
   case T_SYMBOL:
     */
+  case T_ARRAY: {
+    CIMCCount i = 0;
+    int len = RARRAY_LEN(value);
+    CIMCType type = CIMC_string; /* sfcc can't handle CIMC_null */
+    VALUE array_value;
+    CIMCData array_data;    
+    if (len > 0) {
+      /* try to deduce type from first array element */
+      array_value = rb_ary_entry(value, 0);
+      array_data = sfcc_value_to_cimdata(array_value);
+      type = array_data.type;
+    }
+    data.type = type | CIMC_ARRAY;
+    data.state = CIMC_goodValue;
+    data.value.array = cimcEnv->ft->newArray(cimcEnv, len, type, NULL);
+    if (len > 0) {
+      data.value.array->ft->setElementAt(data.value.array, i++, &(array_data.value), array_data.type);
+    }
+    for (; i < len; ++i) {
+      array_value = rb_ary_entry(value, 0);
+      array_data = sfcc_value_to_cimdata(array_value);
+      data.value.array->ft->setElementAt(data.value.array, i, &(array_data.value), array_data.type);      
+    }
+    break;
+  }
   case T_DATA:
   default:
     if (CLASS_OF(value) == cSfccCimString) {
