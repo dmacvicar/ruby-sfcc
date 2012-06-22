@@ -266,8 +266,7 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
   CIMCStatus status;
   CIMCData data;
   CIMCArgs *args = (CIMCArgs *)extra;
-  VALUE key_str = rb_funcall(key, rb_intern("to_s"), 0);
-  const char *key_cstr = to_charptr(key_str);
+  const char *key_cstr = to_charptr(key);
   data = sfcc_value_to_cimdata(value);
   status = args->ft->addArg(args, key_cstr, &data.value, data.type);
 
