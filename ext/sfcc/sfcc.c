@@ -380,7 +380,13 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
   default:
     if (CLASS_OF(value) == cSfccCimString) {
       Data_Get_Struct(value, CIMCString, data.value.string);
-      data.type = CIMC_string;
+      if (data.value.string == NULL) { /* packed a NULL pointer ? */
+        data.type = CIMC_null;
+        data.state = CIMC_nullValue;
+      }
+      else {
+        data.type = CIMC_string;
+      }
     }
     else {
       VALUE cname;
