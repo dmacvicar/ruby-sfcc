@@ -211,7 +211,13 @@ VALUE sfcc_cimdata_to_value(CIMCData *data, CIMCClient *client)
     case CIMC_enumeration:
       return data->value.Enum ? Sfcc_wrap_cim_enumeration(data->value.Enum->ft->clone(data->value.Enum, NULL), client) : Qnil;
     case CIMC_string:
-      return data->value.string ? rb_str_new2((char*)data->value.string->ft->getCharPtr(data->value.string, NULL)) : Qnil;
+      if (data->value.string) {
+        const char *strval = data->value.string->ft->getCharPtr(data->value.string, NULL);
+        /* getCharPtr() might return NULL and rb_str_new2 doesn't like that */
+        if (strval)
+          return rb_str_new2(strval);
+      }
+      return Qnil;
     case CIMC_chars:
     case CIMC_charsptr:
       return data->value.chars ? rb_str_new((char*)data->value.dataPtr.ptr, data->value.dataPtr.length) : Qnil;
