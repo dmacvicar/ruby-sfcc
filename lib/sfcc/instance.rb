@@ -36,7 +36,21 @@ module Sfcc
 	  # FIXME typecheck of args
 	  i += 2
 	end
-        self.client.invoke_method(self.object_path, name, argsin, {})
+        argsout = nil
+	if output
+	  if args.empty?
+	    raise "Function #{name} has output arguments, please add an empty hash to the call"
+	  end
+	  argsout = args.shift
+	  unless argsout.kind_of? Hash
+	    raise "Function #{name} has output arguments, last argument must be a Hash"
+	  end
+	  unless args.empty?
+	    raise "Function call to #{name} has excess arguments"
+	  end
+	end
+        res = self.client.invoke_method(self.object_path, name, argsin, argsout)
+        return res
       end
       
       # properties => Hash
