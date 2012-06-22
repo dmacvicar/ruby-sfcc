@@ -262,7 +262,7 @@ VALUE sfcc_cimdata_to_value(CIMCData *data, CIMCClient *client)
   else if (data->type & CIMC_null ) {
     return Qnil;
   }
-  rb_raise(rb_eTypeError, "unsupported data data type %d", data->type);
+  rb_raise(rb_eTypeError, "unsupported data type %d", data->type);
   return Qnil;
 }
 
@@ -418,7 +418,7 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
       data.type = CIMC_null;
       cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
       class_name = to_charptr(cname);
-      rb_raise(rb_eTypeError, "unsupported data data type: %s", class_name);
+      rb_raise(rb_eTypeError, "unsupported data type: %s", class_name);
       return data;
     }
   }
