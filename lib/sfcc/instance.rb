@@ -1,5 +1,7 @@
 # sfcc/instance.rb
 
+require 'cim'
+
 module Sfcc
 
   module Cim
@@ -9,6 +11,34 @@ module Sfcc
         self.object_path.classname
       end
 
+      def invoke name, *args
+        raise "Cannot invoke, Instance has no client associated" unless self.client
+	classname = self.object_path.classname
+        # get method input parameter information
+	s = "mof/#{classname}"
+	begin
+	  require s
+	rescue LoadError
+	  STDERR.puts "Cannot load #{s} for type information"
+	  return
+	end
+	methods = MOF.class_eval "#{classname}::METHODS"
+	method = methods[name.to_s]
+	raise "Unknown method #{name} for #{classname}" unless method
+	type = method[:type]
+	parameters = method[:parameters]
+	input = parameters[:in]
+	output = parameters[:out]
+	argsin = {}
+	i = 0
+	while i < input.size
+	  argsin[input[i]] = args.shift
+	  # FIXME typecheck of args
+	  i += 2
+	end
+        self.client.invoke_method(self.object_path, name, argsin, {})
+      end
+      
       # properties => Hash
       #
       # return a hash with all properties
@@ -43,7 +73,11 @@ module Sfcc
       end
 
       def method_missing name, *args
-        self.property name
+        if args.empty?
+          self.property name
+        else
+          self.invoke name, *args
+        end
       end
     end
 
