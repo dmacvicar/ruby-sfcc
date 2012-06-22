@@ -32,8 +32,10 @@ module Sfcc
 	argsin = {}
 	i = 0
 	while i < input.size
-	  argsin[input[i]] = args.shift
-	  # FIXME typecheck of args
+          value = args.shift
+          raise "Argument for #{input[i]} is nil, not allowed !" unless value
+	  argsin[input[i]] = value
+	  # FIXME more typecheck of args ?
 	  i += 2
 	end
         argsout = nil
