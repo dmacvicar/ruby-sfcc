@@ -16,12 +16,20 @@
 VALUE mSfcc;
 VALUE mSfccCim;
 CIMCEnv *cimcEnv;
+char *cimcEnvType;
 
 static void
 Exit_sfcc(CIMCEnv *env)
 {
 /*  fprintf(stderr, "Sfcc_dealloc_cimcEnv %p\n", env); */
-  if (env) env->ft->release(env);
+  if (env) {
+    env->ft->release(env);
+    cimcEnv = NULL;
+  }
+  if (cimcEnvType) {
+    free(cimcEnvType);
+    cimcEnvType = NULL;
+  }
 }
 
 void Init_sfcc()
@@ -55,6 +63,8 @@ void Init_sfcc()
   }
   value = Data_Wrap_Struct(cEnvironment, NULL, Exit_sfcc, cimcEnv);
   rb_define_const(mSfccCim, "CIMC_ENV", value);
+  cimcEnvType = strdup(conn);
+  rb_define_const(mSfccCim, "CIMC_ENV_TYPE", rb_str_new2(cimcEnvType));
 
   /**
    * Init other sub-classes

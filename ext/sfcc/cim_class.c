@@ -39,6 +39,11 @@ static VALUE superclass_name(VALUE self)
 {
   CIMCClass *cimclass;
   const char *classname;
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   classname = cimclass->ft->getCharSuperClassName(cimclass);
   if (!classname) {
@@ -60,6 +65,12 @@ static VALUE keys(VALUE self)
   VALUE ret;
   CIMCClass *cimclass;
   CIMCArray *keylist;
+  
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   keylist = cimclass->ft->getKeyList(cimclass);
   if (!keylist)
@@ -81,6 +92,11 @@ static VALUE is_association(VALUE self)
 {
   CIMCClass *cimclass;
   CIMCBoolean is;
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   is = cimclass->ft->isAssociation(cimclass);
   return is ? Qtrue : Qfalse;
@@ -97,6 +113,11 @@ static VALUE is_abstract(VALUE self)
 {
   CIMCClass *cimclass;
   CIMCBoolean is;
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   is = cimclass->ft->isAbstract(cimclass);
   return is ? Qtrue : Qfalse;
@@ -113,6 +134,11 @@ static VALUE is_indication(VALUE self)
 {
   CIMCClass *cimclass;
   CIMCBoolean is;
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   is = cimclass->ft->isIndication(cimclass);
   return is ? Qtrue : Qfalse;

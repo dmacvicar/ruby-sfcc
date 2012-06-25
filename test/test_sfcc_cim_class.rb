@@ -77,29 +77,47 @@ class SfccCimcClass < SfccTestCase
       end
     end # context
     
-    context "and have extension callbacks" do
-      should "have a string superclass name" do
-        assert @cimclass.superclass_name
-        assert_kind_of String, @cimclass.superclass_name
-      end
+      context "and XML connect without extension callbacks" do
+        should "have a string superclass name" do
+          if Sfcc::Cim::CIMC_ENV_TYPE == "XML"
+            assert_raise Sfcc::Cim::ErrorNotSupported do
+              @cimclass.superclass_name
+            end
+          else
+            assert @cimclass.superclass_name
+            assert_kind_of String, @cimclass.superclass_name
+          end
+        end
       
-      should "have key properties" do
-        assert @cimclass.keys
-        assert_kind_of Array, @cimclass.keys
-      end
+        should "have key properties" do
+          if Sfcc::Cim::CIMC_ENV_TYPE == "XML"
+            assert_raise Sfcc::Cim::ErrorNotSupported do
+              assert @cimclass.keys
+            end
+          else
+            assert @cimclass.keys
+            assert_kind_of Array, @cimclass.keys
+          end
+        end
 
-      should "answer if its an association" do
-        assert !@cimclass.association?
-      end
-      should "answer if its abstract" do
-        assert !@cimclass.abstract?
-      end
-      should "answer if its an indication" do
-        assert !@cimclass.indication?
-      end
-
-    end # context
-
+        should "answer if its an association" do
+          assert_raise Sfcc::Cim::ErrorNotSupported do
+            assert !@cimclass.association?
+          end
+        end
+        should "answer if its abstract" do
+          assert_raise Sfcc::Cim::ErrorNotSupported do
+            assert !@cimclass.abstract?
+          end
+        end
+        should "answer if its an indication" do
+          assert_raise Sfcc::Cim::ErrorNotSupported do
+            assert !@cimclass.indication?
+          end
+        end
+        
+      end # context
+      
   end
   
 end

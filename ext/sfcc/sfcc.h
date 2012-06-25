@@ -24,6 +24,7 @@ extern const char *to_charptr(VALUE v);
 extern VALUE mSfcc;
 extern VALUE mSfccCim;
 extern CIMCEnv *cimcEnv;
+extern char *cimcEnvType;
 
 #define CIMSTR_2_RUBYSTR(x) (x ? (x->ft->getCharPtr(x, NULL) ? rb_str_new2(x->ft->getCharPtr(x, NULL)) : Qnil) : Qnil)
 
