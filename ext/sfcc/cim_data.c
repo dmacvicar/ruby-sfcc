@@ -45,7 +45,7 @@ static VALUE value(VALUE self)
 {
   CIMCData *data;
   Data_Get_Struct(self, CIMCData, data);
-  return sfcc_cimdata_to_value(data, NULL);
+  return sfcc_cimdata_to_value(data, Qnil);
 }
 
 

@@ -46,7 +46,7 @@ inline char ** sfcc_value_array_to_string_array(VALUE array);
 /**
  * converts a CIMCArray to rbArray
  */
-inline VALUE sfcc_cimcarray_to_rubyarray(CIMCArray *array);
+inline VALUE sfcc_cimcarray_to_rubyarray(CIMCArray *array, VALUE client);
 
 /**
  * converts a ruby hash to a CIM args object
@@ -56,12 +56,12 @@ inline CIMCArgs* sfcc_hash_to_cimargs(VALUE hash);
 /**
  * converts a CIM args object to a hash
  */
-inline VALUE sfcc_cimargs_to_hash(CIMCArgs *args, CIMCClient *client);
+inline VALUE sfcc_cimargs_to_hash(CIMCArgs *args, VALUE client);
 
 /**
  * converts CIMCData to ruby VALUE
  */
-inline VALUE sfcc_cimdata_to_value(CIMCData *data, CIMCClient *client);
+inline VALUE sfcc_cimdata_to_value(CIMCData *data, VALUE client);
 
 /**
  * convert ruby VALUE to CIMCData

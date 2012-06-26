@@ -4,6 +4,14 @@
 #include "cim_client.h"
 
 static void
+mark(rb_sfcc_enumeration *rse)
+{
+  if (!NIL_P(rse->client)) {
+    rb_gc_mark(rse->client);
+  }
+}
+
+static void
 dealloc(rb_sfcc_enumeration *rse)
 {
 /*  fprintf(stderr, "Sfcc_dealloc_cim_enumeration %p\n", enm); */
@@ -152,12 +160,12 @@ static VALUE client(VALUE self)
   rb_sfcc_enumeration *rse;
 
   Data_Get_Struct(self, rb_sfcc_enumeration, rse);
-  return Sfcc_wrap_cim_client(rse->client);
+  return rse->client;
 }
 
 
 VALUE
-Sfcc_wrap_cim_enumeration(CIMCEnumeration *enm, CIMCClient *client)
+Sfcc_wrap_cim_enumeration(CIMCEnumeration *enm, VALUE client)
 {
   rb_sfcc_enumeration *rse = (rb_sfcc_enumeration *)malloc(sizeof(rb_sfcc_enumeration));
   if (!rse)
@@ -166,7 +174,7 @@ Sfcc_wrap_cim_enumeration(CIMCEnumeration *enm, CIMCClient *client)
   rse->enm = enm;
   rse->client = client;
 
-  return Data_Wrap_Struct(cSfccCimEnumeration, NULL, dealloc, rse);
+  return Data_Wrap_Struct(cSfccCimEnumeration, mark, dealloc, rse);
 }
 
 

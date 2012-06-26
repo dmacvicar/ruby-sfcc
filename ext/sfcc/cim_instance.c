@@ -4,6 +4,13 @@
 #include "cim_client.h"
 
 static void
+mark(rb_sfcc_instance *rsi)
+{
+  if (!NIL_P(rsi->client))
+    rb_gc_mark(rsi->client);
+}
+
+static void
 dealloc(rb_sfcc_instance *rsi)
 {
 /*  fprintf(stderr, "Sfcc_dealloc_cim_instance %p\n", inst); */
@@ -111,7 +118,7 @@ static VALUE set_property(VALUE self, VALUE name, VALUE value)
 
 /**
  * call-seq:
- *  object_path()
+ *  object_path() -> ObjectPath
  *
  * Generates an ObjectPath out of the nameSpace, classname and
  * key propeties of this Instance.
@@ -124,7 +131,7 @@ static VALUE object_path(VALUE self)
   Data_Get_Struct(self, rb_sfcc_instance, rsi);
   ptr = rsi->inst;
   op = ptr->ft->getObjectPath(ptr, NULL);
-  return Sfcc_wrap_cim_object_path(op);
+  return Sfcc_wrap_cim_object_path(op, rsi->client);
 }
 
 /**
@@ -336,23 +343,16 @@ static VALUE new(int argc, VALUE *argv)
 {
   CIMCStatus status;
   CIMCInstance *ptr;
-  CIMCObjectPath *op;
+  rb_sfcc_object_path *rso;
   VALUE object_path;
-  CIMCClient *cl;
   VALUE client = Qnil;
 
   rb_scan_args(argc, argv, "11", &object_path, &client);
   
-  Data_Get_Struct(object_path, CIMCObjectPath, op);
-  if (NIL_P(client)) {
-    cl = NULL;
-  }
-  else {
-    Data_Get_Struct(client, CIMCClient, cl);
-  }
-  ptr = cimcEnv->ft->newInstance(cimcEnv, op, &status);
+  Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
+  ptr = cimcEnv->ft->newInstance(cimcEnv, rso->op, &status);
   if (!status.rc)
-    return Sfcc_wrap_cim_instance(ptr, cl);
+    return Sfcc_wrap_cim_instance(ptr, client);
   sfcc_rb_raise_if_error(status, "Can't create instance");
   return Qnil;
 }
@@ -370,12 +370,12 @@ static VALUE client(VALUE self)
   rb_sfcc_instance *rsi;
 
   Data_Get_Struct(self, rb_sfcc_instance, rsi);
-  return Sfcc_wrap_cim_client(rsi->client);
+  return rsi->client;
 }
 
 
 VALUE
-Sfcc_wrap_cim_instance(CIMCInstance *instance, CIMCClient *client)
+Sfcc_wrap_cim_instance(CIMCInstance *instance, VALUE client)
 {
   rb_sfcc_instance *rsi = (rb_sfcc_instance *)malloc(sizeof(rb_sfcc_instance));
   if (!rsi)
@@ -384,7 +384,7 @@ Sfcc_wrap_cim_instance(CIMCInstance *instance, CIMCClient *client)
   rsi->inst = instance;
   rsi->client = client;
 
-  return Data_Wrap_Struct(cSfccCimInstance, NULL, dealloc, rsi);
+  return Data_Wrap_Struct(cSfccCimInstance, mark, dealloc, rsi);
 }
 
 

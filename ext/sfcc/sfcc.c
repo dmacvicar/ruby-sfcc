@@ -173,7 +173,7 @@ char ** sfcc_value_array_to_string_array(VALUE array)
   return ret;
 }
 
-VALUE sfcc_cimdata_to_value(CIMCData *data, CIMCClient *client)
+VALUE sfcc_cimdata_to_value(CIMCData *data, VALUE client)
 {
   VALUE rbval;
   CIMCStatus status;
@@ -211,7 +211,7 @@ VALUE sfcc_cimdata_to_value(CIMCData *data, CIMCClient *client)
     case CIMC_instance:
       return data->value.inst ? Sfcc_wrap_cim_instance(data->value.inst->ft->clone(data->value.inst, NULL), client) : Qnil;
     case CIMC_ref:
-      return data->value.ref ? Sfcc_wrap_cim_object_path(data->value.ref->ft->clone(data->value.ref, NULL)) : Qnil;
+      return data->value.ref ? Sfcc_wrap_cim_object_path(data->value.ref->ft->clone(data->value.ref, NULL), client) : Qnil;
     case CIMC_args:
       return data->value.args ? sfcc_cimargs_to_hash(data->value.args, client) : Qnil;
     case CIMC_class:
@@ -302,7 +302,7 @@ CIMCArgs *sfcc_hash_to_cimargs(VALUE hash)
   return args;
 }
 
-VALUE sfcc_cimargs_to_hash(CIMCArgs *args, CIMCClient *client)
+VALUE sfcc_cimargs_to_hash(CIMCArgs *args, VALUE client)
 {
   int i = 0;
   int n = 0;
@@ -465,7 +465,7 @@ to_charptr(VALUE v)
  */
 
 VALUE
-sfcc_cimcarray_to_rubyarray(CIMCArray *array)
+sfcc_cimcarray_to_rubyarray(CIMCArray *array, VALUE client)
 {
   CIMCCount size;
   CIMCCount i;
@@ -481,7 +481,7 @@ sfcc_cimcarray_to_rubyarray(CIMCArray *array)
     VALUE value;
     array->ft->getElementAt(array,i,&st);
     sfcc_rb_raise_if_error(st, "Can't get array element %d of %d", i, size);
-    value = sfcc_cimdata_to_value(&data, NULL);
+    value = sfcc_cimdata_to_value(&data, client);
     rb_ary_store(ary,i,value);
   }
   return ary;

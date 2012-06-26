@@ -76,7 +76,7 @@ static VALUE keys(VALUE self)
   if (!keylist)
     return Qnil;
   
-  ret = sfcc_cimcarray_to_rubyarray(keylist);
+  ret = sfcc_cimcarray_to_rubyarray(keylist, Qnil);
   keylist->ft->release(keylist);
   return ret;
 }

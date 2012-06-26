@@ -8,10 +8,10 @@ void init_cim_instance();
 
 typedef struct {
   CIMCInstance *inst;
-  CIMCClient *client;
+  VALUE client;
 } rb_sfcc_instance;
 
 extern VALUE cSfccCimInstance;
-VALUE Sfcc_wrap_cim_instance(CIMCInstance *instance, CIMCClient *client);
+VALUE Sfcc_wrap_cim_instance(CIMCInstance *instance, VALUE client);
 
 #endif
