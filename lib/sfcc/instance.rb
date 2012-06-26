@@ -90,7 +90,11 @@ module Sfcc
 
       def method_missing name, *args
         if args.empty?
-          self.property name
+          begin
+            self.property name
+          rescue Sfcc::Cim::ErrorNoSuchProperty
+            self.invoke name
+          end
         else
           self.invoke name, *args
         end
