@@ -234,7 +234,7 @@ static VALUE set_host_and_namespace_from(VALUE self, VALUE object_path)
 {
   CIMCObjectPath *ptr;
   CIMCObjectPath *src;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
 
   Data_Get_Struct(self, CIMCObjectPath, ptr);
   Data_Get_Struct(object_path, CIMCObjectPath, src);
@@ -259,18 +259,14 @@ static VALUE set_host_and_namespace_from(VALUE self, VALUE object_path)
 static VALUE class_qualifier(VALUE self, VALUE qualifier_name)
 {
   CIMCObjectPath *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
   CIMCData data;
-  memset(&status, 0, sizeof(CIMCStatus));
+
   Data_Get_Struct(self, CIMCObjectPath, ptr);
   if (ptr->ft->getClassQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getClassQualifier(ptr, to_charptr(qualifier_name), &status);
     if ( !status.rc )
       return sfcc_cimdata_to_value(&data, NULL);
-  }
-  else {
-    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
-    status.msg = NULL;
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve class qualifier '%s'", to_charptr(qualifier_name));
   return Qnil;
@@ -285,19 +281,15 @@ static VALUE class_qualifier(VALUE self, VALUE qualifier_name)
 static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier_name)
 {
   CIMCObjectPath *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
   CIMCData data;
-  memset(&status, 0, sizeof(CIMCStatus));
+
   Data_Get_Struct(self, CIMCObjectPath, ptr);
   if (ptr->ft->getPropertyQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getPropertyQualifier(ptr, to_charptr(property_name),
                                          to_charptr(qualifier_name), &status);
     if ( !status.rc )
       return sfcc_cimdata_to_value(&data, NULL);
-  }
-  else {
-    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
-    status.msg = NULL;
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s' for property '%s'", to_charptr(qualifier_name), to_charptr(property_name));
   return Qnil;
@@ -312,19 +304,15 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
 static VALUE method_qualifier(VALUE self, VALUE method_name, VALUE qualifier_name)
 {
   CIMCObjectPath *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
   CIMCData data;
-  memset(&status, 0, sizeof(CIMCStatus));
+
   Data_Get_Struct(self, CIMCObjectPath, ptr);
   if (ptr->ft->getMethodQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getMethodQualifier(ptr, to_charptr(method_name),
                                        to_charptr(qualifier_name), &status);
     if ( !status.rc )
       return sfcc_cimdata_to_value(&data, NULL);
-  }
-  else {
-    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
-    status.msg = NULL;
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve method qualifier '%s' for method '%s'", to_charptr(qualifier_name), to_charptr(method_name));
   return Qnil;
@@ -342,9 +330,9 @@ static VALUE parameter_qualifier(VALUE self,
                                  VALUE qualifier_name)
 {
   CIMCObjectPath *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
   CIMCData data;
-  memset(&status, 0, sizeof(CIMCStatus));
+
   Data_Get_Struct(self, CIMCObjectPath, ptr);
   if (ptr->ft->getParameterQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getParameterQualifier(ptr,
@@ -353,10 +341,6 @@ static VALUE parameter_qualifier(VALUE self,
                                           to_charptr(qualifier_name), &status);
     if ( !status.rc )
       return sfcc_cimdata_to_value(&data, NULL);
-  }
-  else {
-    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
-    status.msg = NULL;
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve parameter qualifier '%s' for '%s'/'%s'", to_charptr(qualifier_name), to_charptr(method_name), to_charptr(parameter_name));
   return Qnil;
