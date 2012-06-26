@@ -13,7 +13,7 @@ dealloc(rb_sfcc_instance *rsi)
 
 /**
  * call-seq:
- *   property(name)
+ *   property(name) -> Cim::Data
  *
  * Gets a named property value, where name is a Symbol or String
  */
