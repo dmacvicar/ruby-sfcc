@@ -26,18 +26,20 @@ module Sfcc
 	method = methods[name.to_s]
 	raise "Unknown method #{name} for #{classname}" unless method
 	type = method[:type]
-	parameters = method[:parameters]
+	parameters = method[:parameters] || {}
 	input = parameters[:in]
 	output = parameters[:out]
 	argsin = {}
 	i = 0
-	while i < input.size
-          value = args.shift
-          raise "Argument for #{input[i]} is nil, not allowed !" unless value
-	  argsin[input[i]] = value
-	  # FIXME more typecheck of args ?
-	  i += 2
-	end
+        if input
+          while i < input.size
+            value = args.shift
+            raise "Argument for #{input[i]} is nil, not allowed !" unless value
+            argsin[input[i]] = value
+            # FIXME more typecheck of args ?
+            i += 2
+          end
+        end
         argsout = nil
 	if output
 	  if args.empty?
