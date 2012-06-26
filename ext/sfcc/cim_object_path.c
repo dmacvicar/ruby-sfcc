@@ -381,9 +381,9 @@ static VALUE to_s(VALUE self)
 
 /**
  * call-seq:
- *   new()
+ *   new(namespace, classname) -> ObjectPath
  *
- * Creates an object path from +namespace+ and +class_name+
+ * Creates an object path from +namespace+ and +classname+
  *
  */
 static VALUE new(int argc, VALUE *argv, VALUE self)
