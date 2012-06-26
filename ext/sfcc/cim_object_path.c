@@ -472,16 +472,17 @@ static VALUE new(int argc, VALUE *argv, VALUE self)
 {
   VALUE namespace;
   VALUE class_name;
+  VALUE client;
 
   CIMCStatus status = { 0, NULL };
   CIMCObjectPath *ptr;
 
-  rb_scan_args(argc, argv, "11", &namespace, &class_name);
+  rb_scan_args(argc, argv, "12", &namespace, &class_name, &client);
 
   ptr = cimcEnv->ft->newObjectPath(cimcEnv, to_charptr(namespace), to_charptr(class_name), &status);
 
   if (!status.rc)
-    return Sfcc_wrap_cim_object_path(ptr, Qnil);
+    return Sfcc_wrap_cim_object_path(ptr, client);
   sfcc_rb_raise_if_error(status, "Can't create object path");
   return Qnil;
 }
