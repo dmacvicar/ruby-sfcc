@@ -11,52 +11,6 @@ module Sfcc
         self.object_path.classname
       end
 
-      def invoke name, *args
-        raise "Cannot invoke, Instance has no client associated" unless self.client
-	classname = self.object_path.classname
-        # get method input parameter information
-	s = "mof/#{classname}"
-	begin
-	  require s
-	rescue LoadError
-	  STDERR.puts "Cannot load #{s} for type information"
-	  return
-	end
-	methods = MOF.class_eval "#{classname}::METHODS"
-	method = methods[name.to_s]
-	raise "Unknown method #{name} for #{classname}" unless method
-	type = method[:type]
-	parameters = method[:parameters] || {}
-	input = parameters[:in]
-	output = parameters[:out]
-	argsin = {}
-	i = 0
-        if input
-          while i < input.size
-            value = args.shift
-            raise "Argument for #{input[i]} is nil, not allowed !" unless value
-            argsin[input[i]] = value
-            # FIXME more typecheck of args ?
-            i += 2
-          end
-        end
-        argsout = nil
-	if output
-	  if args.empty?
-	    raise "Function #{name} has output arguments, please add an empty hash to the call"
-	  end
-	  argsout = args.shift
-	  unless argsout.kind_of? Hash
-	    raise "Function #{name} has output arguments, last argument must be a Hash"
-	  end
-	  unless args.empty?
-	    raise "Function call to #{name} has excess arguments"
-	  end
-	end
-        res = self.client.invoke_method(self.object_path, name, argsin, argsout)
-        return res
-      end
-      
       # properties => Hash
       #
       # return a hash with all properties
@@ -95,10 +49,10 @@ module Sfcc
           begin
             self.property name
           rescue Sfcc::Cim::ErrorNoSuchProperty
-            self.invoke name
+            self.object_path.invoke name
           end
         else
-          self.invoke name, *args
+          self.object_path.invoke name, *args
         end
       end
     end
