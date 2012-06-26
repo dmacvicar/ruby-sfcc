@@ -280,7 +280,7 @@ static VALUE delete_instance(VALUE self, VALUE object_path)
   Data_Get_Struct(object_path, CIMCObjectPath, op);
 
   status = client->ft->deleteInstance(client, op);
-  if (!status.rc) {
+  if (status.rc) {
     ops = op->ft->toString(op, NULL);
     sfcc_rb_raise_if_error(status, "Can't delete instance '%s'", ops->ft->getCharPtr(ops, NULL));
   }
