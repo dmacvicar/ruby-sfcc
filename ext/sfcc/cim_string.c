@@ -4,7 +4,7 @@ static void
 dealloc(CIMCString *string)
 {
 /*  fprintf(stderr, "dealloc(CIMCString %p\n", string); */
-  string->ft->release(string);
+  CIMCRelease(string);
 }
 
 /**
@@ -17,7 +17,7 @@ static VALUE to_s(VALUE self)
   CIMCString *ptr = NULL;
   char *str = NULL;
   Data_Get_Struct(self, CIMCString, ptr);
-  str = ptr->ft->getCharPtr(ptr, NULL);
+  str = CIMCGetCharsPtr(ptr, NULL);
   return str ? rb_str_new2(str) : Qnil;
 }
 

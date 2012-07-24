@@ -3,133 +3,32 @@
 #include "cim_string.h"
 #include "cim_instance.h"
 #include "cim_object_path.h"
+#include "cim_type.h"
+#include "cim_enumeration.h"
+#include "cim_class.h"
+#include "sfcc.h"
 #include "cim_data.h"
 
 VALUE cSfccCimData;
-static VALUE types_module;
-static VALUE valstates_module;
 static VALUE cim_module;
-static VALUE s_types_i2s;
-static VALUE s_valstates_i2s;
 
 typedef struct {
-    char const * name;
-    CIMCType value;
-}type_mapping_t;
+    CIMCData data;
+    /* Says, whether data contains value, that is allocated by other
+     * module. In that case, value is not freed upon garbage collection
+     * of data object
+     */
+    bool reference;
+}rb_sfcc_data;
 
-static type_mapping_t const type_mapping[] = {
-    {"CIMC_null", CIMC_null},
-    {"CIMC_SIMPLE", CIMC_SIMPLE},
-    {"CIMC_boolean", CIMC_boolean},
-    {"CIMC_char16", CIMC_char16},
-
-    {"CIMC_REAL", CIMC_REAL},
-    {"CIMC_real32", CIMC_real32},
-    {"CIMC_real64", CIMC_real64},
-
-    {"CIMC_UINT", CIMC_UINT},
-    {"CIMC_uint8", CIMC_uint8},
-    {"CIMC_uint16", CIMC_uint16},
-    {"CIMC_uint32", CIMC_uint32},
-    {"CIMC_uint64", CIMC_uint64},
-    {"CIMC_SINT", CIMC_SINT},
-    {"CIMC_sint8", CIMC_sint8},
-    {"CIMC_sint16", CIMC_sint16},
-    {"CIMC_sint32", CIMC_sint32},
-    {"CIMC_sint64", CIMC_sint64},
-    {"CIMC_INTEGER", CIMC_INTEGER},
-
-    {"CIMC_ENC", CIMC_ENC},
-    {"CIMC_instance", CIMC_instance},
-    {"CIMC_ref", CIMC_ref},
-    {"CIMC_args", CIMC_args},
-    {"CIMC_class", CIMC_class},
-    {"CIMC_filter", CIMC_filter},
-    {"CIMC_enumeration", CIMC_enumeration},
-    {"CIMC_string", CIMC_string},
-    {"CIMC_chars", CIMC_chars},
-    {"CIMC_dateTime", CIMC_dateTime},
-    {"CIMC_ptr", CIMC_ptr},
-    {"CIMC_charsptr", CIMC_charsptr},
-
-    {"CIMC_ARRAY", CIMC_ARRAY},
-    {"CIMC_SIMPLEA", CIMC_SIMPLEA},
-    {"CIMC_booleanA", CIMC_booleanA},
-    {"CIMC_char16A", CIMC_char16A},
-
-    {"CIMC_REALA", CIMC_REALA},
-    {"CIMC_real32A", CIMC_real32A},
-    {"CIMC_real64A", CIMC_real64A},
-
-    {"CIMC_UINTA", CIMC_UINTA},
-    {"CIMC_uint8A", CIMC_uint8A},
-    {"CIMC_uint16A", CIMC_uint16A},
-    {"CIMC_uint32A", CIMC_uint32A},
-    {"CIMC_uint64A", CIMC_uint64A},
-    {"CIMC_SINTA", CIMC_SINTA},
-    {"CIMC_sint8A", CIMC_sint8A},
-    {"CIMC_sint16A", CIMC_sint16A},
-    {"CIMC_sint32A", CIMC_sint32A},
-    {"CIMC_sint64A", CIMC_sint64A},
-    {"CIMC_INTEGERA", CIMC_INTEGERA},
-
-    {"CIMC_ENCA", CIMC_ENCA},
-    {"CIMC_stringA", CIMC_stringA},
-    {"CIMC_charsA", CIMC_charsA},
-    {"CIMC_dateTimeA", CIMC_dateTimeA},
-    {"CIMC_instanceA", CIMC_instanceA},
-    {"CIMC_refA", CIMC_refA},
-    {"CIMC_ptrA", CIMC_ptrA},
-    {"CIMC_charsptrA", CIMC_charsptrA},
-
-    // the following are CIMCObjectPath key-types synonyms
-    // and are valid only when CIMC_keyValue of CIMCValueState is set
-
-    {"CIMC_keyInteger", CIMC_keyInteger},
-    {"CIMC_keyString", CIMC_keyString},
-    {"CIMC_keyBoolean", CIMC_keyBoolean},
-    {"CIMC_keyRef", CIMC_keyRef},
-
-    // the following are predicate types only
-
-    {"CIMC_charString", CIMC_charString},
-    {"CIMC_integerString", CIMC_integerString},
-    {"CIMC_realString", CIMC_realString},
-    {"CIMC_numericString", CIMC_numericString},
-    {"CIMC_booleanString", CIMC_booleanString},
-    {"CIMC_dateTimeString", CIMC_dateTimeString},
-    {"CIMC_classNameString", CIMC_classNameString},
-    {"CIMC_nameString", CIMC_nameString},
-    {NULL, 0}
-    
-};
-
-typedef struct {
-    char const *name;
-    CIMCValueState value;
-}valstate_mapping_t;
-
-static valstate_mapping_t const valstate_mapping[] = {
-    {"CIMC_goodValue", CIMC_goodValue},
-    {"CIMC_nullValue", CIMC_nullValue},
-    {"CIMC_keyValue", CIMC_keyValue},
-    {"CIMC_notFound", CIMC_notFound},
-    {"CIMC_badValue", CIMC_badValue},
-    {NULL, 0},
-};
-
-#define CIMCRelease(o) ((o)->ft->release((o)))
-
-static void
-dealloc(CIMCData *d)
-{
+static void dealloc_cimdata(CIMCData *d) {
     if (  ((d)->type < CIMC_instance  || (d)->type > CIMC_dateTime)
        && ((d)->type < CIMC_instanceA || (d)->type > CIMC_dateTimeA)
        && d->type != CIMC_chars && d->type != CIMC_charsptr) return;
 
     if (d->state != CIMC_goodValue && d->state != CIMC_keyValue) return;
 
-    if (d->type & CMPI_ARRAY) {
+    if (d->type & CIMC_ARRAY) {
         CIMCRelease(d->value.array);
     }else {
         switch (d->type) {
@@ -149,70 +48,218 @@ dealloc(CIMCData *d)
             default: break;
         }
     }
-    d->state = CMPI_nullValue;
+    d->state = CIMC_nullValue;
     memset(&d->value, 0, sizeof(CIMCValue));
 }
 
-static VALUE itype2str(CIMCType t)
+static void
+dealloc(rb_sfcc_data *rd)
 {
-    switch (t) {
-        case CIMC_string: return rb_str_new2("CIMC_string");
-        case CIMC_chars:  return rb_str_new2("CIMC_chars");
-        default: return rb_hash_lookup(s_types_i2s, INT2FIX(t));
+    if (!rd->reference) {
+        dealloc_cimdata(&rd->data);
     }
+    free(rd);
 }
 
-static VALUE numeric2str(VALUE v) {
+static char const * state2cstr(unsigned int state)
+{
+    char const * s = NULL;
+    switch (state) {
+        case CIMC_goodValue: s = "Good"; break;
+        case CIMC_nullValue: s = "Null"; break;
+        case CIMC_keyValue : s = "Key"; break;
+        case CIMC_notFound : s = "NotFound"; break;
+        case CIMC_badValue : s = "Bad"; break;
+        default:
+            rb_raise(rb_eRuntimeError, "invalid value of state: 0x%x",
+                    state);
+            break;
+    }
+    return s;
+}
+
+static char * data2cstr(CIMCData * data)
+{
+    int ret;
+    int const buf_size = 80;
+    char buf[buf_size];
+    char * result;
+    ret = snprintf(buf, buf_size - 1, "Data(state=%s, type=%s",
+            state2cstr(data->state),
+            Sfcc_cim_type_to_s(data->type));
+    if (data->state == CIMC_goodValue) {
+        char const * valcstr = "null";
+        if (data->type != CIMC_null) {
+            VALUE val = sfcc_cimdata_to_value(data, Qnil, true);
+            if (val != Qnil) {
+                valcstr = to_charptr(val);
+            }
+        }
+        ret += snprintf(buf + ret, buf_size - 1 - ret, ", value=%s", valcstr);
+        if (ret >= buf_size - 3) {
+            buf[buf_size - 4] = '.';
+            buf[buf_size - 3] = '.';
+            buf[buf_size - 2] = '.';
+            ret = buf_size - 2;
+        }
+    }
+    buf[ret] = ')';
+    buf[ret + 1] = '\0';
+    result = strndup(buf, ret + 1);
+    return result;
+}
+
+static VALUE numeric2str(VALUE v)
+{
     VALUE tmp = rb_str_new("", 0);
-    char buf[50];
+    char buf[100];
     switch (TYPE(v)) {
         case T_FIXNUM: tmp = rb_fix2str(v, 10); break;
         case T_BIGNUM: tmp = rb_big2str(v, 10); break;
         case T_FLOAT:
-            snprintf(buf, 50, "%f", NUM2DBL(v));
+            snprintf(buf, 100, "%f", NUM2DBL(v));
             tmp = rb_str_new2(buf);
             break;
     }
     return tmp;
 }
 
-static void do_set_type(CIMCData *data, VALUE type)
+static VALUE itype2str(CIMCType t)
 {
+    char const * s = Sfcc_cim_type_to_s(t);
+    if (s) {
+        return rb_str_new2(s);
+    }
+    return Qnil;
+}
+
+
+#define CLONEDATAVAL(val_attr) \
+    dst->value.val_attr = \
+        src->value.val_attr->ft->clone(src->value.val_attr, &rc); \
+    if (rc.rc || (!dst->value.val_attr && src->value.val_attr)) return 1;
+/**
+ * @return 0 on success, 1 on memory error
+ */
+static int clone_cimdata(CIMCData *dst, CIMCData *src)
+{
+    CIMCCount i;
+    dst->state = src->state;
+    dst->type = src->type;
+    memset(&dst->value, 0, sizeof(CIMCValue));
+    if (src->state == CIMC_nullValue || src->type == CIMC_null) return 0;
+    CIMCStatus rc;
+    if (dst->type & CIMC_ARRAY) {
+        CLONEDATAVAL(array);
+        for ( i=0; i < src->value.array->ft->getSize(src->value.array, &rc)
+            ; ++i)
+        {
+            CIMCData tmpd, tmps;
+            tmps = src->value.array->ft->getElementAt(
+                       src->value.array, i, NULL);
+            if (clone_cimdata(&tmpd, &tmps)) {
+                CIMCRelease(dst->value.array);
+                return 1;
+            }
+            dst->value.array->ft->setElementAt(dst->value.array, i,
+                    &tmpd.value, tmpd.type);
+        }
+    }else {
+        switch(dst->type) {
+            case CIMC_chars:
+                dst->value.chars = src->value.chars ? strdup(src->value.chars):NULL;
+                if (!dst->value.chars && src->value.chars) return 1;
+                break;
+            case CIMC_charsptr:
+                dst->value.dataPtr.ptr = malloc(src->value.dataPtr.length);
+                if (!dst->value.dataPtr.ptr) return 1;
+                strncpy(dst->value.dataPtr.ptr, src->value.dataPtr.ptr,
+                        src->value.dataPtr.length);
+                dst->value.dataPtr.length = src->value.dataPtr.length;
+                break;
+            case CIMC_class      : CLONEDATAVAL(cls); break;
+            case CIMC_instance   : CLONEDATAVAL(inst); break;
+            case CIMC_ref        : CLONEDATAVAL(ref); break;
+            case CIMC_args       : CLONEDATAVAL(args); break;
+            case CIMC_enumeration: CLONEDATAVAL(Enum); break;
+            case CIMC_string     : CLONEDATAVAL(string); break;
+            case CIMC_dateTime   : CLONEDATAVAL(dateTime); break;
+            default:
+                dst->value = src->value;
+                break;
+        }
+    }
+    return 0;
+}
+
+static void do_set_type(rb_sfcc_data *data, VALUE type)
+{
+    char buf[100];
+    snprintf(buf, 100, "expected Type instance, Symbol,"
+            " String or Fixnum, not: %s",
+            to_charptr(rb_obj_class(type))); 
+    VALUE type_except = rb_exc_new2(rb_eTypeError, buf);
+
     switch (TYPE(type)) {
         case T_STRING:
-            if (strncmp("CIMC_", STR2CSTR(type), 5)) {
-                type = rb_str_concat(rb_str_new2("CIMC_"), type);
-            }
             type = rb_intern(STR2CSTR(type));
         case T_SYMBOL:
-            type = rb_const_get(types_module, type);
+            type = rb_const_get(cSfccCimType, type);
             break;
-        case T_FIXNUM:
-            if (  !RHASH(s_types_i2s)->tbl
-               || !st_lookup(RHASH(s_types_i2s)->tbl, type, NULL)) {
-                data->state = CIMC_badValue;
-                rb_raise(rb_eTypeError, "unsupported value of cimc type: 0x%x",
-                        FIX2UINT(type));
+        case T_DATA:
+            if (CLASS_OF(type) != cSfccCimType) {
+                rb_exc_raise(type_except);
+                return;
             }
+            type = INT2FIX(Sfcc_rb_type_to_i(type));
+        case T_FIXNUM:
+            if (!Sfcc_cim_type_to_s(FIX2UINT(type))) return;
             break;
         default:
-            data->state = CIMC_badValue;
-            rb_raise(rb_eTypeError,
-                    "expected one of CIMC_* symbols or Fixnum, not: %s",
-                    STR2CSTR(rb_any_to_s(rb_obj_class(type))));
-            break;
+            data->data.state = CIMC_badValue;
+            rb_exc_raise(type_except);
+            return;
     }
-    if (data->type != (CIMCType) FIX2UINT(type)) {
-        dealloc(data);
-        data->type = (CIMCType) FIX2UINT(type);
-        data->state = CIMC_nullValue;
+    if (data->data.type != (CIMCType) FIX2UINT(type)) {
+        if (!data->reference) dealloc_cimdata(&data->data);
+        data->reference = false;
+        data->data.type = (CIMCType) FIX2UINT(type);
+        data->data.state = CIMC_nullValue;
     }
 }
 
-static void do_set_value(CIMCData *data, VALUE value)
+#define STORE_DATA_VAL(data_type_suf, struct_suf, struct_attr, value_attr, cimc_suf) \
+    if (CLASS_OF(value) == cSfccCim ## data_type_suf) { \
+        if (d->type == CIMC_ ## cimc_suf) { \
+            rb_sfcc_ ## struct_suf * tmp; \
+            Data_Get_Struct(value, rb_sfcc_ ## struct_suf, tmp); \
+            if (deep_copy) { \
+                d->value.value_attr = CIMCClone(tmp->struct_attr, &rc); \
+                if (!d->value.value_attr || rc.rc != CIMC_RC_OK) { \
+                    d->state = CIMC_badValue; \
+                    rb_raise(rb_eNoMemError, "failed to clone " #data_type_suf); \
+                } \
+            }else { \
+                d->value.value_attr = tmp->struct_attr; \
+                data->reference = false; \
+            } \
+        }else { \
+            d->state = CIMC_badValue; \
+            rb_raise(rb_eTypeError, #data_type_suf \
+                    " object can only be set for " #cimc_suf " type"); \
+        } \
+    } \
+
+/**
+ * @param deep_copy | true -> clone underlying value object
+ */
+static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
 {
-    dealloc(data);
-    data->state = CIMC_goodValue;
+    if (!data->reference) dealloc_cimdata(&data->data);
+    CIMCStatus rc;
+    CIMCData *d = &data->data;
+    data->reference = false;
+    d->state = CIMC_goodValue;
 
     switch (TYPE(value)) {
         case T_NIL:
@@ -223,104 +270,104 @@ static void do_set_value(CIMCData *data, VALUE value)
                         "null value can be set only for CIMC_nullValse type");
             }else {
             */
-                data->state = CIMC_nullValue;
+                d->state = CIMC_nullValue;
             //}
             break;
 
         case T_SYMBOL:
             value = rb_any_to_s(value);
         case T_STRING:
-            if ((data->type & (CIMC_UINT | CIMC_char16))) {
+            if ((d->type & (CIMC_UINT | CIMC_char16))) {
                 uint64_t tmp = NUM2ULL(rb_str2inum(value, 10));
-                switch (data->type) {
-                    case CIMC_uint32: data->value.uint32 = tmp; break;
-                    case CIMC_uint16: data->value.uint16 = tmp; break;
-                    case CIMC_uint8:  data->value.uint8 = tmp; break;
-                    default: data->value.uint64 = tmp; break;
+                switch (d->type) {
+                    case CIMC_uint32: d->value.uint32 = tmp; break;
+                    case CIMC_uint16: d->value.uint16 = tmp; break;
+                    case CIMC_uint8:  d->value.uint8 = tmp; break;
+                    default: d->value.uint64 = tmp; break;
                 }
-            }else if (data->type & CIMC_SINT) {
+            }else if (d->type & CIMC_SINT) {
                 int64_t tmp = NUM2LL(rb_str2inum(value, 10));
-                switch (data->type) {
-                    case CIMC_sint32: data->value.sint32 = tmp; break;
-                    case CIMC_sint16: data->value.sint16 = tmp; break;
-                    case CIMC_sint8: data->value.sint8 = tmp; break;
-                    default: data->value.sint64 = tmp; break;
+                switch (d->type) {
+                    case CIMC_sint32: d->value.sint32 = tmp; break;
+                    case CIMC_sint16: d->value.sint16 = tmp; break;
+                    case CIMC_sint8: d->value.sint8 = tmp; break;
+                    default: d->value.sint64 = tmp; break;
                 }
-            }else if (data->type & CIMC_REAL) {
+            }else if (d->type & CIMC_REAL) {
                 double tmp = NUM2LL(rb_Float(value));
-                switch (data->type) {
-                    case CIMC_real32: data->value.real32 = tmp; break;
-                    default: data->value.real64 = tmp; break;
+                switch (d->type) {
+                    case CIMC_real32: d->value.real32 = tmp; break;
+                    default: d->value.real64 = tmp; break;
                 }
-            }else if (data->type == CIMC_string) {
-                data->value.string = cimcEnv->ft->newString(
+            }else if (d->type == CIMC_string) {
+                d->value.string = cimcEnv->ft->newString(
                         cimcEnv, STR2CSTR(value), NULL);
-            }else if (data->type == CIMC_chars) {
-                data->value.chars = strdup(STR2CSTR(value));
-            }else if (data->type == CIMC_charsptr) {
-                data->value.dataPtr.ptr = strdup(STR2CSTR(value));
-                data->value.dataPtr.length = rb_funcall(
+            }else if (d->type == CIMC_chars) {
+                d->value.chars = strdup(STR2CSTR(value));
+            }else if (d->type == CIMC_charsptr) {
+                d->value.dataPtr.ptr = strdup(STR2CSTR(value));
+                d->value.dataPtr.length = rb_funcall(
                         value, rb_intern("length"), 0);
             }else {
-                data->state = CIMC_badValue;
+                d->state = CIMC_badValue;
                 rb_raise(rb_eTypeError, "unsupported data type(%s) for value"
-                        ", when data.type set to %s",
-                        STR2CSTR(rb_any_to_s(CLASS_OF(value))),
-                        STR2CSTR(rb_hash_lookup(s_valstates_i2s, data->type)));
+                        ", when data.type set to \"%s\"",
+                        to_charptr(rb_obj_class(value)),
+                        Sfcc_cim_type_to_s(d->type));
             }
             break;
 
         case T_TRUE:
         case T_FALSE:
-            if (data->type != CIMC_boolean) {
-                data->state = CIMC_badValue;
+            if (d->type != CIMC_boolean) {
+                d->state = CIMC_badValue;
                 rb_raise(rb_eTypeError, "boolean values are supported only"
                        " for CIMC_boolean type");
-                data->value.boolean = TYPE(value) == T_TRUE;
+                d->value.boolean = TYPE(value) == T_TRUE;
             }
             break;
 
         case T_FIXNUM:
         case T_BIGNUM:
         case T_FLOAT:
-            if ((data->type & (CIMC_UINT | CIMC_char16))) {
+            if ((d->type & (CIMC_UINT | CIMC_char16))) {
                 uint64_t tmp = NUM2ULL(value);
-                switch (data->type) {
-                    case CIMC_uint32: data->value.uint32 = tmp; break;
-                    case CIMC_uint16: data->value.uint16 = tmp; break;
-                    case CIMC_uint8:  data->value.uint8 = tmp; break;
-                    default: data->value.uint64 = tmp; break;
+                switch (d->type) {
+                    case CIMC_uint32: d->value.uint32 = tmp; break;
+                    case CIMC_uint16: d->value.uint16 = tmp; break;
+                    case CIMC_uint8:  d->value.uint8 = tmp; break;
+                    default: d->value.uint64 = tmp; break;
                 }
-            }else if (data->type & CIMC_SINT) {
+            }else if (d->type & CIMC_SINT) {
                 int64_t tmp = NUM2LL(value);
-                switch (data->type) {
-                    case CIMC_sint32: data->value.sint32 = tmp; break;
-                    case CIMC_sint16: data->value.sint16 = tmp; break;
-                    case CIMC_sint8: data->value.sint8 = tmp; break;
-                    default: data->value.sint64 = tmp; break;
+                switch (d->type) {
+                    case CIMC_sint32: d->value.sint32 = tmp; break;
+                    case CIMC_sint16: d->value.sint16 = tmp; break;
+                    case CIMC_sint8: d->value.sint8 = tmp; break;
+                    default: d->value.sint64 = tmp; break;
                 }
-            }else if (data->type & CIMC_REAL) {
+            }else if (d->type & CIMC_REAL) {
                 double tmp = NUM2DBL(value);
-                switch (data->type) {
-                    case CIMC_real32: data->value.real32 = tmp; break;
-                    default: data->value.real64 = tmp; break;
+                switch (d->type) {
+                    case CIMC_real32: d->value.real32 = tmp; break;
+                    default: d->value.real64 = tmp; break;
                 }
-            }else if (data->type == CIMC_string) {
-                data->value.string = cimcEnv->ft->newString(
+            }else if (d->type == CIMC_string) {
+                d->value.string = cimcEnv->ft->newString(
                         cimcEnv, STR2CSTR(numeric2str(value)), NULL);
-            }else if (data->type == CIMC_chars) {
-                data->value.chars = strdup(STR2CSTR(numeric2str(value)));
-            }else if (data->type == CIMC_charsptr) {
+            }else if (d->type == CIMC_chars) {
+                d->value.chars = strdup(STR2CSTR(numeric2str(value)));
+            }else if (d->type == CIMC_charsptr) {
                 VALUE tmp = numeric2str(value);
-                data->value.dataPtr.ptr = strdup(STR2CSTR(tmp));
-                data->value.dataPtr.length = rb_funcall(
+                d->value.dataPtr.ptr = strdup(STR2CSTR(tmp));
+                d->value.dataPtr.length = rb_funcall(
                         tmp, rb_intern("length"), 0);
             }else {
-                data->state = CIMC_badValue;
+                d->state = CIMC_badValue;
                 rb_raise(rb_eTypeError, "unsupported data type(%s) for value"
-                        ", when data.type set to %s",
-                        STR2CSTR(rb_any_to_s(CLASS_OF(value))),
-                        STR2CSTR(itype2str(data->type)));
+                        ", when data.type set to \"%s\"",
+                        to_charptr(rb_obj_class(value)),
+                        STR2CSTR(itype2str(d->type)));
             }
             break;
 
@@ -333,47 +380,46 @@ static void do_set_value(CIMCData *data, VALUE value)
         case T_DATA:
         default:
             if (CLASS_OF(value) == cSfccCimString) {
-                if (data->type & CIMC_string) {
-                    Data_Get_Struct(value, CIMCString, data->value.string);
+                if (d->type == CIMC_string) {
+                    Data_Get_Struct(value, CIMCString, d->value.string);
+                    if (deep_copy) {
+                        d->value.string = CIMCClone(d->value.string, &rc);
+                        if (!d->value.string || rc.rc != CIMC_RC_OK) {
+                            d->state = CIMC_badValue;
+                            rb_raise(rb_eNoMemError, "failed to clone string");
+                        }
+                    }else {
+                        data->reference = true;
+                    }
                 }else {
-                    data->state = CIMC_badValue;
+                    d->state = CIMC_badValue;
                     rb_raise(rb_eTypeError, "string value can be set only for"
-                           " CIMC_string type");
+                           " String type");
                 }
-            }else if (CLASS_OF(value) == cSfccCimInstance) {
-                if (data->type & CIMC_instance) {
-                    CIMCInstance *tmp;
-                    CIMCStatus rc;
-                    Data_Get_Struct(value, CIMCInstance, tmp);
-                    data->value.inst = tmp->ft->clone(tmp, &rc);
-                    if (!data->value.inst || rc.rc != CIMC_RC_OK) {
-                        data->state = CIMC_badValue;
-                        rb_raise(rb_eNoMemError, "failed to clone instance");
+            }else STORE_DATA_VAL(Instance, instance, inst, inst, instance)
+            else  STORE_DATA_VAL(ObjectPath, object_path, op, ref, ref)
+            else  STORE_DATA_VAL(Enumeration, enumeration, enm, Enum, enumeration)
+            else if (CLASS_OF(value) == cSfccCimClass) {
+                if (d->type == CIMC_class) {
+                    Data_Get_Struct(value, CIMCClass, d->value.cls);
+                    if (deep_copy) {
+                        d->value.cls = CIMCClone(d->value.cls, &rc);
+                        if (!d->value.cls || rc.rc != CIMC_RC_OK) {
+                            d->state = CIMC_badValue;
+                            rb_raise(rb_eNoMemError, "failed to clone class");
+                        }
+                    }else {
+                        data->reference = true;
                     }
                 }else {
-                    data->state = CIMC_badValue;
-                    rb_raise(rb_eTypeError, "instance can only be set for"
-                            " CIMC_instance type");
-                }
-            }else if (CLASS_OF(value) == cSfccCimObjectPath) {
-                if (data->type & CIMC_ref) {
-                    CIMCObjectPath *tmp;
-                    CIMCStatus rc;
-                    Data_Get_Struct(value, CIMCObjectPath, tmp);
-                    data->value.ref = tmp->ft->clone(tmp, &rc);
-                    if (!data->value.ref || rc.rc != CIMC_RC_OK) {
-                        data->state = CIMC_badValue;
-                        rb_raise(rb_eNoMemError, "failed to clone object path");
-                    }
-                }else {
-                    data->state = CIMC_badValue;
-                    rb_raise(rb_eTypeError, "object path can only be set for"
-                            " CIMC_ref type");
+                    d->state = CIMC_badValue;
+                    rb_raise(rb_eTypeError,
+                            "class can only be set for Class type");
                 }
             }else {
                 VALUE cname;
                 const char *class_name;
-                data->state = CIMC_badValue;
+                d->state = CIMC_badValue;
                 cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0),
                         rb_intern("to_s"), 0);
                 class_name = to_charptr(cname);
@@ -385,59 +431,100 @@ static void do_set_value(CIMCData *data, VALUE value)
 
 static VALUE new(VALUE klass, VALUE type, VALUE value)
 {
-    VALUE res;
-    CIMCData *data;
-    res = Data_Make_Struct(klass, CIMCData, NULL, dealloc, data);
-    do_set_type(data, type);
-    data->state = CMPI_nullValue;
-    do_set_value(data, value);
-    rb_obj_call_init(res, 0, NULL);
+    VALUE res = Qnil;
+    CIMCData tmp;
+    tmp.state = CIMC_nullValue;
+    tmp.type = CIMC_null;
+    if ((res = Sfcc_wrap_cim_data(&tmp)) != Qnil) {
+        rb_sfcc_data *data;
+        Data_Get_Struct(res, rb_sfcc_data, data);
+        do_set_type(data, type);
+        data->reference = false;
+        data->data.state = CIMC_nullValue;
+        do_set_value(data, value, true); //make a deep copy of value
+        rb_obj_call_init(res, 0, NULL);
+    }
     return res;
 }
 
 static VALUE from_value(VALUE klass, VALUE value)
 {
-    VALUE res;
-    CIMCData *data;
-    res = Data_Make_Struct(klass, CIMCData, NULL, dealloc, data);
-    *data = sfcc_value_to_cimdata(value);
+    VALUE res = Qnil;
+    CIMCData tmp;
+    tmp.state = CIMC_nullValue;
+    tmp.type = CIMC_null;
+    if ((res = Sfcc_wrap_cim_data(&tmp)) != Qnil) {
+        rb_sfcc_data *data;
+        Data_Get_Struct(res, rb_sfcc_data, data);
+        data->data = sfcc_value_to_cimdata(value);
+        data->reference = TYPE(value) == T_DATA ? true:false;
+    }
     return res;
 }
 
 static VALUE type(VALUE self)
 {
-    CIMCData *data;
-    Data_Get_Struct(self, CIMCData, data);
-    return INT2FIX(data->type);
-}
-
-static VALUE type_s(VALUE self)
-{
-    CIMCData *data;
-    Data_Get_Struct(self, CIMCData, data);
-    return itype2str(data->type);
+    rb_sfcc_data *data;
+    Data_Get_Struct(self, rb_sfcc_data, data);
+    return Sfcc_wrap_cim_type(data->data.type);
 }
 
 static VALUE set_type(VALUE self, VALUE type)
 {
-    CIMCData *data;
-    Data_Get_Struct(self, CIMCData, data);
+    rb_sfcc_data *data;
+    Data_Get_Struct(self, rb_sfcc_data, data);
     do_set_type(data, type);
     return type;
 }
 
 static VALUE state(VALUE self)
 {
-    CIMCData *data;
-    Data_Get_Struct(self, CIMCData, data);
-    return INT2FIX(data->state);
+    rb_sfcc_data *data;
+    Data_Get_Struct(self, rb_sfcc_data, data);
+    return INT2FIX(data->data.state);
 }
 
 static VALUE state_s(VALUE self)
 {
-    CIMCData *data;
-    Data_Get_Struct(self, CIMCData, data);
-    return rb_hash_lookup(s_valstates_i2s, INT2FIX(data->state));
+    rb_sfcc_data *data;
+    Data_Get_Struct(self, rb_sfcc_data, data);
+    char const * s = state2cstr(data->data.state);
+    if (s) {
+        return rb_str_new2(s);
+    }
+    return Qnil;
+}
+
+/**
+ * call-seq:
+ *   state_is(state) -> Boolean
+ *
+ * Check the value state
+ */
+static VALUE state_is(VALUE self, VALUE state)
+{
+    rb_sfcc_data *data;
+    Data_Get_Struct(self, rb_sfcc_data, data);
+    switch (TYPE(state)) {
+        case T_STRING:
+            state = rb_intern(STR2CSTR(state));
+        case T_SYMBOL:
+            state = rb_const_get(cSfccCimData, state);
+            break;
+        case T_FIXNUM:
+            if (!state2cstr(FIX2UINT(state))) {
+                return Qfalse;
+            }
+            break;
+        default:
+            rb_raise(rb_eTypeError,
+                    "unsupported state type(%s),"
+                    " supported are Fixnum, Symbol or String",
+                    STR2CSTR(rb_any_to_s(rb_obj_class(state))));
+            return Qfalse;
+    }
+    if (data->data.state == FIX2INT(state)) return Qtrue;
+    return Qfalse;
 }
 
 /*
@@ -469,26 +556,46 @@ static VALUE set_state(VALUE self, VALUE state)
 }
 */
 
+/**
+ * call-seq:
+ *   value()
+ *
+ * Get the value of the data
+ */
 static VALUE value(VALUE self)
 {
-    CIMCData *data;
-    Data_Get_Struct(self, CIMCData, data);
-    return sfcc_cimdata_to_value(*data);
+    rb_sfcc_data *data;
+    Data_Get_Struct(self, rb_sfcc_data, data);
+    return sfcc_cimdata_to_value(&data->data, Qnil, true);
 }
 
 static VALUE set_value(VALUE self, VALUE value)
 {
-    CIMCData *data;
-    Data_Get_Struct(self, CIMCData, data);
-    do_set_value(data, value);
+    rb_sfcc_data *data;
+    Data_Get_Struct(self, rb_sfcc_data, data);
+    do_set_value(data, value, true);
     return value;
+}
+
+static VALUE to_s(VALUE self)
+{
+    rb_sfcc_data *data;
+    Data_Get_Struct(self, rb_sfcc_data, data);
+    char * cstr = data2cstr(&data->data);
+    VALUE ret;
+    if (cstr) {
+        ret = rb_str_new2(cstr);
+        free(cstr);
+    }else {
+        rb_raise(rb_eNoMemError, "failed to allocate string for data");
+        return Qnil;
+    }
+    return ret;
 }
 
 void init_cim_data()
 {
     VALUE sfcc = rb_define_module("Sfcc");
-    types_module = rb_define_module_under(sfcc, "Types");
-    valstates_module = rb_define_module_under(sfcc, "ValueStates");
     cim_module = rb_define_module_under(sfcc, "Cim");
 
     VALUE klass = rb_define_class_under(cim_module, "Data", rb_cObject);
@@ -497,32 +604,47 @@ void init_cim_data()
     rb_define_singleton_method(klass, "new", new, 2);
     rb_define_singleton_method(klass, "from_value", from_value, 1);
     rb_define_method(klass, "type", type, 0);
-    rb_define_method(klass, "type_s", type_s, 0);
     rb_define_method(klass, "type=", set_type, 1);
     rb_define_method(klass, "state", state, 0);
     rb_define_method(klass, "state_s", state_s, 0);
     rb_define_method(klass, "value", value, 0);
     rb_define_method(klass, "value=", set_value, 1);
+    rb_define_method(klass, "to_s", to_s, 0);
 
-    s_types_i2s = rb_hash_new();
-    type_mapping_t const *tpptr = type_mapping;
-    for (; tpptr->name; ++tpptr) {
-        rb_define_const(types_module, tpptr->name, INT2FIX(tpptr->value));
-        rb_hash_aset(s_types_i2s, INT2FIX(tpptr->value),
-                rb_str_new2(tpptr->name));
-    }
-    s_valstates_i2s = rb_hash_new();
-    valstate_mapping_t const *vsptr = valstate_mapping;
-    for (; vsptr->name; ++vsptr) {
-        rb_define_const(valstates_module, vsptr->name, INT2FIX(vsptr->value));
-        rb_hash_aset(s_valstates_i2s, INT2FIX(vsptr->value),
-                rb_str_new2(vsptr->name));
-    }
+    rb_define_method(klass, "state_is", state_is, 1);
+
+    rb_define_const(klass, "Good", INT2FIX(CIMC_goodValue)); /* (0) */
+    rb_define_const(klass, "Null", INT2FIX(CIMC_nullValue)); /* (1<<8) */
+    rb_define_const(klass, "Key", INT2FIX(CIMC_keyValue)); /*  (2<<8) */
+    rb_define_const(klass, "NotFound", INT2FIX(CIMC_notFound)); /*  (4<<8) */
+    rb_define_const(klass, "Bad", INT2FIX(CIMC_badValue)); /*  (0x80<<8) */
 
 }
 
 VALUE
 Sfcc_wrap_cim_data(CIMCData *data)
 {
-    return Data_Wrap_Struct(cSfccCimData, NULL, dealloc, data);
+    rb_sfcc_data *d = malloc(sizeof(rb_sfcc_data));
+    if (!d) {
+        rb_raise(rb_eNoMemError, "failed to allocate data");
+        return Qnil;
+    }
+    d->data = *data;
+    d->reference = true;
+    return Data_Wrap_Struct(cSfccCimData, NULL, dealloc, d);
+}
+
+VALUE
+Sfcc_make_rb_cim_data(CIMCData *cimdata) {
+    CIMCData d;
+    if (clone_cimdata(&d, cimdata)) {
+        rb_raise(rb_eNoMemError, "failed to clone CIMCData");
+        return Qnil;
+    }
+    return Sfcc_wrap_cim_data(&d);
+}
+
+void Sfcc_free_cim_data(CIMCData *data)
+{
+    dealloc_cimdata(data);
 }

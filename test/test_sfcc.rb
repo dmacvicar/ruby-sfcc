@@ -3,7 +3,7 @@ require 'pp'
 
 class BasicTest < SfccTestCase
 
-  context "a running CIMOM with no auth" do
+  context "a running CIMOM" do
     setup do
       setup_cim_client
     end
@@ -40,6 +40,10 @@ class BasicTest < SfccTestCase
           @class_names = @client.class_names(@op, Sfcc::Flags::DeepInheritance)
         end
         
+        should "not be empty" do
+          assert @class_names.size > 0
+        end
+
         should "be a Cimc::Enumeration" do
           assert_kind_of(Sfcc::Cim::Enumeration, @class_names)
         end
