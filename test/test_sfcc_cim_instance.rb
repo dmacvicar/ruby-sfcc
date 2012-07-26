@@ -3,7 +3,7 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
 
 class SfccCimInstanceTest < SfccTestCase
 
-  context "object path for CIM_ComputerSystem and running CIMOM with no auth" do
+  context "object path for CIM_ComputerSystem and running CIMOM" do
     setup do
       setup_cim_client
       @op_computer_system = Sfcc::Cim::ObjectPath.new("root/cimv2", "CIM_ComputerSystem")

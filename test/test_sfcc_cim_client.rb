@@ -3,7 +3,7 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
 
 class SfccCimcClient < SfccTestCase
     
-  context "a running CIMOM with no auth" do
+  context "a running CIMOM" do
 
     setup do
       setup_cim_client
@@ -59,6 +59,7 @@ class SfccCimcClient < SfccTestCase
     should "be able to create an instance" do
       op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
       instance = Sfcc::Cim::Instance.new(op)
+      assert instance
       assert_raise Sfcc::Cim::ErrorNotSupported do
         new_op = @client.create_instance(op, instance)
       end
@@ -67,6 +68,7 @@ class SfccCimcClient < SfccTestCase
     should "be able to set an instance" do
       @op = Sfcc::Cim::ObjectPath.new("root/cimv2", "Linux_OperatingSystem")
       instance = @client.query(@op, "select * from Linux_OperatingSystem", "wql").to_a.first
+      assert instance
       assert_raise Sfcc::Cim::ErrorNotSupported do
         instance = @client.set_instance(instance.object_path, instance)
       end
@@ -74,6 +76,7 @@ class SfccCimcClient < SfccTestCase
 
     should "be able to delete an instance" do
       instance = @client.query(@op, "select * from Linux_OperatingSystem", "wql").to_a.first
+      assert instance
       assert_raise Sfcc::Cim::ErrorNotSupported do
         @client.delete_instance(instance.object_path)
       end
@@ -122,9 +125,9 @@ class SfccCimcClient < SfccTestCase
         path = instance.object_path
         assert_kind_of Sfcc::Cim::ObjectPath, path
         out = {}
-        ret = @client.invoke_method(path, :execCmd, {:cmd => "cat /etc/SuSE-release"}, out)
+        ret = @client.invoke_method(path, :execCmd, {:cmd => 'sh -c "echo \"14 + 7\" | bc"'}, out)
         assert out.has_key?(:out), "output parameter is present"
-        assert out[:out].match(/VERSION/)
+        assert_equal out[:out], "21", "14 + 7 is 21"
         assert_equal 0, ret, "execCmd returns 0"
       end      
     end

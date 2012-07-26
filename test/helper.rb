@@ -3,13 +3,18 @@ require 'test/unit'
 require 'shoulda'
 require 'tempfile'
 
+$schema = "http"
+$user = nil
+$pw = nil
+$hostname = "kvm-fedora17"
+$port = "5988"
+
 tmpdir = "../tmp/#{RUBY_PLATFORM}/sfcc/#{RUBY_VERSION}"
 
 %w(../lib tmpdir).each do |path|
   $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), path)))
 end
  
-require 'rubygems'
 require 'sfcc'
  
 class SfccTestCase < Test::Unit::TestCase
@@ -27,8 +32,9 @@ class SfccTestCase < Test::Unit::TestCase
   end
 
   def setup_cim_client
-    @client = Sfcc::Cim::Client.connect('http://root@localhost:5988')
-    # @client = Sfcc::Cim::Client.connect(:host => 'localhost', :scheme => 'http', :user => 'root', :port => '5988')
+    #@client = Sfcc::Cim::Client.connect(:uri => $url, :verify => false)
+    @client = Sfcc::Cim::Client.connect(:host => $hostname, :scheme => $schema,
+                                        :user => $user, :password => $pw, :port => '5988')
   end
   
 end
