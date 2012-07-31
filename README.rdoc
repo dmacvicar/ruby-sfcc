@@ -72,6 +72,13 @@ ruby-like API to do CIM based management.
 
 * ObjectPath qualifier methods crash
 
+== If you want to contribute:
+
+* fork http://github.com/elucid/ruby-freshbooks
+* make your changes along with tests (don't touch version in changelog or 
+  lib/sfcc/version.rb)
+* send me a pull request
+
 == Links
 
 === Documentation
