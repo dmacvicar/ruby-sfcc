@@ -1,7 +1,5 @@
 # sfcc/instance.rb
 
-require 'cim'
-
 module Sfcc
 
   module Cim
