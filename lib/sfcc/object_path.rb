@@ -4,10 +4,21 @@
 module Sfcc
   module Cim
     class ObjectPath
+      #
+      # ObjectPath#[name]
+      # Get key value
+      # Alias for ObjectPath#key(value)
+      #
       def [] name
 	self.key(name)
       end
 
+      #
+      # invoke name, *args
+      # Class or instance method invocation
+      # @param name name of method
+      # @param args method arguments
+      #
       def invoke name, *args
         raise "Cannot invoke, ObjectPath has no client associated" unless self.client
 	classname = self.classname
@@ -54,6 +65,9 @@ module Sfcc
         return res
       end
 
+      #
+      # Catch-all for ObjectPath.<key> or ObjectPath.<method>(<args>)
+      #
       def method_missing name, *args
         if args.empty?
           begin
