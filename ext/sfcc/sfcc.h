@@ -7,7 +7,6 @@
 #include <cimc/cimc.h>
 #include <cimc/cimcdt.h>
 #include <cimc/cimcft.h>
-#include <CimClientLib/cmcimacs.h>
         
 #include "ruby.h"
 
@@ -25,6 +24,7 @@ extern const char *to_charptr(VALUE v);
 extern VALUE mSfcc;
 extern VALUE mSfccCim;
 extern CIMCEnv *cimcEnv;
+extern char *cimcEnvType;
 
 #define CIMSTR_2_RUBYSTR(x) (x ? (x->ft->getCharPtr(x, NULL) ? rb_str_new2(x->ft->getCharPtr(x, NULL)) : Qnil) : Qnil)
 
@@ -46,7 +46,7 @@ inline char ** sfcc_value_array_to_string_array(VALUE array);
 /**
  * converts a CIMCArray to rbArray
  */
-inline VALUE sfcc_cimcarray_to_rubyarray(CIMCArray *array);
+inline VALUE sfcc_cimcarray_to_rubyarray(CIMCArray *array, VALUE client);
 
 /**
  * converts a ruby hash to a CIM args object
@@ -56,12 +56,12 @@ inline CIMCArgs* sfcc_hash_to_cimargs(VALUE hash);
 /**
  * converts a CIM args object to a hash
  */
-inline VALUE sfcc_cimargs_to_hash(CIMCArgs *args);
+inline VALUE sfcc_cimargs_to_hash(CIMCArgs *args, VALUE client);
 
 /**
  * converts CIMCData to ruby VALUE
  */
-inline VALUE sfcc_cimdata_to_value(CIMCData data);
+inline VALUE sfcc_cimdata_to_value(CIMCData *data, VALUE client);
 
 /**
  * convert ruby VALUE to CIMCData
