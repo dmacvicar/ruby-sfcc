@@ -8,17 +8,28 @@
 #include "cim_enumeration.h"
 #include "cim_class.h"
 #include "cim_instance.h"
+#include "cim_data.h"
+#include "cim_type.h"
+#include "cim_flags.h"
 #include "cim_client.h"
 
 VALUE mSfcc;
 VALUE mSfccCim;
 CIMCEnv *cimcEnv;
+char *cimcEnvType;
 
 static void
 Exit_sfcc(CIMCEnv *env)
 {
 /*  fprintf(stderr, "Sfcc_dealloc_cimcEnv %p\n", env); */
-  if (env) env->ft->release(env);
+  if (env) {
+    env->ft->release(env);
+    cimcEnv = NULL;
+  }
+  if (cimcEnvType) {
+    free(cimcEnvType);
+    cimcEnvType = NULL;
+  }
 }
 
 void Init_sfcc()
@@ -28,6 +39,7 @@ void Init_sfcc()
   VALUE value; /* wrapped value */
   int rc;
   char *msg;
+  char *rails_env = getenv("RAILS_ENV");
 
   /**
    * SBLIM sfcc ruby API
@@ -44,12 +56,15 @@ void Init_sfcc()
   cEnvironment = rb_define_class_under(mSfccCim, "CimcEnvironment", rb_cObject);
   conn = getenv("RUBY_SFCC_CONNECTION"); /* "SfcbLocal" or "XML" */
   if (!conn) conn = "XML";
-  cimcEnv = NewCIMCEnv(conn,0,&rc,&msg);
+  /* Don't let sfcc init curl if running in Rails env (http://sourceforge.net/tracker/?func=detail&aid=3435363&group_id=128809&atid=712784) */
+  cimcEnv = NewCIMCEnv(conn, rails_env?CIMC_NO_CURL_INIT:0, &rc, &msg);
   if (!cimcEnv) {
     rb_raise(rb_eLoadError, "Cannot local %s cim client library. %d:%s", conn, rc, msg ? msg : "");
   }
   value = Data_Wrap_Struct(cEnvironment, NULL, Exit_sfcc, cimcEnv);
   rb_define_const(mSfccCim, "CIMC_ENV", value);
+  cimcEnvType = strdup(conn);
+  rb_define_const(mSfccCim, "CIMC_ENV_TYPE", rb_str_new2(cimcEnvType));
 
   /**
    * Init other sub-classes
@@ -59,6 +74,9 @@ void Init_sfcc()
   init_cim_enumeration();
   init_cim_class();
   init_cim_instance();
+  init_cim_data();
+  init_cim_type();
+  init_cim_flags();
   init_cim_client();
 }
 
@@ -131,7 +149,7 @@ void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...)
 
   if (status.msg) {
     snprintf(error, MAX_ERROR_BUFFER, "%s : %s", orig_error, status.msg->ft->getCharPtr(status.msg, NULL));
-    CMRelease(status.msg);
+    status.msg->ft->release(status.msg);
   }
   else
     strcpy(error, orig_error);
@@ -155,92 +173,106 @@ char ** sfcc_value_array_to_string_array(VALUE array)
   return ret;
 }
 
-VALUE sfcc_cimdata_to_value(CIMCData data)
+VALUE sfcc_cimdata_to_value(CIMCData *data, VALUE client)
 {
-  CIMCString *cimstr = NULL;
   VALUE rbval;
   CIMCStatus status;
 
-  if (data.type & CIMC_ARRAY) {
+  if ((data->state != CIMC_goodValue)
+      && (data->state != CIMC_keyValue)) {
+    if (data->state & CIMC_nullValue)
+      return Qnil;
+    if (data->state & CIMC_notFound)
+      rb_raise(rb_eRuntimeError, "Value not found");
+    if (data->state & CIMC_badValue)
+      rb_raise(rb_eArgError, "Bad value");
+  }
+  if (data->type & CIMC_ARRAY) {
     int k = 0;
     int n = 0;
     VALUE rbarray = rb_ary_new();
 
-    if (!data.value.array)
+    if (!data->value.array)
       return rb_ary_new();
 
-    n = data.value.array->ft->getSize(data.value.array, &status);
+    n = data->value.array->ft->getSize(data->value.array, &status);
     if (!status.rc) {
       for (k = 0; k < n; ++k) {
-        CIMCData element = data.value.array->ft->getElementAt(data.value.array, k, NULL);
-        rb_ary_push(rbarray, sfcc_cimdata_to_value(element));
+        CIMCData element = data->value.array->ft->getElementAt(data->value.array, k, NULL);
+        rb_ary_push(rbarray, sfcc_cimdata_to_value(&element, client));
       }
       return rbarray;
     }
     sfcc_rb_raise_if_error(status, "Can't retrieve array size");
     return Qnil;
   }
-  else if (data.type & CIMC_ENC) {
-    switch (data.type) {
+  else if (data->type & CIMC_ENC) {
+    switch (data->type) {
     case CIMC_instance:
-      return data.value.inst ? Sfcc_wrap_cim_instance(data.value.inst->ft->clone(data.value.inst, NULL)) : Qnil;
-    case CIMC_class:
-      return data.value.cls ? Sfcc_wrap_cim_class(data.value.cls->ft->clone(data.value.cls, NULL)) : Qnil;
+      return data->value.inst ? Sfcc_wrap_cim_instance(data->value.inst->ft->clone(data->value.inst, NULL), client) : Qnil;
     case CIMC_ref:
-      return data.value.ref ? Sfcc_wrap_cim_object_path(data.value.ref->ft->clone(data.value.ref, NULL)) : Qnil;
+      return data->value.ref ? Sfcc_wrap_cim_object_path(data->value.ref->ft->clone(data->value.ref, NULL), client) : Qnil;
     case CIMC_args:
-      return data.value.args ? sfcc_cimargs_to_hash(data.value.args) : Qnil;
+      return data->value.args ? sfcc_cimargs_to_hash(data->value.args, client) : Qnil;
+    case CIMC_class:
+      return data->value.cls ? Sfcc_wrap_cim_class(data->value.cls->ft->clone(data->value.cls, NULL)) : Qnil;
     case CIMC_filter:
       return Qnil;
-    case CIMC_numericString:
-    case CIMC_booleanString:
-    case CIMC_dateTimeString:
-    case CIMC_classNameString:
-      break;
+    case CIMC_enumeration:
+      return data->value.Enum ? Sfcc_wrap_cim_enumeration(data->value.Enum->ft->clone(data->value.Enum, NULL), client) : Qnil;
     case CIMC_string:
-      return data.value.string ? rb_str_new2((char*)data.value.string->ft->getCharPtr(data.value.string, NULL)) : Qnil;
+      if (data->value.string) {
+        const char *strval = data->value.string->ft->getCharPtr(data->value.string, NULL);
+        /* getCharPtr() might return NULL and rb_str_new2 doesn't like that */
+        if (strval)
+          return rb_str_new2(strval);
+      }
+      return Qnil;
+    case CIMC_chars:
     case CIMC_charsptr:
-      return data.value.chars ? rb_str_new((char*)data.value.dataPtr.ptr, data.value.dataPtr.length) : Qnil;
+      return data->value.chars ? rb_str_new((char*)data->value.dataPtr.ptr, data->value.dataPtr.length) : Qnil;
     case CIMC_dateTime:
-      if (data.value.dateTime) {
+      if (data->value.dateTime) {
         CIMCUint64 bintime;
-        bintime = data.value.dateTime->ft->getBinaryFormat(data.value.dateTime, NULL);
+        bintime = data->value.dateTime->ft->getBinaryFormat(data->value.dateTime, NULL);
         rbval = rb_time_new((time_t) (bintime / 1000000L), (time_t) (bintime % 1000000));
       }
       else {
         rbval = Qnil;
       }
       return rbval;
+    default:
+      rb_raise(rb_eTypeError, "Unhandled type 0x%04x", data->type);
     }
   }
-  else if (data.type & CIMC_SIMPLE) {
-    switch (data.type) {
-    case CIMC_boolean: return data.value.boolean ? Qtrue : Qfalse;
-    case CIMC_char16: return UINT2NUM(data.value.char16);
+  else if (data->type & CIMC_SIMPLE) {
+    switch (data->type) {
+    case CIMC_boolean: return data->value.boolean ? Qtrue : Qfalse;
+    case CIMC_char16: return UINT2NUM(data->value.char16);
     }
   }
-  else if (data.type & CIMC_INTEGER) {
-    switch (data.type) {
-    case CIMC_uint8: return UINT2NUM(data.value.uint8);
-    case CIMC_sint8: return INT2NUM(data.value.sint8);
-    case CIMC_uint16: return UINT2NUM(data.value.uint16);
-    case CIMC_sint16: return INT2NUM(data.value.sint16);
-    case CIMC_uint32: return UINT2NUM(data.value.uint32);
-    case CIMC_sint32: return INT2NUM(data.value.sint32);
-    case CIMC_uint64: return UINT2NUM(data.value.uint64);
-    case CIMC_sint64: return INT2NUM(data.value.sint64);
+  else if (data->type & CIMC_INTEGER) {
+    switch (data->type) {
+    case CIMC_uint8: return UINT2NUM(data->value.uint8);
+    case CIMC_sint8: return INT2NUM(data->value.sint8);
+    case CIMC_uint16: return UINT2NUM(data->value.uint16);
+    case CIMC_sint16: return INT2NUM(data->value.sint16);
+    case CIMC_uint32: return UINT2NUM(data->value.uint32);
+    case CIMC_sint32: return INT2NUM(data->value.sint32);
+    case CIMC_uint64: return UINT2NUM(data->value.uint64);
+    case CIMC_sint64: return INT2NUM(data->value.sint64);
     }
   }
-  else if (data.type & CIMC_REAL) {
-    switch (data.type) {
-    case CIMC_real32: return rb_float_new(data.value.real32);
-    case CIMC_real64: return rb_float_new(data.value.real64);
+  else if (data->type & CIMC_REAL) {
+    switch (data->type) {
+    case CIMC_real32: return rb_float_new(data->value.real32);
+    case CIMC_real64: return rb_float_new(data->value.real64);
     }
   }
-  else if (data.type & CIMC_null ) {
+  else if (data->type & CIMC_null ) {
     return Qnil;
   }
-  rb_raise(rb_eTypeError, "unsupported data data type %d", data.type);
+  rb_raise(rb_eTypeError, "unsupported data type %d", data->type);
   return Qnil;
 }
 
@@ -250,8 +282,7 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
   CIMCStatus status;
   CIMCData data;
   CIMCArgs *args = (CIMCArgs *)extra;
-  VALUE key_str = rb_funcall(key, rb_intern("to_s"), 0);
-  const char *key_cstr = to_charptr(key_str);
+  const char *key_cstr = to_charptr(key);
   data = sfcc_value_to_cimdata(value);
   status = args->ft->addArg(args, key_cstr, &data.value, data.type);
 
@@ -271,7 +302,7 @@ CIMCArgs *sfcc_hash_to_cimargs(VALUE hash)
   return args;
 }
 
-VALUE sfcc_cimargs_to_hash(CIMCArgs *args)
+VALUE sfcc_cimargs_to_hash(CIMCArgs *args, VALUE client)
 {
   int i = 0;
   int n = 0;
@@ -300,7 +331,7 @@ VALUE sfcc_cimargs_to_hash(CIMCArgs *args)
       }
 
       if (!status.rc) {
-        rb_hash_aset(hash, rb_funcall(rb_str_new2(argname_cstr), rb_intern("to_sym"), 0), sfcc_cimdata_to_value(argdata));
+        rb_hash_aset(hash, rb_funcall(rb_str_new2(argname_cstr), rb_intern("to_sym"), 0), sfcc_cimdata_to_value(&argdata, client));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve argument name");
@@ -349,17 +380,46 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
     break;
   case T_FLOAT:
     break;
-  case T_ARRAY:
-    break;
   case T_HASH:
     break;
   case T_SYMBOL:
     */
+  case T_ARRAY: {
+    CIMCCount i = 0;
+    int len = RARRAY_LEN(value);
+    CIMCType type = CIMC_string; /* sfcc can't handle CIMC_null */
+    VALUE array_value;
+    CIMCData array_data;    
+    if (len > 0) {
+      /* try to deduce type from first array element */
+      array_value = rb_ary_entry(value, 0);
+      array_data = sfcc_value_to_cimdata(array_value);
+      type = array_data.type;
+    }
+    data.type = type | CIMC_ARRAY;
+    data.state = CIMC_goodValue;
+    data.value.array = cimcEnv->ft->newArray(cimcEnv, len, type, NULL);
+    if (len > 0) {
+      data.value.array->ft->setElementAt(data.value.array, i++, &(array_data.value), array_data.type);
+    }
+    for (; i < len; ++i) {
+      array_value = rb_ary_entry(value, 0);
+      array_data = sfcc_value_to_cimdata(array_value);
+      data.value.array->ft->setElementAt(data.value.array, i, &(array_data.value), array_data.type);      
+    }
+    break;
+  }
   case T_DATA:
   default:
     if (CLASS_OF(value) == cSfccCimString) {
       Data_Get_Struct(value, CIMCString, data.value.string);
-      data.type = CIMC_string;
+      if (data.value.string == NULL) { /* packed a NULL pointer ? */
+        data.type = CIMC_null;
+        data.state = CIMC_nullValue;
+      }
+      else {
+        data.type = CIMC_string;
+      }
     }
     else {
       VALUE cname;
@@ -368,7 +428,7 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
       data.type = CIMC_null;
       cname = rb_funcall(rb_funcall(value, rb_intern("class"), 0), rb_intern("to_s"), 0);
       class_name = to_charptr(cname);
-      rb_raise(rb_eTypeError, "unsupported data data type: %s", class_name);
+      rb_raise(rb_eTypeError, "unsupported data type: %s", class_name);
       return data;
     }
   }
@@ -399,3 +459,31 @@ to_charptr(VALUE v)
   }
   return str;
 }
+
+/**
+ * converts a CIMCArray to rbArray
+ */
+
+VALUE
+sfcc_cimcarray_to_rubyarray(CIMCArray *array, VALUE client)
+{
+  CIMCCount size;
+  CIMCCount i;
+  CIMCStatus st = { 0, NULL };
+  VALUE ary;
+  if (!array)
+    rb_raise(rb_eArgError, "Cannot convert NULL array");
+  size = array->ft->getSize(array, &st);
+  sfcc_rb_raise_if_error(st, "Can't get array size");
+  ary = rb_ary_new2(size);
+  for (i = 0; i < size; ++i) {
+    CIMCData data;
+    VALUE value;
+    array->ft->getElementAt(array,i,&st);
+    sfcc_rb_raise_if_error(st, "Can't get array element %d of %d", i, size);
+    value = sfcc_cimdata_to_value(&data, client);
+    rb_ary_store(ary,i,value);
+  }
+  return ary;
+}
+

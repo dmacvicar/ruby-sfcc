@@ -1,5 +1,6 @@
 
 #include "cim_class.h"
+#include "cim_data.h"
 
 static void
 dealloc(CIMCClass *c)
@@ -10,22 +11,27 @@ dealloc(CIMCClass *c)
 
 /**
  * call-seq:
- *   name()
+ *   name() -> String
  *
  * gets the class name
  */
 static VALUE class_name(VALUE self)
 {
   CIMCClass *cimclass;
-  const char *classname;
+  CIMCString *name;
+  CIMCStatus status = { 0 };
   Data_Get_Struct(self, CIMCClass, cimclass);
-  classname = cimclass->ft->getCharClassName(cimclass);
-  return rb_str_new2(classname);
+  name = cimclass->ft->getClassName(cimclass, &status);
+  if ( !status.rc )
+    return CIMSTR_2_RUBYSTR(name);
+
+  sfcc_rb_raise_if_error(status, "Can't retrieve class name");
+  return Qnil;
 }
 
 /**
  * call-seq:
- *   superclass_name()
+ *   superclass_name() -> String
  *
  * gets the superclass name
  */
@@ -33,15 +39,24 @@ static VALUE superclass_name(VALUE self)
 {
   CIMCClass *cimclass;
   const char *classname;
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   classname = cimclass->ft->getCharSuperClassName(cimclass);
+  if (!classname) {
+    rb_raise(rb_eArgError, "Cannot retrieve superclass name");
+    return Qnil;
+  }
   return rb_str_new2(classname);
 }
 
 
 /**
  * call-seq:
- *   keys()
+ *   keys() -> Array
  *
  * gets the list of keys
  */
@@ -50,9 +65,18 @@ static VALUE keys(VALUE self)
   VALUE ret;
   CIMCClass *cimclass;
   CIMCArray *keylist;
+  
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   keylist = cimclass->ft->getKeyList(cimclass);
-  ret = sfcc_cimcarray_to_rubyarray(keylist);
+  if (!keylist)
+    return Qnil;
+  
+  ret = sfcc_cimcarray_to_rubyarray(keylist, Qnil);
   keylist->ft->release(keylist);
   return ret;
 }
@@ -68,6 +92,11 @@ static VALUE is_association(VALUE self)
 {
   CIMCClass *cimclass;
   CIMCBoolean is;
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   is = cimclass->ft->isAssociation(cimclass);
   return is ? Qtrue : Qfalse;
@@ -84,6 +113,11 @@ static VALUE is_abstract(VALUE self)
 {
   CIMCClass *cimclass;
   CIMCBoolean is;
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   is = cimclass->ft->isAbstract(cimclass);
   return is ? Qtrue : Qfalse;
@@ -100,6 +134,11 @@ static VALUE is_indication(VALUE self)
 {
   CIMCClass *cimclass;
   CIMCBoolean is;
+  if (*cimcEnvType == 'X') {
+    CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };    
+    sfcc_rb_raise_if_error(status, "Not supported in XML connection");
+    return Qnil;
+  }
   Data_Get_Struct(self, CIMCClass, cimclass);
   is = cimclass->ft->isIndication(cimclass);
   return is ? Qtrue : Qfalse;
@@ -108,20 +147,20 @@ static VALUE is_indication(VALUE self)
 
 /**
  * call-seq:
- *   property(name)
+ *   property(name) -> Cim::Data
  *
- * gets a named property value
+ * gets a named property 
  */
 static VALUE property(VALUE self, VALUE name)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   CIMCData data;
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClass, ptr);
   data = ptr->ft->getProperty(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return Sfcc_wrap_cim_data(&data);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property '%s'", to_charptr(name));
   return Qnil;
@@ -129,18 +168,18 @@ static VALUE property(VALUE self, VALUE name)
 
 /**
  * call-seq:
- *   cimclass.each_property do |name, value|
+ *   cimclass.each_property do |name, data|
  *      ...
  *   end
  *
  * enumerates properties yielding the property name and
- * its value
+ * its Cim::Data
  *
  */
 static VALUE each_property(VALUE self)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   int k=0;
   int num_props=0;
   CIMCString *property_name;
@@ -152,12 +191,12 @@ static VALUE each_property(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropertyAt(ptr, k, &property_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_name ? rb_str_intern(rb_str_new2(property_name->ft->getCharPtr(property_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_name ? rb_str_intern(rb_str_new2(property_name->ft->getCharPtr(property_name, NULL))) : Qnil), Sfcc_wrap_cim_data(&data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property #%d", k);
       }
-      if (property_name) CMRelease(property_name);
+      if (property_name) property_name->ft->release(property_name);
     }
   }
   else {
@@ -168,7 +207,7 @@ static VALUE each_property(VALUE self)
 
 /**
  * call-seq:
- *   property_count()
+ *   property_count() -> Integer
  *
  * Gets the number of properties contained in this class
  */
@@ -176,26 +215,25 @@ static VALUE property_count(VALUE self)
 {
   CIMCClass *ptr;
   Data_Get_Struct(self, CIMCClass, ptr);
-  Data_Get_Struct(self, CIMCClass, ptr);
   return UINT2NUM(ptr->ft->getPropertyCount(ptr, NULL));
 }
 
 /**
  * call-seq:
- *   qualifier(name)
+ *   qualifier(name) -> Cim::Data
  *
- * gets a named qualifier value
+ * gets a named qualifier
  */
 static VALUE qualifier(VALUE self, VALUE name)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   CIMCData data;
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClass, ptr);
   data = ptr->ft->getQualifier(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return Sfcc_wrap_cim_data(&data);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve qualifier '%s'", to_charptr(name));
   return Qnil;
@@ -203,18 +241,18 @@ static VALUE qualifier(VALUE self, VALUE name)
 
 /**
  * call-seq:
- *   cimclass.each_qualifier do |name, value|
+ *   cimclass.each_qualifier do |name, data|
  *      ...
  *   end
  *
  * enumerates properties yielding the qualifier name and
- * its value
+ * its Cim::Data
  *
  */
 static VALUE each_qualifier(VALUE self)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   int k=0;
   int num_props=0;
   CIMCString *qualifier_name;
@@ -226,12 +264,12 @@ static VALUE each_qualifier(VALUE self)
     for (; k < num_props; ++k) {
       data = ptr->ft->getQualifierAt(ptr, k, &qualifier_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (qualifier_name ? rb_str_intern(rb_str_new2(qualifier_name->ft->getCharPtr(qualifier_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (qualifier_name ? rb_str_intern(rb_str_new2(qualifier_name->ft->getCharPtr(qualifier_name, NULL))) : Qnil), Sfcc_wrap_cim_data(&data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve qualifier #%d", k);
       }
-      if (qualifier_name) CMRelease(qualifier_name);
+      if (qualifier_name) qualifier_name->ft->release(qualifier_name);
     }
   }
   else {
@@ -242,7 +280,7 @@ static VALUE each_qualifier(VALUE self)
 
 /**
  * call-seq:
- *   qualifier_count()
+ *   qualifier_count() -> Integer
  *
  * Gets the number of qualifiers in this class
  */
@@ -255,21 +293,21 @@ static VALUE qualifier_count(VALUE self)
 
 /**
  * call-seq:
- *   property_qualifier(property_name, qualifier_name)
+ *   property_qualifier(property_name, qualifier_name) -> Cim::Data
  *
- * gets a named property qualifier value
+ * gets a named property qualifier
  */
 static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier_name)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   CIMCData data;
   memset(&status, 0, sizeof(CIMCStatus));
   Data_Get_Struct(self, CIMCClass, ptr);
   data = ptr->ft->getPropQualifier(ptr, to_charptr(property_name),
                                         to_charptr(qualifier_name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return Sfcc_wrap_cim_data(&data);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve property_qualifier '%s'", to_charptr(qualifier_name));
   return Qnil;
@@ -277,18 +315,18 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
 
 /**
  * call-seq:
- *   cimclass.each_property_qualifier(property_name) do |name, value|
+ *   cimclass.each_property_qualifier(property_name) do |name, data|
  *      ...
  *   end
  *
  * enumerates properties yielding the property qualifier name and
- * its value
+ * its Cim::Data
  *
  */
 static VALUE each_property_qualifier(VALUE self, VALUE property_name)
 {
   CIMCClass *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { 0 };
   int k=0;
   int num_props=0;
   CIMCString *property_qualifier_name;
@@ -300,12 +338,12 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
     for (; k < num_props; ++k) {
       data = ptr->ft->getPropQualifierAt(ptr, to_charptr(property_name), k, &property_qualifier_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, (property_qualifier_name ? rb_str_intern(rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL))) : Qnil), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, (property_qualifier_name ? rb_str_intern(rb_str_new2(property_qualifier_name->ft->getCharPtr(property_qualifier_name, NULL))) : Qnil), Sfcc_wrap_cim_data(&data));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier #%d", k);
       }
-      if (property_qualifier_name) CMRelease(property_qualifier_name);
+      if (property_qualifier_name) property_qualifier_name->ft->release(property_qualifier_name);
     }
   }
   else {
@@ -316,7 +354,7 @@ static VALUE each_property_qualifier(VALUE self, VALUE property_name)
 
 /**
  * call-seq:
- *   property_qualifier_count(property_name)
+ *   property_qualifier_count(property_name) -> Integer
  *
  * Gets the number of qualifiers contained in this property
  */

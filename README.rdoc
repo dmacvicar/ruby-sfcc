@@ -24,7 +24,9 @@ ruby-sfcc has been built and the testsuite ran against:
 
 ruby-sfcc has been built and the testsuite ran against:
 
-* sblim-sfcc 2.2.1
+* sblim-sfcc 2.2.4
+
+(Note: Earlier versions of sfcc don't play well with ruby-sfcc+Rails)
 
 == Quick Start
 

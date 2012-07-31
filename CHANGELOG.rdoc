@@ -1,3 +1,26 @@
+== 0.8.0
+
+* Support native Ruby calls to CIM instance methods
+  (requires genprovider gem)
+
+== 0.7.0
+
+* add Cim::Type to provide type operations
+* add Cim::Data to obtain state and type information
+  for Class properties and qualifiers
+
+== 0.6.0
+
+* add client information to Cim::Instance
+  to allow direct method invocation
+* fix real32/real64 conversion to Ruby
+
+== 0.5.0
+
+* support Ruby 1.9
+* drop CMPI constants, its all CIMC in sfcc
+* fix CMCIDateTime <-> Ruby Time conversions
+
 == 0.4.0
 
 * support https access

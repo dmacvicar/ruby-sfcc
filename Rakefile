@@ -27,7 +27,12 @@ begin
     t.files   = ['lib/**/*.h', 'lib/**/*.c', 'lib/**/*.rb', *extra_docs]
   end
 rescue LoadError
-  require 'rake/rdoctask'
+  # WARNING: 'require 'rake/rdoctask'' is deprecated.  Please use 'require 'rdoc/task' (in RDoc 2.4.2+)' instead.
+  begin
+    require 'rdoc/task' # try Rdoc 2.4.2+ first
+  rescue
+    require 'rake/rdoctask' # fallback
+  end
   STDERR.puts "Install yard if you want prettier docs"
   Rake::RDocTask.new(:doc) do |rdoc|
     if File.exist?("VERSION.yml")

@@ -8,5 +8,4 @@ unless have_library('cimcclient', 'NewCIMCEnv')
 end
 
 find_header 'cimc.h', '/usr/include/cimc'
-find_header 'cmcimacs.h', '/usr/include/CimClientLib'
 create_makefile('sfcc')

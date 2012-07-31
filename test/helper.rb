@@ -27,7 +27,7 @@ class SfccTestCase < Test::Unit::TestCase
   end
 
   def setup_cim_client
-    @client = Sfcc::Cim::Client.connect('http://root@localhost:5988')
+    @client = Sfcc::Cim::Client.connect(:uri => 'https://wsman:secret@localhost:5989', :verify => false)
     # @client = Sfcc::Cim::Client.connect(:host => 'localhost', :scheme => 'http', :user => 'root', :port => '5988')
   end
   

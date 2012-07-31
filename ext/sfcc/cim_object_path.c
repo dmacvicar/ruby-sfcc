@@ -1,9 +1,22 @@
+/*
+ * ext/sfcc/cim_object_path.c
+ *
+ */
 
+#include "cim_client.h"
 #include "cim_object_path.h"
 
 static void
-dealloc(CIMCObjectPath *op)
+mark(rb_sfcc_object_path *rso)
 {
+  if (!NIL_P(rso->client))
+    rb_gc_mark(rso->client);
+}
+
+static void
+dealloc(rb_sfcc_object_path *rso)
+{
+  CIMCObjectPath *op = rso->op;
 /*  fprintf(stderr, "Sfcc_dealloc_object_path %p\n", op); */
   op->ft->release(op);
 }
@@ -18,7 +31,9 @@ static VALUE set_namespace(VALUE self, VALUE val)
 {
   CIMCObjectPath *ptr;
   CIMCStatus status;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   status = ptr->ft->setNameSpace(ptr, to_charptr(val));
   if (!status.rc)
     return val;
@@ -37,7 +52,10 @@ static VALUE namespace(VALUE self)
   CIMCObjectPath *ptr;
   CIMCString *cimstr;
   CIMCStatus status;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   cimstr = ptr->ft->getNameSpace(ptr, &status);
   if (!status.rc)
     return CIMSTR_2_RUBYSTR(cimstr);
@@ -55,7 +73,10 @@ static VALUE set_hostname(VALUE self, VALUE val)
 {
   CIMCObjectPath *ptr;
   CIMCStatus status;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   status = ptr->ft->setHostname(ptr, to_charptr(val));
   if (!status.rc)
     return val;
@@ -74,7 +95,10 @@ static VALUE hostname(VALUE self)
   CIMCObjectPath *ptr;
   CIMCString *cimstr;
   CIMCStatus status;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   cimstr = ptr->ft->getHostname(ptr, &status);
   if (!status.rc)
     return CIMSTR_2_RUBYSTR(cimstr);
@@ -90,7 +114,10 @@ static VALUE hostname(VALUE self)
 static VALUE set_classname(VALUE self, VALUE val)
 {
   CIMCObjectPath *ptr;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   ptr->ft->setClassName(ptr, to_charptr(val));
   return val;
 }
@@ -105,9 +132,50 @@ static VALUE classname(VALUE self)
 {
   CIMCObjectPath *ptr;
   CIMCString *cimstr;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   cimstr = ptr->ft->getClassName(ptr, NULL);
   return CIMSTR_2_RUBYSTR(cimstr);
+}
+
+/**
+ * call-seq:
+ *   client=(Client)
+ *
+ * Set/replace the client component
+ */
+static VALUE set_client(VALUE self, VALUE client)
+{
+  CIMCStatus status;
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  if ((TYPE(client) == T_DATA)
+      && (CLASS_OF(client) == cSfccCimClient)) {
+    rso->client = client;
+    return client;
+  }
+  else {
+    status.rc = CIMC_RC_ERR_TYPE_MISMATCH;
+    sfcc_rb_raise_if_error(status, "Argument must be Cim::Client");
+  }
+  return Qnil;
+}
+
+/**
+ * call-seq:
+ *   client() -> Client
+ *
+ * Get the client component
+ */
+static VALUE get_client(VALUE self)
+{
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  return rso->client;
 }
 
 /**
@@ -120,7 +188,10 @@ static VALUE add_key(VALUE self, VALUE name, VALUE value)
 {
   CIMCObjectPath *ptr;
   CIMCData data;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   data = sfcc_value_to_cimdata(value);
   ptr->ft->addKey(ptr, to_charptr(name), &data.value, data.type);
   return value;
@@ -137,10 +208,13 @@ static VALUE key(VALUE self, VALUE name)
   CIMCObjectPath *ptr;
   CIMCStatus status;
   CIMCData data;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   data = ptr->ft->getKey(ptr, to_charptr(name), &status);
   if ( !status.rc )
-    return sfcc_cimdata_to_value(data);
+    return sfcc_cimdata_to_value(&data, rso->client);
 
   sfcc_rb_raise_if_error(status, "Can't retrieve key '%s'", to_charptr(name));
   return Qnil;
@@ -164,19 +238,22 @@ static VALUE each_key(VALUE self)
   int num_props=0;
   CIMCString *key_name = NULL;
   CIMCData data;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
 
   num_props = ptr->ft->getKeyCount(ptr, &status);
   if (!status.rc) {
     for (; k < num_props; ++k) {
       data = ptr->ft->getKeyAt(ptr, k, &key_name, &status);
       if (!status.rc) {
-        rb_yield_values(2, rb_str_intern(CIMSTR_2_RUBYSTR(key_name)), sfcc_cimdata_to_value(data));
+        rb_yield_values(2, rb_str_intern(CIMSTR_2_RUBYSTR(key_name)), sfcc_cimdata_to_value(&data, rso->client));
       }
       else {
         sfcc_rb_raise_if_error(status, "Can't retrieve key #%d", k);
       }
-      if (key_name) CMRelease(key_name);
+      if (key_name) key_name->ft->release(key_name);
     }
   }
   else {
@@ -194,7 +271,10 @@ static VALUE each_key(VALUE self)
 static VALUE key_count(VALUE self)
 {
   CIMCObjectPath *ptr;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   return UINT2NUM(ptr->ft->getKeyCount(ptr, NULL));
 }
 
@@ -210,9 +290,12 @@ static VALUE set_namespace_from(VALUE self, VALUE object_path)
   CIMCObjectPath *ptr;
   CIMCObjectPath *src;
   CIMCStatus status;
+  rb_sfcc_object_path *rso, *rso1;
 
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
-  Data_Get_Struct(object_path, CIMCObjectPath, src);
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
+  Data_Get_Struct(object_path, rb_sfcc_object_path, rso1);
+  src = rso1->op;
 
   status = ptr->ft->setNameSpaceFromObjectPath(ptr, src);
 
@@ -234,10 +317,13 @@ static VALUE set_host_and_namespace_from(VALUE self, VALUE object_path)
 {
   CIMCObjectPath *ptr;
   CIMCObjectPath *src;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
+  rb_sfcc_object_path *rso, *rso1;
 
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
-  Data_Get_Struct(object_path, CIMCObjectPath, src);
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
+  Data_Get_Struct(object_path, rb_sfcc_object_path, rso1);
+  src = rso1->op;
 
   if (ptr->ft->setHostAndNameSpaceFromObjectPath) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     status = ptr->ft->setHostAndNameSpaceFromObjectPath(ptr, src);
@@ -259,18 +345,16 @@ static VALUE set_host_and_namespace_from(VALUE self, VALUE object_path)
 static VALUE class_qualifier(VALUE self, VALUE qualifier_name)
 {
   CIMCObjectPath *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
   CIMCData data;
-  memset(&status, 0, sizeof(CIMCStatus));
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   if (ptr->ft->getClassQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getClassQualifier(ptr, to_charptr(qualifier_name), &status);
     if ( !status.rc )
-      return sfcc_cimdata_to_value(data);
-  }
-  else {
-    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
-    status.msg = NULL;
+      return sfcc_cimdata_to_value(&data, rso->client);
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve class qualifier '%s'", to_charptr(qualifier_name));
   return Qnil;
@@ -285,19 +369,17 @@ static VALUE class_qualifier(VALUE self, VALUE qualifier_name)
 static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier_name)
 {
   CIMCObjectPath *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
   CIMCData data;
-  memset(&status, 0, sizeof(CIMCStatus));
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   if (ptr->ft->getPropertyQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getPropertyQualifier(ptr, to_charptr(property_name),
                                          to_charptr(qualifier_name), &status);
     if ( !status.rc )
-      return sfcc_cimdata_to_value(data);
-  }
-  else {
-    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
-    status.msg = NULL;
+      return sfcc_cimdata_to_value(&data, rso->client);
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve property qualifier '%s' for property '%s'", to_charptr(qualifier_name), to_charptr(property_name));
   return Qnil;
@@ -312,19 +394,17 @@ static VALUE property_qualifier(VALUE self, VALUE property_name, VALUE qualifier
 static VALUE method_qualifier(VALUE self, VALUE method_name, VALUE qualifier_name)
 {
   CIMCObjectPath *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
   CIMCData data;
-  memset(&status, 0, sizeof(CIMCStatus));
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   if (ptr->ft->getMethodQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getMethodQualifier(ptr, to_charptr(method_name),
                                        to_charptr(qualifier_name), &status);
     if ( !status.rc )
-      return sfcc_cimdata_to_value(data);
-  }
-  else {
-    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
-    status.msg = NULL;
+      return sfcc_cimdata_to_value(&data, rso->client);
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve method qualifier '%s' for method '%s'", to_charptr(qualifier_name), to_charptr(method_name));
   return Qnil;
@@ -342,21 +422,19 @@ static VALUE parameter_qualifier(VALUE self,
                                  VALUE qualifier_name)
 {
   CIMCObjectPath *ptr;
-  CIMCStatus status;
+  CIMCStatus status = { CIMC_RC_ERR_NOT_SUPPORTED, NULL };
   CIMCData data;
-  memset(&status, 0, sizeof(CIMCStatus));
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
   if (ptr->ft->getParameterQualifier) { /* might be missing in sfcc/backend/cimxml/objectpath.c */
     data = ptr->ft->getParameterQualifier(ptr,
                                           to_charptr(method_name),
                                           to_charptr(parameter_name),
                                           to_charptr(qualifier_name), &status);
     if ( !status.rc )
-      return sfcc_cimdata_to_value(data);
-  }
-  else {
-    status.rc = CIMC_RC_ERR_NOT_SUPPORTED;
-    status.msg = NULL;
+      return sfcc_cimdata_to_value(&data, rso->client);
   }
   sfcc_rb_raise_if_error(status, "Can't retrieve parameter qualifier '%s' for '%s'/'%s'", to_charptr(qualifier_name), to_charptr(method_name), to_charptr(parameter_name));
   return Qnil;
@@ -372,43 +450,54 @@ static VALUE to_s(VALUE self)
   VALUE ret;
   CIMCObjectPath *ptr;
   CIMCString *cimstr;
-  Data_Get_Struct(self, CIMCObjectPath, ptr);
+  rb_sfcc_object_path *rso;
+
+  Data_Get_Struct(self, rb_sfcc_object_path, rso);
+  ptr = rso->op;
+
   cimstr = ptr->ft->toString(ptr, NULL);
   ret = CIMSTR_2_RUBYSTR(cimstr);
-  CMRelease(cimstr);
+  cimstr->ft->release(cimstr);
   return ret;
 }
 
 /**
  * call-seq:
- *   new()
+ *   new(namespace, classname) -> ObjectPath
  *
- * Creates an object path from +namespace+ and +class_name+
+ * Creates an object path from +namespace+ and +classname+
  *
  */
 static VALUE new(int argc, VALUE *argv, VALUE self)
 {
   VALUE namespace;
   VALUE class_name;
+  VALUE client;
 
-  CIMCStatus status;
+  CIMCStatus status = { 0, NULL };
   CIMCObjectPath *ptr;
-  memset(&status, 0, sizeof(CIMCStatus));
 
-  rb_scan_args(argc, argv, "11", &namespace, &class_name);
+  rb_scan_args(argc, argv, "12", &namespace, &class_name, &client);
 
   ptr = cimcEnv->ft->newObjectPath(cimcEnv, to_charptr(namespace), to_charptr(class_name), &status);
 
   if (!status.rc)
-    return Sfcc_wrap_cim_object_path(ptr);
+    return Sfcc_wrap_cim_object_path(ptr, client);
   sfcc_rb_raise_if_error(status, "Can't create object path");
   return Qnil;
 }
 
 VALUE
-Sfcc_wrap_cim_object_path(CIMCObjectPath *object_path)
+Sfcc_wrap_cim_object_path(CIMCObjectPath *object_path, VALUE client)
 {
-  return Data_Wrap_Struct(cSfccCimObjectPath, NULL, dealloc, object_path);
+  rb_sfcc_object_path *rso = (rb_sfcc_object_path *)malloc(sizeof(rb_sfcc_object_path));
+  if (!rso)
+    rb_raise(rb_eNoMemError, "Cannot alloc rb_sfcc_object_path");
+
+  rso->op = object_path;
+  rso->client = client;
+
+  return Data_Wrap_Struct(cSfccCimObjectPath, mark, dealloc, rso);
 }
 
 VALUE cSfccCimObjectPath;
@@ -430,6 +519,8 @@ void init_cim_object_path()
   rb_define_method(klass, "hostname", hostname, 0);
   rb_define_method(klass, "classname=", set_classname, 1);
   rb_define_method(klass, "classname", classname, 0);
+  rb_define_method(klass, "client=", set_client, 1);
+  rb_define_method(klass, "client", get_client, 0);
   rb_define_method(klass, "add_key", add_key, 2);
   rb_define_method(klass, "key", key, 1);
   rb_define_method(klass, "each_key", each_key, 0);
