@@ -24,7 +24,8 @@ typedef struct {
 static void dealloc_cimdata(CIMCData *d) {
     if (  ((d)->type < CIMC_instance  || (d)->type > CIMC_dateTime)
        && ((d)->type < CIMC_instanceA || (d)->type > CIMC_dateTimeA)
-       && d->type != CIMC_chars && d->type != CIMC_charsptr) return;
+       && d->type != CIMC_chars && d->type != CIMC_charsptr
+       && !(d->type & CIMC_ARRAY)) return;
 
     if (d->state != CIMC_goodValue && d->state != CIMC_keyValue) return;
 
