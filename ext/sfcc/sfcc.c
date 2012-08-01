@@ -456,8 +456,15 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
           &(array_data.value), array_data.type);
     }
     for (; i < (typeof(i)) len; ++i) {
-      array_value = rb_ary_entry(value, 0);
+      array_value = rb_ary_entry(value, i);
       array_data = sfcc_value_to_cimdata(array_value);
+      if (type != array_data.type) {
+        Sfcc_free_cim_data(&data);
+        rb_raise(rb_eTypeError, "all elements of array must"
+                " have the same type");
+        data.state = CIMC_badValue;
+        break;
+      }
       data.value.array->ft->setElementAt(data.value.array, i,
           &(array_data.value), array_data.type);
       if (TYPE(array_value) != T_DATA) {
