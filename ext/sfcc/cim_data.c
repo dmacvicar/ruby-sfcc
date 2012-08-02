@@ -134,65 +134,6 @@ static VALUE itype2str(CIMCType t)
     return Qnil;
 }
 
-
-#define CLONEDATAVAL(val_attr) \
-    dst->value.val_attr = \
-        src->value.val_attr->ft->clone(src->value.val_attr, &rc); \
-    if (rc.rc || (!dst->value.val_attr && src->value.val_attr)) return 1;
-/**
- * @return 0 on success, 1 on memory error
- */
-static int clone_cimdata(CIMCData *dst, CIMCData *src)
-{
-    CIMCCount i;
-    dst->state = src->state;
-    dst->type = src->type;
-    memset(&dst->value, 0, sizeof(CIMCValue));
-    if (src->state == CIMC_nullValue || src->type == CIMC_null) return 0;
-    CIMCStatus rc;
-    if (dst->type & CIMC_ARRAY) {
-        CLONEDATAVAL(array);
-        for ( i=0; i < src->value.array->ft->getSize(src->value.array, &rc)
-            ; ++i)
-        {
-            CIMCData tmpd, tmps;
-            tmps = src->value.array->ft->getElementAt(
-                       src->value.array, i, NULL);
-            if (clone_cimdata(&tmpd, &tmps)) {
-                CIMCRelease(dst->value.array);
-                return 1;
-            }
-            dst->value.array->ft->setElementAt(dst->value.array, i,
-                    &tmpd.value, tmpd.type);
-        }
-    }else {
-        switch(dst->type) {
-            case CIMC_chars:
-                dst->value.chars = src->value.chars ? strdup(src->value.chars):NULL;
-                if (!dst->value.chars && src->value.chars) return 1;
-                break;
-            case CIMC_charsptr:
-                dst->value.dataPtr.ptr = malloc(src->value.dataPtr.length);
-                if (!dst->value.dataPtr.ptr) return 1;
-                strncpy(dst->value.dataPtr.ptr, src->value.dataPtr.ptr,
-                        src->value.dataPtr.length);
-                dst->value.dataPtr.length = src->value.dataPtr.length;
-                break;
-            case CIMC_class      : CLONEDATAVAL(cls); break;
-            case CIMC_instance   : CLONEDATAVAL(inst); break;
-            case CIMC_ref        : CLONEDATAVAL(ref); break;
-            case CIMC_args       : CLONEDATAVAL(args); break;
-            case CIMC_enumeration: CLONEDATAVAL(Enum); break;
-            case CIMC_string     : CLONEDATAVAL(string); break;
-            case CIMC_dateTime   : CLONEDATAVAL(dateTime); break;
-            default:
-                dst->value = src->value;
-                break;
-        }
-    }
-    return 0;
-}
-
 static void do_set_type(rb_sfcc_data *data, VALUE type)
 {
     char buf[100];
@@ -372,9 +313,20 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
             }
             break;
 
-        /* not yet supported
         case T_ARRAY:
-        break;
+            if (d->type & CIMC_ARRAY) {
+                if (!(d->value.array = sfcc_rubyarray_to_cimcarray(
+                                value, &d->type)))
+                    d->state = CIMC_badValue;
+            }else {
+                rb_raise(rb_eTypeError, "unsupported data type(%s) for value"
+                        ", when data.type set to \"%s\"",
+                        to_charptr(rb_obj_class(value)),
+                        STR2CSTR(itype2str(d->type)));
+            }
+            break;
+
+        /* not yet supported
         case T_HASH:
         break;
         */
@@ -638,7 +590,7 @@ Sfcc_wrap_cim_data(CIMCData *data)
 VALUE
 Sfcc_make_rb_cim_data(CIMCData *cimdata) {
     CIMCData d;
-    if (clone_cimdata(&d, cimdata)) {
+    if (sfcc_clone_cimdata(&d, cimdata)) {
         rb_raise(rb_eNoMemError, "failed to clone CIMCData");
         return Qnil;
     }

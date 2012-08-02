@@ -334,6 +334,64 @@ CIMCArgs *sfcc_hash_to_cimargs(VALUE hash)
   return args;
 }
 
+#define CLONEDATAVAL(val_attr) \
+    dst->value.val_attr = \
+        src->value.val_attr->ft->clone(src->value.val_attr, &rc); \
+    if (rc.rc || (!dst->value.val_attr && src->value.val_attr)) return 1;
+int sfcc_clone_cimdata(CIMCData *dst, CIMCData *src)
+{
+    if (dst == src) {
+      return 2;
+    }
+    CIMCCount i;
+    dst->state = src->state;
+    dst->type = src->type;
+    memset(&dst->value, 0, sizeof(CIMCValue));
+    if (src->state == CIMC_nullValue || src->type == CIMC_null) return 0;
+    CIMCStatus rc;
+    if (dst->type & CIMC_ARRAY) {
+        CLONEDATAVAL(array);
+        for ( i=0; i < src->value.array->ft->getSize(src->value.array, &rc)
+            ; ++i)
+        {
+            CIMCData tmpd, tmps;
+            tmps = src->value.array->ft->getElementAt(
+                       src->value.array, i, NULL);
+            if (sfcc_clone_cimdata(&tmpd, &tmps)) {
+                CIMCRelease(dst->value.array);
+                return 1;
+            }
+            dst->value.array->ft->setElementAt(dst->value.array, i,
+                    &tmpd.value, tmpd.type);
+        }
+    }else {
+        switch(dst->type) {
+            case CIMC_chars:
+                dst->value.chars = src->value.chars ? strdup(src->value.chars):NULL;
+                if (!dst->value.chars && src->value.chars) return 1;
+                break;
+            case CIMC_charsptr:
+                dst->value.dataPtr.ptr = malloc(src->value.dataPtr.length);
+                if (!dst->value.dataPtr.ptr) return 1;
+                strncpy(dst->value.dataPtr.ptr, src->value.dataPtr.ptr,
+                        src->value.dataPtr.length);
+                dst->value.dataPtr.length = src->value.dataPtr.length;
+                break;
+            case CIMC_class      : CLONEDATAVAL(cls); break;
+            case CIMC_instance   : CLONEDATAVAL(inst); break;
+            case CIMC_ref        : CLONEDATAVAL(ref); break;
+            case CIMC_args       : CLONEDATAVAL(args); break;
+            case CIMC_enumeration: CLONEDATAVAL(Enum); break;
+            case CIMC_string     : CLONEDATAVAL(string); break;
+            case CIMC_dateTime   : CLONEDATAVAL(dateTime); break;
+            default:
+                dst->value = src->value;
+                break;
+        }
+    }
+    return 0;
+}
+
 VALUE sfcc_cimargs_to_hash(CIMCArgs *args, VALUE client, bool deep_copy)
 {
   int i = 0;
@@ -376,6 +434,66 @@ VALUE sfcc_cimargs_to_hash(CIMCArgs *args, VALUE client, bool deep_copy)
     }
   }
   return hash;
+}
+
+CIMCArray* sfcc_rubyarray_to_cimcarray(
+    VALUE array,
+    CIMCType *type)
+{
+  Check_Type(array, T_ARRAY); // raise exc. if not an array
+
+  CIMCArray * cimcarr = NULL;
+  CIMCCount i = 0;
+  int len = RARRAY_LEN(array);
+  VALUE array_value;
+  CIMCData array_data;
+
+  *type = CIMC_stringA; /* sfcc can't handle CIMC_null */
+
+  if (len > 0) {
+    /* try to deduce type from first array element */
+    array_value = rb_ary_entry(array, 0);
+    if (TYPE(array_value) == T_ARRAY) {
+      rb_raise(rb_eTypeError, "nested arrays are not supported");
+      return cimcarr;
+    }
+    array_data = sfcc_value_to_cimdata(array_value);
+    *type = array_data.type;
+  }
+
+  cimcarr = cimcEnv->ft->newArray(cimcEnv, len, *type, NULL);
+  if (!cimcarr) {
+    rb_raise(rb_eNoMemError, "failed to allocate new CIMCArray");
+    return cimcarr;
+  }
+  if (len > 0) {
+    // this method does the cloning of passed data value
+    cimcarr->ft->setElementAt(cimcarr, i++,
+        &(array_data.value), array_data.type);
+    if (TYPE(array_value) != T_DATA) {
+      // in case of string/chars/data_ptr, the data must be freed
+      Sfcc_free_cim_data(&array_data);
+    }
+  }
+  for (; i < (typeof(i)) len; ++i) {
+    array_value = rb_ary_entry(array, i);
+    array_data = sfcc_value_to_cimdata(array_value);
+    if (*type != array_data.type) {
+      CIMCRelease(cimcarr);
+      if (TYPE(array_value) != T_DATA) {
+        Sfcc_free_cim_data(&array_data);
+      }
+      rb_raise(rb_eTypeError, "all elements of array must"
+              " have the same type");
+      break;
+    }
+    cimcarr->ft->setElementAt(cimcarr, i, &(array_data.value), array_data.type);
+    if (TYPE(array_value) != T_DATA) {
+      Sfcc_free_cim_data(&array_data);
+    }
+  }
+  *type |= CIMC_ARRAY;
+  return cimcarr;
 }
 
 #define STOREDATAVAL(data_type_suf, struct_suf, struct_attr, value_attr, cimc_suf) \
@@ -433,46 +551,12 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
     break;
   case T_SYMBOL:
     */
-  case T_ARRAY: {
-    CIMCCount i = 0;
-    int len = RARRAY_LEN(value);
-    CIMCType type = CIMC_string; /* sfcc can't handle CIMC_null */
-    VALUE array_value;
-    CIMCData array_data;    
-    if (len > 0) {
-      /* try to deduce type from first array element */
-      array_value = rb_ary_entry(value, 0);
-      array_data = sfcc_value_to_cimdata(array_value);
-      type = array_data.type;
-      if (TYPE(array_value) != T_DATA) {
-        Sfcc_free_cim_data(&array_data);
-      }
-    }
-    data.type = type | CIMC_ARRAY;
-    data.state = CIMC_goodValue;
-    data.value.array = cimcEnv->ft->newArray(cimcEnv, len, type, NULL);
-    if (len > 0) {
-      data.value.array->ft->setElementAt(data.value.array, i++,
-          &(array_data.value), array_data.type);
-    }
-    for (; i < (typeof(i)) len; ++i) {
-      array_value = rb_ary_entry(value, i);
-      array_data = sfcc_value_to_cimdata(array_value);
-      if (type != array_data.type) {
-        Sfcc_free_cim_data(&data);
-        rb_raise(rb_eTypeError, "all elements of array must"
-                " have the same type");
-        data.state = CIMC_badValue;
-        break;
-      }
-      data.value.array->ft->setElementAt(data.value.array, i,
-          &(array_data.value), array_data.type);
-      if (TYPE(array_value) != T_DATA) {
-        Sfcc_free_cim_data(&array_data);
-      }
+  case T_ARRAY:
+    data.value.array = sfcc_rubyarray_to_cimcarray(value, &data.type);
+    if (!data.value.array) {
+      data.state = CIMC_badValue;
     }
     break;
-  }
   case T_DATA:
   default:
     if (CLASS_OF(value) == cSfccCimString) {

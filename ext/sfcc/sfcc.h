@@ -57,6 +57,24 @@ inline char ** sfcc_value_array_to_string_array(VALUE array);
 inline VALUE sfcc_cimcarray_to_rubyarray(CIMCArray *array, VALUE client, bool deep_copy);
 
 /**
+ * allocates a new cimcarray and fills it with converted values of ruby array
+ *
+ * wrapped objects or strings are cloned
+ *
+ * all elements of array must have the same type,
+ *   otherwise TypeError is raised
+ * @param type will contain type of array
+ */
+inline CIMCArray * sfcc_rubyarray_to_cimcarray(VALUE array, CIMCType *type);
+
+/**
+ * clones kept value of src data in case of string/array/wrapped objects etc.
+ * and stores it in the dst
+ * @return 0 on success, 1 on memory error, 2 on other error
+ */
+int sfcc_clone_cimdata(CIMCData *dst, CIMCData *src);
+
+/**
  * converts a ruby hash to a CIM args object
  * caller must free it manually by calling CIMCRelease(result)
  */
@@ -79,6 +97,8 @@ inline VALUE sfcc_cimdata_to_value(CIMCData *data, VALUE client, bool deep_copy)
 /**
  * convert ruby VALUE to CIMCData
  * does not make a deep copy in case of wrapped objects
+ * only exception is ruby array containing wrapped objects, these
+ * must be cloned to avoid double free error
  */
 inline CIMCData sfcc_value_to_cimdata(VALUE value);
 

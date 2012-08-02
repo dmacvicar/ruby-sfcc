@@ -14,6 +14,7 @@ VALUE Sfcc_wrap_cim_data(CIMCData *cimdata);
 VALUE Sfcc_make_rb_cim_data(CIMCData *cimdata);
 /**
  * deallocates inner value in case of pointer to data
+ * not the CIMCData object itself
  */
 void Sfcc_free_cim_data(CIMCData *data);
 
