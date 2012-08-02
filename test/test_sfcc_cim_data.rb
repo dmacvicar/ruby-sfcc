@@ -151,6 +151,24 @@ class SfccCimcData < SfccTestCase
       assert_equal(d.value, 15.2)
     end
 
+    should "allow to instantiate Cim::Data from array" do
+      d = Sfcc::Cim::Data.new("StringA", ["abc", "def"])
+      assert_equal(d.type.to_i, Sfcc::Cim::Type::StringA)
+      assert_kind_of(Array, d.value)
+      assert_equal(d.value, ["abc", "def"])
+      d = Sfcc::Cim::Data.from_value([
+            Sfcc::Cim::ObjectPath.new("namespace", "classname"),
+            Sfcc::Cim::ObjectPath.new("nm2", "cls2")])
+      assert_equal(d.type.to_i, Sfcc::Cim::Type::ReferenceA)
+      assert_kind_of(Array, d.value)
+      assert_equal(d.value.size, 2)
+      assert_equal(d.value[0], Sfcc::Cim::ObjectPath.new("namespace", "classname"))
+      # forbid array creation from array with different value types
+      assert_raise TypeError do
+        d = Sfcc::Cim::Data.from_value([1, "string"])
+      end
+    end
+
   end
 
 end
