@@ -110,8 +110,11 @@ static char * data2cstr(CIMCData * data)
         char const * valcstr = "null";
         if (data->type != CIMC_null) {
             VALUE val = sfcc_cimdata_to_value(data, Qnil, true);
+            if (val) {
+                val = rb_funcall(val, rb_intern("inspect"), 0);
+            }
             if (val != Qnil) {
-                valcstr = to_charptr(val);
+                valcstr = StringValuePtr(val);
             }
         }
         ret += snprintf(buf + ret, buf_size - 1 - ret, ", value=%s", valcstr);
