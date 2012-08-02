@@ -181,6 +181,15 @@ char ** sfcc_value_array_to_string_array(VALUE array)
   return ret;
 }
 
+/**
+ * helper macro for wrapping the CIMCData's value to ruby object and possibly
+ * making its duplicate beforehand if deep_copy is true
+ *
+ * @param data_type is a suffix of function doing the wrap beggining with
+ *                  Sfcc_wrap_cim_
+ * @param value_attr is an attribute name of CIMCValue accessing the
+ *                  corresponding value
+ */
 #define SFCCWRAP(data_type, value_attr, ...) \
   if (data->value.value_attr) { \
     return Sfcc_wrap_cim_ ## data_type( \
@@ -311,7 +320,7 @@ static int hash_to_cimargs_iterator(VALUE key, VALUE value, VALUE extra)
   data = sfcc_value_to_cimdata(value);
   if (data.state != CIMC_badValue) {
     status = args->ft->addArg(args, key_cstr, &data.value, data.type);
-    /*
+    /* find out, whether addArg call makes its own copy
     if (TYPE(value) != T_DATA) {
       Sfcc_free_cim_data(&data);
     }
@@ -334,36 +343,29 @@ CIMCArgs *sfcc_hash_to_cimargs(VALUE hash)
   return args;
 }
 
+/**
+ * helper macro cloning value of CIMCData src and storing it in dst
+ * used in sfcc_clone_cimdata() below
+ *
+ * @param val_attr is attribute name of CIMCValue accessing the value
+ */
 #define CLONEDATAVAL(val_attr) \
     dst->value.val_attr = \
         src->value.val_attr->ft->clone(src->value.val_attr, &rc); \
     if (rc.rc || (!dst->value.val_attr && src->value.val_attr)) return 1;
+
 int sfcc_clone_cimdata(CIMCData *dst, CIMCData *src)
 {
     if (dst == src) {
       return 2;
     }
-    CIMCCount i;
     dst->state = src->state;
     dst->type = src->type;
     memset(&dst->value, 0, sizeof(CIMCValue));
     if (src->state == CIMC_nullValue || src->type == CIMC_null) return 0;
     CIMCStatus rc;
     if (dst->type & CIMC_ARRAY) {
-        CLONEDATAVAL(array);
-        for ( i=0; i < src->value.array->ft->getSize(src->value.array, &rc)
-            ; ++i)
-        {
-            CIMCData tmpd, tmps;
-            tmps = src->value.array->ft->getElementAt(
-                       src->value.array, i, NULL);
-            if (sfcc_clone_cimdata(&tmpd, &tmps)) {
-                CIMCRelease(dst->value.array);
-                return 1;
-            }
-            dst->value.array->ft->setElementAt(dst->value.array, i,
-                    &tmpd.value, tmpd.type);
-        }
+        CLONEDATAVAL(array); // this also handles copying of elements
     }else {
         switch(dst->type) {
             case CIMC_chars:
@@ -466,7 +468,7 @@ CIMCArray* sfcc_rubyarray_to_cimcarray(
     rb_raise(rb_eNoMemError, "failed to allocate new CIMCArray");
     return cimcarr;
   }
-  if (len > 0) {
+  if (len > 0) { // set the first element
     // this method does the cloning of passed data value
     cimcarr->ft->setElementAt(cimcarr, i++,
         &(array_data.value), array_data.type);
@@ -476,6 +478,7 @@ CIMCArray* sfcc_rubyarray_to_cimcarray(
     }
   }
   for (; i < (typeof(i)) len; ++i) {
+    // set the rest of elements
     array_value = rb_ary_entry(array, i);
     array_data = sfcc_value_to_cimdata(array_value);
     if (*type != array_data.type) {
@@ -496,6 +499,17 @@ CIMCArray* sfcc_rubyarray_to_cimcarray(
   return cimcarr;
 }
 
+/**
+ * a helper macro, that stores a wrapped cimc value in CIMCData
+ * used in sfcc_value_to_cimdata() function below
+ *
+ * @param data_type_suf is a suffix of ruby klass beginning with cSfccCim
+ * @param struct_suf is a suffix for rb_sfcc_ structure for corresponding type
+ * @param struct_attr is attribute name used to access value in this structure
+ * @param value_attr is attribute name used to access value of corresponding type
+ *                   in CIMCValue
+ * @param cimc_suf is a suffix of cimc type beggining with CIMC_
+ */
 #define STOREDATAVAL(data_type_suf, struct_suf, struct_attr, value_attr, cimc_suf) \
   if (CLASS_OF(value) == cSfccCim ## data_type_suf) { \
     rb_sfcc_ ## struct_suf  *obj; \
@@ -557,7 +571,7 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
       data.state = CIMC_badValue;
     }
     break;
-  case T_DATA:
+  case T_DATA: // handle wrapped objects
   default:
     if (CLASS_OF(value) == cSfccCimString) {
       Data_Get_Struct(value, CIMCString, data.value.string);
@@ -600,7 +614,6 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
  * target_charptr
  * Convert target type to const char *
  */
-
 const char *
 to_charptr(VALUE v)
 {
@@ -624,7 +637,6 @@ to_charptr(VALUE v)
 /**
  * converts a CIMCArray to rbArray
  */
-
 VALUE
 sfcc_cimcarray_to_rubyarray(CIMCArray *array, VALUE client, bool deep_copy)
 {

@@ -12,6 +12,10 @@
 VALUE cSfccCimData;
 static VALUE cim_module;
 
+/**
+ * CIMCData needs to be wrapped in this struct together with information
+ * whether dealloc_cimdata should be called upon it on destruction
+ */
 typedef struct {
     CIMCData data;
     /* Says, whether data contains value, that is allocated by other
@@ -21,7 +25,11 @@ typedef struct {
     bool reference;
 }rb_sfcc_data;
 
-static void dealloc_cimdata(CIMCData *d) {
+/**
+ * just releases kept value
+ */
+static void dealloc_cimdata(CIMCData *d)
+{
     if (  ((d)->type < CIMC_instance  || (d)->type > CIMC_dateTime)
        && ((d)->type < CIMC_instanceA || (d)->type > CIMC_dateTimeA)
        && d->type != CIMC_chars && d->type != CIMC_charsptr
@@ -53,6 +61,9 @@ static void dealloc_cimdata(CIMCData *d) {
     memset(&d->value, 0, sizeof(CIMCValue));
 }
 
+/**
+ * frees the wrapping structure and possibly referenced value
+ */
 static void
 dealloc(rb_sfcc_data *rd)
 {
@@ -62,6 +73,9 @@ dealloc(rb_sfcc_data *rd)
     free(rd);
 }
 
+/**
+ * @return string representation of CIMCData's state
+ */
 static char const * state2cstr(unsigned int state)
 {
     char const * s = NULL;
@@ -79,6 +93,10 @@ static char const * state2cstr(unsigned int state)
     return s;
 }
 
+/*
+ * @return string representation of CIMCData
+ * with format: Data(state=?, type=?, value=?)
+ */
 static char * data2cstr(CIMCData * data)
 {
     int ret;
@@ -110,6 +128,10 @@ static char * data2cstr(CIMCData * data)
     return result;
 }
 
+/**
+ * @param v, can be Fixnum, Bignum or Float
+ * @return ruby String created from ruby number
+ */
 static VALUE numeric2str(VALUE v)
 {
     VALUE tmp = rb_str_new("", 0);
@@ -125,6 +147,9 @@ static VALUE numeric2str(VALUE v)
     return tmp;
 }
 
+/**
+ * @return ruby string representation of type
+ */
 static VALUE itype2str(CIMCType t)
 {
     char const * s = Sfcc_cim_type_to_s(t);
@@ -134,6 +159,12 @@ static VALUE itype2str(CIMCType t)
     return Qnil;
 }
 
+/**
+ * sets the Cim::Data's type
+ *
+ * it deallocates CIMCData's value in case the type is different from current
+ * one
+ */
 static void do_set_type(rb_sfcc_data *data, VALUE type)
 {
     char buf[100];
@@ -170,6 +201,20 @@ static void do_set_type(rb_sfcc_data *data, VALUE type)
     }
 }
 
+/**
+ * helper macro used to set value of CIMCData in case of wrapped object
+ * in structure rb_sfcc_...
+ *
+ * in case of deep_copy, it makes a duplicate of wrapped object wich is then
+ * stored
+ *
+ * @param data_type_suf is a suffix of ruby klass beginning with cSfccCim
+ * @param struct_suf is a suffix for rb_sfcc_ structure for corresponding type
+ * @param struct_attr is attribute name used to access value in this structure
+ * @param value_attr is attribute name used to access value of corresponding type
+ *                   in CIMCValue
+ * @param cimc_suf is a suffix of cimc type beggining with CIMC_
+ */
 #define STORE_DATA_VAL(data_type_suf, struct_suf, struct_attr, value_attr, cimc_suf) \
     if (CLASS_OF(value) == cSfccCim ## data_type_suf) { \
         if (d->type == CIMC_ ## cimc_suf) { \
@@ -193,10 +238,18 @@ static void do_set_type(rb_sfcc_data *data, VALUE type)
     } \
 
 /**
- * @param deep_copy | true -> clone underlying value object
+ * sets the value of Cim::Data
+ *
+ * @param value will be transformed to cimc data and then stored
+ * @param deep_copy if true, make a duplicate out of wrapped objects
+ *                  (such as Cim::ObjectPath, Cim::String, ...) before storing
+ *
+ *                  this does not influence other ruby types
+ *                  (String, Fixnum, ...)
  */
 static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
 {
+    // dealloc previously kept value
     if (!data->reference) dealloc_cimdata(&data->data);
     CIMCStatus rc;
     CIMCData *d = &data->data;
@@ -205,21 +258,14 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
 
     switch (TYPE(value)) {
         case T_NIL:
-            /*
-            if (data->type != CIMC_nullValue) {
-                data->state = CIMC_badValue;
-                rb_raise(rb_eTypeError,
-                        "null value can be set only for CIMC_nullValse type");
-            }else {
-            */
-                d->state = CIMC_nullValue;
-            //}
+            d->state = CIMC_nullValue;
             break;
 
-        case T_SYMBOL:
+        case T_SYMBOL:  // first make a string out of symbol
             value = rb_any_to_s(value);
         case T_STRING:
             if ((d->type & (CIMC_UINT | CIMC_char16))) {
+                // handle unsigned numbers passed as string
                 uint64_t tmp = NUM2ULL(rb_str2inum(value, 10));
                 switch (d->type) {
                     case CIMC_uint32: d->value.uint32 = tmp; break;
@@ -228,6 +274,7 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
                     default: d->value.uint64 = tmp; break;
                 }
             }else if (d->type & CIMC_SINT) {
+                // handle signed numbers passed as string
                 int64_t tmp = NUM2LL(rb_str2inum(value, 10));
                 switch (d->type) {
                     case CIMC_sint32: d->value.sint32 = tmp; break;
@@ -236,6 +283,7 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
                     default: d->value.sint64 = tmp; break;
                 }
             }else if (d->type & CIMC_REAL) {
+                // handle reals passed as string
                 double tmp = NUM2LL(rb_Float(value));
                 switch (d->type) {
                     case CIMC_real32: d->value.real32 = tmp; break;
@@ -273,6 +321,7 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
         case T_BIGNUM:
         case T_FLOAT:
             if ((d->type & (CIMC_UINT | CIMC_char16))) {
+                // handle unsigned numbers
                 uint64_t tmp = NUM2ULL(value);
                 switch (d->type) {
                     case CIMC_uint32: d->value.uint32 = tmp; break;
@@ -281,6 +330,7 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
                     default: d->value.uint64 = tmp; break;
                 }
             }else if (d->type & CIMC_SINT) {
+                // handle signed numbers
                 int64_t tmp = NUM2LL(value);
                 switch (d->type) {
                     case CIMC_sint32: d->value.sint32 = tmp; break;
@@ -289,11 +339,14 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
                     default: d->value.sint64 = tmp; break;
                 }
             }else if (d->type & CIMC_REAL) {
+                // handle real numbers
                 double tmp = NUM2DBL(value);
                 switch (d->type) {
                     case CIMC_real32: d->value.real32 = tmp; break;
                     default: d->value.real64 = tmp; break;
                 }
+
+            // try to convert numbers to string
             }else if (d->type == CIMC_string) {
                 d->value.string = cimcEnv->ft->newString(
                         cimcEnv, STR2CSTR(numeric2str(value)), NULL);
@@ -328,9 +381,11 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
 
         /* not yet supported
         case T_HASH:
+            // this would result in CIMCArgs ... is this really needed?
         break;
         */
-        case T_DATA:
+
+        case T_DATA:    // handle wrapped objects
         default:
             if (CLASS_OF(value) == cSfccCimString) {
                 if (d->type == CIMC_string) {
@@ -382,6 +437,19 @@ static void do_set_value(rb_sfcc_data *data, VALUE value, bool deep_copy)
     }
 }
 
+/**
+ * call-seq:
+ *  new(type, value)                   -> Cim::Data
+ *  new("Reference", op)               -> Cim::Data
+ *  new("Cim::Type::String", "string") -> Cim::Data
+ *
+ * Creates a new data object from +type+ and +value+.
+ * +value+'s type must correspond to +type+, otherwise a +TypeError+ is raised.
+ * Also if +value+ is an +Array+, then all of its elements must be of the
+ * same type.
+ *
+ * +type+ can be given as +String+ or as +Symbol+ from +Cim::Type+.
+ */
 static VALUE new(VALUE klass, VALUE type, VALUE value)
 {
     VALUE res = Qnil;
@@ -400,6 +468,20 @@ static VALUE new(VALUE klass, VALUE type, VALUE value)
     return res;
 }
 
+/**
+ * call-seq:
+ *  from_value(123)       -> Cim::Data
+ *  from_value("string")  -> Cim::Data
+ *  from_value([1, 2, 3]) -> Cim::Data
+ *
+ * Created a new data object from +value+ only. The +Cim::Type+ is guessed
+ * from type of +value+:
+ *  * +String+             -> +Cim::Type::String+
+ *  * +Fixnum+ or +Bignum+ -> +Cim::Type::SInt64+
+ *  * +Float+              -> +Cim::Type::Real64+
+ *  * +Array+ containing values of type xy -> Cim::Type::xyA
+ * any wrapped cimc objects in Cim namespace are also supported
+ */
 static VALUE from_value(VALUE klass, VALUE value)
 {
     VALUE res = Qnil;
@@ -415,6 +497,12 @@ static VALUE from_value(VALUE klass, VALUE value)
     return res;
 }
 
+/**
+ * call-seq:
+ *  type      -> Cim::Type
+ *  type.to_i -> Fixnum
+ *  type.to_s -> String
+ */
 static VALUE type(VALUE self)
 {
     rb_sfcc_data *data;
@@ -422,6 +510,15 @@ static VALUE type(VALUE self)
     return Sfcc_wrap_cim_type(data->data.type);
 }
 
+/**
+ * call-seq:
+ *  type = "Reference"
+ *  type = Cim::Type::Reference
+ *
+ * Sets the type of +Cim::Data+.
+ *
+ * +type+ can be either +String+ or a +Symbol+ from +Cim::Type+ namespace.
+ */
 static VALUE set_type(VALUE self, VALUE type)
 {
     rb_sfcc_data *data;
@@ -430,6 +527,18 @@ static VALUE set_type(VALUE self, VALUE type)
     return type;
 }
 
+/**
+ * call-seq:
+ *  state -> Fixnum
+ *
+ * Returns integer representation of +Cim::Data+'s state.
+ * This can be compared to symbols defined in Cim::Data such as:
+ *  * +:Good+
+ *  * +:Null+
+ *  * +:Key+
+ *  * +:NotFound+
+ *  * +:Bad+
+ */
 static VALUE state(VALUE self)
 {
     rb_sfcc_data *data;
@@ -437,6 +546,12 @@ static VALUE state(VALUE self)
     return INT2FIX(data->data.state);
 }
 
+/**
+ * call-seq:
+ *  state_s -> String
+ *
+ * Returns string representation of +Cim::Data+'s state.
+ */
 static VALUE state_s(VALUE self)
 {
     rb_sfcc_data *data;
@@ -452,7 +567,7 @@ static VALUE state_s(VALUE self)
  * call-seq:
  *   state_is(state) -> Boolean
  *
- * Check the value state
+ * Check the value state.
  */
 static VALUE state_is(VALUE self, VALUE state)
 {
@@ -480,40 +595,11 @@ static VALUE state_is(VALUE self, VALUE state)
     return Qfalse;
 }
 
-/*
-static VALUE set_state(VALUE self, VALUE state)
-{
-    CIMCData *data;
-    Data_Get_Struct(self, CIMCData, data);
-    switch (TYPE(state)) {
-        case T_STRING:
-            state = rb_intern(STR2CSTR(state));
-        case T_SYMBOL:
-            state = rb_const_get(valstates_module, state);
-            break;
-        case T_FIXNUM:
-            if (Qtrue != rb_hash_has_value(s_valstates_i2s, state)) {
-                rb_raise(rb_const_get(cim_module, rb_intern("ErrorInvalidValueState")),
-                        "unsupported value of cimc valuestate: 0x%x", FIX2UINT(state));
-                return Qnil;
-            }
-            break;
-        default:
-            rb_raise(rb_const_get(cim_module, rb_intern("ErrorInvalidValueState")),
-                    "expected one of CIMC_* symbols or Fixnum, not: %s",
-                    STR2CSTR(rb_any_to_s(rb_obj_class(value))));
-            return Qnil;
-    }
-    data->state (CIMCValueState) FIX2UINT(state);
-    return state;
-}
-*/
-
 /**
  * call-seq:
  *   value()
  *
- * Get the value of the data
+ * Get the value of the data.
  */
 static VALUE value(VALUE self)
 {
@@ -522,6 +608,16 @@ static VALUE value(VALUE self)
     return sfcc_cimdata_to_value(&data->data, Qnil, true);
 }
 
+/**
+ * call-seq:
+ *  value=(10)
+ *  value=(["abc", "def"])
+ *
+ * Set value of data.
+ *
+ * +value+ must be convertible to data's type, otherwise a +TypeError+ will
+ * be raised.
+ */
 static VALUE set_value(VALUE self, VALUE value)
 {
     rb_sfcc_data *data;
@@ -530,6 +626,13 @@ static VALUE set_value(VALUE self, VALUE value)
     return value;
 }
 
+/**
+ * call-seq:
+ *  to_s
+ *
+ * Returns string representation of data containing state, type and
+ * value information.
+ */
 static VALUE to_s(VALUE self)
 {
     rb_sfcc_data *data;
@@ -571,7 +674,6 @@ void init_cim_data()
     rb_define_const(klass, "Key", INT2FIX(CIMC_keyValue)); /*  (2<<8) */
     rb_define_const(klass, "NotFound", INT2FIX(CIMC_notFound)); /*  (4<<8) */
     rb_define_const(klass, "Bad", INT2FIX(CIMC_badValue)); /*  (0x80<<8) */
-
 }
 
 VALUE

@@ -698,7 +698,12 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
  * components.
  *
  * +argin+ hash containing the input parameters (keys can be symbols) or
- * strings.
+ * strings. Hash may look like for example:
+ *  * { "Param1" => "string value", "Param2" => 123 }
+ *  * { "Param1" => Cim::Data.new("Chars", "string value"),
+ *      "Param2" => Cim::Data.new("UInt8" => 123) }
+ * use the second form to be sure, that resulting Cim::Data type will be
+ * picked correctly
  *
  * +argout+ hash where output parameters will be returned
  */

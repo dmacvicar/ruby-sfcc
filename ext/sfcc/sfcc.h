@@ -64,12 +64,17 @@ inline VALUE sfcc_cimcarray_to_rubyarray(CIMCArray *array, VALUE client, bool de
  * all elements of array must have the same type,
  *   otherwise TypeError is raised
  * @param type will contain type of array
+ *
+ * @note nested arrays are not supported
  */
 inline CIMCArray * sfcc_rubyarray_to_cimcarray(VALUE array, CIMCType *type);
 
 /**
  * clones kept value of src data in case of string/array/wrapped objects etc.
  * and stores it in the dst
+ *
+ * @note this function does not raise an exception on error, it just
+ * returns the code
  * @return 0 on success, 1 on memory error, 2 on other error
  */
 int sfcc_clone_cimdata(CIMCData *dst, CIMCData *src);
