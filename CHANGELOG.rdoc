@@ -1,22 +1,18 @@
-== 0.8.1
-
+== 0.6.1
 * added support for refs and instances in Data wrapped type
 * added Data wrapped struct to allow passing types specifications to methods
 * support for passing refs and instances to client methods
-
-== 0.8.0
-
-* Support native Ruby calls to CIM instance methods
-  (requires genprovider gem)
-
-== 0.7.0
-
-* add Cim::Type to provide type operations
-* add Cim::Data to obtain state and type information
-  for Class properties and qualifiers
+* support for data instantiation from ruby arrays
+* made nicer string representation of data
+* fixed memory leak for data containing array
 
 == 0.6.0
 
+* Support native Ruby calls to CIM instance methods
+  (requires genprovider gem)
+* add Cim::Type to provide type operations
+* add Cim::Data to obtain state and type information
+  for Class properties and qualifiers
 * add client information to Cim::Instance
   to allow direct method invocation
 * fix real32/real64 conversion to Ruby
