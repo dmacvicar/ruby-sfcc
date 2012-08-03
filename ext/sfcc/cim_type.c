@@ -6,13 +6,20 @@
 #include "cim_type.h"
 
 typedef struct {
-  unsigned int type;
+  CIMCType type;
 } rb_sfcc_type;
 
 static void
 dealloc(rb_sfcc_type *type)
 {
   free(type);
+}
+
+CIMCType Sfcc_rb_type_to_cimtype(VALUE self)
+{
+  rb_sfcc_type *type;
+  Data_Get_Struct(self, rb_sfcc_type, type);
+  return type->type;
 }
 
 /**
@@ -23,26 +30,12 @@ dealloc(rb_sfcc_type *type)
  */
 static VALUE to_i(VALUE self)
 {
-  rb_sfcc_type *type;
-  Data_Get_Struct(self, rb_sfcc_type, type);
-
-  return INT2FIX(type->type);
+  return INT2FIX(Sfcc_rb_type_to_cimtype(self));
 }
 
-
-/**
- * call-seq:
- *   to_s() -> String
- *
- * String representation of type
- */
-static VALUE to_s(VALUE self)
-{
-  rb_sfcc_type *type;
-  const char *s;
-  Data_Get_Struct(self, rb_sfcc_type, type);
-
-  switch (type->type) {
+char const * Sfcc_cim_type_to_cstr(CIMCType type) {
+  const char *s = NULL;
+  switch (type) {
     case CIMC_null: s = "null"; break;
     
     case CIMC_boolean: s = "boolean"; break;
@@ -99,12 +92,27 @@ static VALUE to_s(VALUE self)
     rb_raise(rb_eTypeError, "Unknown Cim::Type");
     break;
   }
-  return rb_str_new2(s);
+  return s;
+}
+
+/**
+ * call-seq:
+ *   to_s() -> String
+ *
+ * String representation of type
+ */
+static VALUE to_s(VALUE self)
+{
+  char const * s = Sfcc_cim_type_to_cstr(Sfcc_rb_type_to_cimtype(self));
+  if (s) {
+    return rb_str_new2(s);
+  }
+  return Qnil;
 }
 
 
 VALUE
-Sfcc_wrap_cim_type(unsigned int type)
+Sfcc_wrap_cim_type(CIMCType type)
 {
   rb_sfcc_type *rst = (rb_sfcc_type *)malloc(sizeof(rb_sfcc_type));
   if (!rst)
