@@ -74,7 +74,7 @@ ruby-like API to do CIM based management.
 
 == If you want to contribute:
 
-* fork http://github.com/elucid/ruby-freshbooks
+* fork http://github.com/dmacvicar/ruby-sfcc
 * make your changes along with tests (don't touch version in changelog or 
   lib/sfcc/version.rb)
 * send me a pull request
