@@ -1,3 +1,7 @@
+== 0.6.1
+* fixed accessing char array in CIMCValue
+* enabled compilation for older sblim-sfcc
+
 == 0.6.0
 
 * Support native Ruby calls to CIM instance methods

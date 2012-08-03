@@ -237,6 +237,7 @@ VALUE sfcc_cimdata_to_value(CIMCData *data, VALUE client)
       }
       return Qnil;
     case CIMC_chars:
+      return data->value.chars ? rb_str_new2(data->value.chars) : Qnil;
     case CIMC_charsptr:
       return data->value.chars ? rb_str_new((char*)data->value.dataPtr.ptr, data->value.dataPtr.length) : Qnil;
     case CIMC_dateTime:
