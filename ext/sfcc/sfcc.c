@@ -384,11 +384,15 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
     data.type = CIMC_sint64;
     data.value.Long = NUM2INT(value);
     break;
-/* not yet supported
-  case T_BIGNUM:
-    break;
   case T_FLOAT:
+    data.type = CIMC_real64;
+    data.value.real64 = NUM2DBL(value);
     break;
+  case T_BIGNUM:
+    data.type = CIMC_sint64;
+    data.value.Long = NUM2LL(value);
+    break;
+/* not yet supported
   case T_HASH:
     break;
   case T_SYMBOL:
