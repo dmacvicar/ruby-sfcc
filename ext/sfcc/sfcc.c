@@ -39,7 +39,10 @@ void Init_sfcc()
   VALUE value; /* wrapped value */
   int rc;
   char *msg;
+
+#ifdef CIMC_NO_CURL_INIT //defined in cimc/cimc.h since version 2.2.4
   char *rails_env = getenv("RAILS_ENV");
+#endif
 
   /**
    * SBLIM sfcc ruby API
@@ -56,8 +59,13 @@ void Init_sfcc()
   cEnvironment = rb_define_class_under(mSfccCim, "CimcEnvironment", rb_cObject);
   conn = getenv("RUBY_SFCC_CONNECTION"); /* "SfcbLocal" or "XML" */
   if (!conn) conn = "XML";
-  /* Don't let sfcc init curl if running in Rails env (http://sourceforge.net/tracker/?func=detail&aid=3435363&group_id=128809&atid=712784) */
-  cimcEnv = NewCIMCEnv(conn, rails_env?CIMC_NO_CURL_INIT:0, &rc, &msg);
+  cimcEnv = NewCIMCEnv(conn,
+#ifdef CIMC_NO_CURL_INIT
+  /* Don't let sfcc init curl if running in Rails env
+   * (http://sourceforge.net/tracker/?func=detail&aid=3435363&group_id=128809&atid=712784) */
+        rails_env?CIMC_NO_CURL_INIT:
+#endif
+        0, &rc, &msg);
   if (!cimcEnv) {
     rb_raise(rb_eLoadError, "Cannot local %s cim client library. %d:%s", conn, rc, msg ? msg : "");
   }
