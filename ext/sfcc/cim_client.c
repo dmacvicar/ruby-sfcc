@@ -709,13 +709,14 @@ static VALUE invoke_method(VALUE self,
 {
   CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCClient *client;
-  CIMCArgs *cimcargsout;
+  CIMCArgs *cimcargsin, *cimcargsout;
   const char *method_name_cstr;
   CIMCData ret;
   rb_sfcc_object_path *rso;
 
   Check_Type(argin, T_HASH);
 
+  cimcargsin = sfcc_hash_to_cimargs(argin);
   cimcargsout = cimcEnv->ft->newArgs(cimcEnv, NULL);
 
   Data_Get_Struct(self, CIMCClient, client);
@@ -725,16 +726,28 @@ static VALUE invoke_method(VALUE self,
   ret = client->ft->invokeMethod(client,
                               rso->op,
                               method_name_cstr,
-                              sfcc_hash_to_cimargs(argin),
+                              cimcargsin,
                               cimcargsout,
                               &status);
+
+  /** this is a work around the bug:
+   * * https://sourceforge.net/tracker/?func=detail&aid=3555103&group_id=128809&atid=712784
+   * release function has wrong declaration
+   */
+  CIMCStatus (*args_release) (CIMCArgs *) =
+                (CIMCStatus (*) (CIMCArgs *)) cimcargsin->ft->release;
+  args_release(cimcargsin);
+
   if (!status.rc) {
     if (cimcargsout && ! NIL_P(argout)) {
       Check_Type(argout, T_HASH);
       rb_funcall(argout, rb_intern("merge!"), 1, sfcc_cimargs_to_hash(cimcargsout, self));
+      args_release(cimcargsout);
     }
     return sfcc_cimdata_to_value(&ret, self);
   }
+  // in this case cimcargsout needs not to be freed
+  // this is handled be invokeMethod
   sfcc_rb_raise_if_error(status, "Can't invoke method '%s'", method_name_cstr);
   return Qnil;
 }
