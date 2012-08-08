@@ -1,4 +1,6 @@
 == 0.6.1
+* added support for conversion of Cim::ObjectPath, Cim::Instance,
+  Cim::Enumeration and Cim::Class to CIMCData
 * supported instantiation of Cim::Data
 * fixed memory leak in client's invokeMethod
 * added support for Float and Bignum in Cim::Data creation

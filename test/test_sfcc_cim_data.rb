@@ -61,6 +61,11 @@ class SfccCimcData < SfccTestCase
       assert_equal(d.state, Sfcc::Cim::Data::Good)
       assert_kind_of(String, d.value)
       assert_equal(d.value, "sfcc string")
+      op = Sfcc::Cim::ObjectPath.new("namespace", "classname")
+      d = Sfcc::Cim::Data.from_value(op)
+      assert_equal(d.type.to_i, Sfcc::Cim::Type::Reference)
+      assert_equal(d.state, Sfcc::Cim::Data::Good)
+      assert_kind_of(Sfcc::Cim::ObjectPath, d.value)
       d = Sfcc::Cim::Data.from_value(nil)
       assert_equal(d.type.to_i, Sfcc::Cim::Type::Null)
       assert_equal(d.state, Sfcc::Cim::Data::Null)
@@ -89,6 +94,10 @@ class SfccCimcData < SfccTestCase
       d = Sfcc::Cim::Data.new("UInt16", "432")
       assert_equal(d.type.to_i, Sfcc::Cim::Type::UInt16)
       assert_equal(d.value, 432)
+      op = Sfcc::Cim::ObjectPath.new("namespace", "classname")
+      d = Sfcc::Cim::Data.new("Reference", op)
+      assert_equal(d.type.to_i, Sfcc::Cim::Type::Reference)
+      assert_kind_of(Sfcc::Cim::ObjectPath, d.value)
       assert_raise NameError do
         d = Sfcc::Cim::Data.new("unknown type", "some value")
       end
@@ -105,6 +114,10 @@ class SfccCimcData < SfccTestCase
       assert_equal(d.value, 10)
       assert_raise TypeError do
         d = Sfcc::Cim::Data.new(Sfcc::Cim::Type::Reference, "not a reference")
+      end
+      assert_raise TypeError do
+        d = Sfcc::Cim::Data.new(
+          "String", Sfcc::Cim::ObjectPath.new("namespace", "classname"))
       end
     end
 
@@ -128,6 +141,9 @@ class SfccCimcData < SfccTestCase
       assert_equal(d.value, "abc")
       d.value = Sfcc::Cim::String.new("tmp string")
       assert_equal(d.value, "tmp string")
+      assert_raise TypeError do
+        d.value = Sfcc::Cim::ObjectPath.new("namespace", "classname")
+      end
       d.type = Sfcc::Cim::Type::Real64
       assert_equal(d.state, Sfcc::Cim::Data::Null)
       d.value = 15.2
@@ -140,12 +156,38 @@ class SfccCimcData < SfccTestCase
       assert_equal(d.type.to_i, Sfcc::Cim::Type::StringA)
       assert_kind_of(Array, d.value)
       assert_equal(d.value, ["abc", "def"])
+      d = Sfcc::Cim::Data.from_value([
+            Sfcc::Cim::ObjectPath.new("namespace", "classname"),
+            Sfcc::Cim::ObjectPath.new("nm2", "cls2")])
+      assert_equal(d.type.to_i, Sfcc::Cim::Type::ReferenceA)
+      assert_kind_of(Array, d.value)
+      assert_equal(d.value.size, 2)
+      assert_equal(d.value[0].namespace, "namespace")
+      assert_equal(d.value[0].classname, "classname")
       # forbid array creation from array with different value types
       assert_raise TypeError do
         d = Sfcc::Cim::Data.from_value([1, "string"])
       end
     end
 
+    should "allow to instantiate Cim::Data from cimc wrapped objects" do
+      d = Sfcc::Cim::Data.from_value(@cimclass)
+      assert_equal(d.type.to_i, Sfcc::Cim::Type::Class)
+      assert_kind_of(Sfcc::Cim::Class, d.value)
+      assert_equal(d.value.class_name, @cimclass.class_name)
+      d = Sfcc::Cim::Data.from_value(Sfcc::Cim::String.new("cimstring"))
+      assert_equal(d.type.to_i, Sfcc::Cim::Type::String)
+      assert_kind_of(String, d.value)
+      assert_equal(d.value, "cimstring")
+      @client.instances(
+              Sfcc::Cim::ObjectPath.new("root/cimv2", "CIM_ComputerSystem"),
+              Sfcc::Flags::DeepInheritance).each { |i|
+          d = Sfcc::Cim::Data.from_value(i)
+          assert_equal(d.type.to_i, Sfcc::Cim::Type::Instance)
+          assert_kind_of(Sfcc::Cim::Instance, d.value)
+      }
+    end
+
   end
-  
+
 end

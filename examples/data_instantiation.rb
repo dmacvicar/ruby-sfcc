@@ -18,6 +18,8 @@ data = Cim::Data.from_value(15)
 puts "Data created from integer(#{data.value}): #{data}"
 data = Cim::Data.from_value([1, 4, 9, 10])
 puts "Data created from array(from #{data.value.inspect}): #{data}"
+data = Cim::Data.from_value(Cim::ObjectPath.new("namespace", "class_name"))
+puts "Data created from object path: #{data}"
 
 # creating data from type and value
 data = Cim::Data.new(Cim::Type::String, "Data(type=string):")

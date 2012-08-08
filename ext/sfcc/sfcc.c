@@ -482,6 +482,48 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
       Data_Get_Struct(value, CIMCData, tmp);
       data = *tmp;
     }
+    else if(CLASS_OF(value) == cSfccCimInstance) {
+      rb_sfcc_instance *obj;
+      Data_Get_Struct(value, rb_sfcc_instance, obj);
+      data.value.inst = obj->inst;
+      if (data.value.inst == NULL) {
+        data.type = CIMC_null;
+        data.state = CIMC_nullValue;
+      }else {
+        data.type = CIMC_instance;
+      }
+    }
+    else if(CLASS_OF(value) == cSfccCimObjectPath) {
+      rb_sfcc_object_path *obj;
+      Data_Get_Struct(value, rb_sfcc_object_path, obj);
+      data.value.ref = obj->op;
+      if (data.value.ref == NULL) {
+        data.type = CIMC_null;
+        data.state = CIMC_nullValue;
+      }else {
+        data.type = CIMC_ref;
+      }
+    }
+    else if(CLASS_OF(value) == cSfccCimEnumeration) {
+      rb_sfcc_enumeration *obj;
+      Data_Get_Struct(value, rb_sfcc_enumeration, obj);
+      data.value.Enum = obj->enm;
+      if (data.value.Enum == NULL) {
+        data.type = CIMC_null;
+        data.state = CIMC_nullValue;
+      }else {
+        data.type = CIMC_enumeration;
+      }
+    }
+    else if (CLASS_OF(value) == cSfccCimClass) {
+      Data_Get_Struct(value, CIMCClass, data.value.cls);
+      if (data.value.cls == NULL) {
+        data.type = CIMC_null;
+        data.state = CIMC_nullValue;
+      }else {
+        data.type = CIMC_class;
+      }
+    }
     else {
       VALUE cname;
       const char *class_name;
