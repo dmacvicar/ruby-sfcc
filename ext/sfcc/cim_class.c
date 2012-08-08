@@ -22,8 +22,11 @@ static VALUE class_name(VALUE self)
   CIMCStatus status = { 0 };
   Data_Get_Struct(self, CIMCClass, cimclass);
   name = cimclass->ft->getClassName(cimclass, &status);
-  if ( !status.rc )
-    return CIMSTR_2_RUBYSTR(name);
+  if ( !status.rc ) {
+    VALUE ret = CIMSTR_2_RUBYSTR(name);
+    name->ft->release(name);
+    return ret;
+  }
 
   sfcc_rb_raise_if_error(status, "Can't retrieve class name");
   return Qnil;
