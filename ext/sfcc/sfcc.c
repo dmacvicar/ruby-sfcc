@@ -355,6 +355,67 @@ VALUE sfcc_cimargs_to_hash(CIMCArgs *args, VALUE client)
   return hash;
 }
 
+CIMCArray* sfcc_rubyarray_to_cimcarray(
+    VALUE array,
+    CIMCType *type)
+{
+  Check_Type(array, T_ARRAY); // raise exc. if not an array
+
+  CIMCArray * cimcarr = NULL;
+  CIMCCount i = 0;
+  int len = RARRAY_LEN(array);
+  VALUE array_value = Qnil;
+  CIMCData array_data;
+
+  *type = CIMC_stringA; /* sfcc can't handle CIMC_null */
+
+  if (len > 0) {
+    /* try to deduce type from first array element */
+    array_value = rb_ary_entry(array, 0);
+    if (TYPE(array_value) == T_ARRAY) {
+      rb_raise(rb_eTypeError, "nested arrays are not supported");
+      return cimcarr;
+    }
+    array_data = sfcc_value_to_cimdata(array_value);
+    *type = array_data.type;
+  }
+
+  cimcarr = cimcEnv->ft->newArray(cimcEnv, len, *type, NULL);
+  if (!cimcarr) {
+    rb_raise(rb_eNoMemError, "failed to allocate new CIMCArray");
+    return cimcarr;
+  }
+  if (len > 0) { // set the first element
+    // this method does the cloning of passed data value
+    cimcarr->ft->setElementAt(cimcarr, i++,
+        &(array_data.value), array_data.type);
+    if (TYPE(array_value) != T_DATA) {
+      // in case of string/chars/data_ptr, the data must be freed
+      Sfcc_clear_cim_data(&array_data);
+    }
+  }
+  for (; i < (typeof(i)) len; ++i) {
+    // set the rest of elements
+    array_value = rb_ary_entry(array, i);
+    array_data = sfcc_value_to_cimdata(array_value);
+    if (*type != array_data.type) {
+      cimcarr->ft->release(cimcarr);
+      if (TYPE(array_value) != T_DATA) {
+        Sfcc_clear_cim_data(&array_data);
+      }
+      rb_raise(rb_eTypeError, "all elements of array must"
+              " have the same type");
+      break;
+    }
+    cimcarr->ft->setElementAt(cimcarr, i, &(array_data.value), array_data.type);
+    if (TYPE(array_value) != T_DATA) {
+      Sfcc_clear_cim_data(&array_data);
+    }
+  }
+  *type |= CIMC_ARRAY;
+  return cimcarr;
+}
+
 CIMCData sfcc_value_to_cimdata(VALUE value)
 {
   CIMCData data;
@@ -398,27 +459,9 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
   case T_SYMBOL:
     */
   case T_ARRAY: {
-    CIMCCount i = 0;
-    int len = RARRAY_LEN(value);
-    CIMCType type = CIMC_string; /* sfcc can't handle CIMC_null */
-    VALUE array_value;
-    CIMCData array_data;    
-    if (len > 0) {
-      /* try to deduce type from first array element */
-      array_value = rb_ary_entry(value, 0);
-      array_data = sfcc_value_to_cimdata(array_value);
-      type = array_data.type;
-    }
-    data.type = type | CIMC_ARRAY;
-    data.state = CIMC_goodValue;
-    data.value.array = cimcEnv->ft->newArray(cimcEnv, len, type, NULL);
-    if (len > 0) {
-      data.value.array->ft->setElementAt(data.value.array, i++, &(array_data.value), array_data.type);
-    }
-    for (; i < len; ++i) {
-      array_value = rb_ary_entry(value, 0);
-      array_data = sfcc_value_to_cimdata(array_value);
-      data.value.array->ft->setElementAt(data.value.array, i, &(array_data.value), array_data.type);      
+    data.value.array = sfcc_rubyarray_to_cimcarray(value, &data.type);
+    if (!data.value.array) {
+      data.state = CIMC_badValue;
     }
     break;
   }
@@ -433,6 +476,11 @@ CIMCData sfcc_value_to_cimdata(VALUE value)
       else {
         data.type = CIMC_string;
       }
+    }
+    else if (CLASS_OF(value) == cSfccCimData) {
+      CIMCData *tmp;
+      Data_Get_Struct(value, CIMCData, tmp);
+      data = *tmp;
     }
     else {
       VALUE cname;
@@ -498,5 +546,21 @@ sfcc_cimcarray_to_rubyarray(CIMCArray *array, VALUE client)
     rb_ary_store(ary,i,value);
   }
   return ary;
+}
+
+VALUE
+sfcc_numeric_to_str(VALUE v)
+{
+  VALUE tmp = rb_str_new("", 0);
+  char buf[100];
+  switch (TYPE(v)) {
+    case T_FIXNUM: tmp = rb_fix2str(v, 10); break;
+    case T_BIGNUM: tmp = rb_big2str(v, 10); break;
+    case T_FLOAT:
+      snprintf(buf, 100, "%f", NUM2DBL(v));
+      tmp = rb_str_new2(buf);
+      break;
+  }
+  return tmp;
 }
 

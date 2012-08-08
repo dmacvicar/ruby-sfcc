@@ -1,4 +1,5 @@
 == 0.6.1
+* supported instantiation of Cim::Data
 * fixed memory leak in client's invokeMethod
 * added support for Float and Bignum in Cim::Data creation
 * fixed accessing char array in CIMCValue
