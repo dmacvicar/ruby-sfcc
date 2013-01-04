@@ -27,7 +27,7 @@ module Sfcc
 	begin
 	  require s
 	rescue LoadError
-	  STDERR.puts "Cannot load #{s} for type information"
+	  STDERR.puts "ruby-sfcc(invoke): Cannot load #{s} for type information"
 	  return
 	end
 	methods = MOF.class_eval "#{classname}::METHODS"
