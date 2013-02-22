@@ -4,6 +4,196 @@
 #include "cim_class.h"
 #include "cim_instance.h"
 
+#ifdef RUBY_VM
+#ifdef HAVE_NATIVETHREAD
+#define THREAD_MIGHT_BLOCK 1
+#else
+#define THREAD_MIGHT_BLOCK 0
+#endif
+#endif
+
+#if THREAD_MIGHT_BLOCK
+/*
+ * Adapt to Ruby 1.9 thread model
+ * 
+ * Ruby 1.9 introduces 'real' threads which need special consideration if
+ * a called C function is long running (i.e. doing I/O)
+ *
+ * See http://www.spacevatican.org/2012/7/5/whos-afraid-of-the-big-bad-lock/
+ * and esp. http://media.pragprog.com/titles/ruby3/ext_ruby.pdf
+ */
+
+/* rb_blocking_function_t only accepts a single argument */
+typedef struct {
+  CIMCStatus *status;
+  CIMCClient *client;
+  CIMCObjectPath *op;
+  CIMCClass *cimclass;
+  CIMCString *ops;
+  char **props;
+  const char *assoc_class;
+  const char *result_class;
+  const char *role;
+  const char *result_role;
+  CIMCFlags flags;
+  CIMCInstance *instance;
+  const char *query;
+  const char *lang;
+  const char *name;
+  CIMCArgs *argsin;
+  CIMCArgs *argsout;
+  CIMCData *data;
+  CIMCValue *value;
+  CIMCType type;
+} ruby_thread_args_t;
+
+static CIMCClass *
+threaded_get_class(ruby_thread_args_t *args)
+{
+  return args->client->ft->getClass(args->client, args->op, args->flags, args->props, args->status);
+}
+
+static CIMCEnumeration *
+threaded_enum_class_names(ruby_thread_args_t *args)
+{
+  return args->client->ft->enumClassNames(args->client, args->op, args->flags, args->status);
+}
+
+static CIMCEnumeration *
+threaded_enum_classes(ruby_thread_args_t *args)
+{
+  return args->client->ft->enumClasses(args->client, args->op, args->flags, args->status);
+}
+
+static CIMCInstance *
+threaded_get_instance(ruby_thread_args_t *args)
+{
+  return args->client->ft->getInstance(args->client, args->op, args->flags, args->props, args->status);
+}
+
+static CIMCObjectPath *
+threaded_create_instance(ruby_thread_args_t *args)
+{
+  return args->client->ft->createInstance(args->client, args->op, args->instance, args->status);
+}
+
+static void *
+threaded_set_instance(ruby_thread_args_t *args)
+{
+  CIMCStatus status;
+  status = args->client->ft->setInstance(args->client, args->op, args->instance, args->flags, args->props);
+  memcpy(args->status, &status, sizeof(CIMCStatus));
+  return NULL;
+}
+
+static void *
+threaded_delete_instance(ruby_thread_args_t *args)
+{
+  CIMCStatus status;
+  status = args->client->ft->deleteInstance(args->client, args->op);
+  memcpy(args->status, &status, sizeof(CIMCStatus));
+  return NULL;
+}
+
+static CIMCEnumeration *
+threaded_exec_query(ruby_thread_args_t *args)
+{
+  return args->client->ft->execQuery(args->client,
+                              args->op,
+                              args->query,
+                              args->lang,
+                              args->status);
+}
+
+static CIMCEnumeration *
+threaded_enum_instance_names(ruby_thread_args_t *args)
+{
+  return args->client->ft->enumInstanceNames(args->client, args->op, args->status);
+}
+
+static CIMCEnumeration *
+threaded_enum_instances(ruby_thread_args_t *args)
+{
+  return args->client->ft->enumInstances(args->client, args->op, args->flags, args->props, args->status);
+}
+
+static CIMCEnumeration *
+threaded_associators(ruby_thread_args_t *args)
+{
+  return args->client->ft->associators(args->client,
+                                args->op,
+                                args->assoc_class,
+                                args->result_class,
+                                args->role,
+                                args->result_role,
+                                args->flags, args->props, args->status);
+}
+
+static CIMCEnumeration *
+threaded_associator_names(ruby_thread_args_t *args)
+{
+  return args->client->ft->associatorNames(args->client,
+                                args->op,
+                                args->assoc_class,
+                                args->result_class,
+                                args->role,
+                                args->result_role,
+                                args->status);
+}
+
+static CIMCEnumeration *
+threaded_references(ruby_thread_args_t *args)
+{
+  return args->client->ft->references(args->client,
+                                args->op,
+                                args->result_class,
+                                args->role,
+                                args->flags, args->props, args->status);
+}
+
+static CIMCEnumeration *
+threaded_reference_names(ruby_thread_args_t *args)
+{
+  return args->client->ft->referenceNames(args->client,
+                                   args->op,
+                                   args->result_class,
+                                   args->role,
+                                   args->status);
+}
+
+static void *
+threaded_invoke_method(ruby_thread_args_t *args)
+{
+  CIMCData data;
+  data = args->client->ft->invokeMethod(args->client,
+                              args->op,
+                              args->name,
+                              args->argsin,
+                              args->argsout,
+                              args->status);
+  memcpy(args->data, &data, sizeof(CIMCData));
+  return NULL;
+}
+
+static void *
+threaded_set_property(ruby_thread_args_t *args)
+{
+  CIMCStatus status;
+  status = args->client->ft->setProperty(args->client, args->op, args->name, args->value, args->type);
+  memcpy(args->status, &status, sizeof(CIMCStatus));
+  return NULL;
+}
+
+static void *
+threaded_get_property(ruby_thread_args_t *args)
+{
+  CIMCData data;
+  data = args->client->ft->getProperty(args->client, args->op, args->name, args->status);
+  memcpy(args->data, &data, sizeof(CIMCData));
+  return NULL;
+}
+#endif
+
 static void
 dealloc(CIMCClient *c)
 {
@@ -48,6 +238,9 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   CIMCString *ops;
   rb_sfcc_object_path *rso;
   char **props;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
 
@@ -57,7 +250,16 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
   props = sfcc_value_array_to_string_array(properties);
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.flags = NUM2INT(flags);
+  args.props = props;
+  args.status = &status;
+  cimclass = (CIMCClass *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_get_class, &args, RUBY_UBF_IO, 0);
+#else
   cimclass = client->ft->getClass(client, rso->op, NUM2INT(flags), props, &status);
+ #endif
   free(props);
 
   if (!status.rc) {
@@ -86,6 +288,9 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
   CIMCClient *client;
   CIMCEnumeration *enm;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "11", &object_path, &flags);
   if (NIL_P(flags)) flags = INT2NUM(0);
@@ -93,7 +298,15 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.flags = NUM2INT(flags);
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_enum_class_names, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->enumClassNames(client, rso->op, NUM2INT(flags), &status);
+#endif
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, self);
   }
@@ -121,6 +334,9 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   CIMCClient *client;
   CIMCEnumeration *enm;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "11", &object_path, &flags);
   if (NIL_P(flags)) flags = INT2NUM(0);
@@ -128,7 +344,15 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.flags = NUM2INT(flags);
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_enum_classes, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->enumClasses(client, rso->op, NUM2INT(flags), &status);
+#endif
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, self);
   }
@@ -165,6 +389,9 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
   CIMCInstance *ciminstance;
   rb_sfcc_object_path *rso;
   char **props;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
@@ -174,7 +401,16 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
 
   props = sfcc_value_array_to_string_array(properties);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.flags = NUM2INT(flags);
+  args.props = props;
+  args.status = &status;
+  ciminstance = (CIMCInstance *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_get_instance, &args, RUBY_UBF_IO, 0);
+#else
   ciminstance = client->ft->getInstance(client, rso->op, NUM2INT(flags), props, &status);
+#endif
   free(props);
 
   if (!status.rc)
@@ -203,12 +439,23 @@ static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
   CIMCObjectPath *new_op;
   rb_sfcc_object_path *rso;
   rb_sfcc_instance *inst;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
   Data_Get_Struct(instance, rb_sfcc_instance, inst);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.instance = inst->inst;
+  args.status = &status;
+  new_op = (CIMCObjectPath *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_create_instance, &args, RUBY_UBF_IO, 0);
+#else
   new_op = client->ft->createInstance(client, rso->op, inst->inst, &status);
+#endif
 
   if (!status.rc)
     return Sfcc_wrap_cim_object_path(new_op, self);
@@ -244,6 +491,9 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
   rb_sfcc_instance *inst;
   CIMCClient *client;
   char **props;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "22", &object_path, &instance, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
@@ -254,7 +504,17 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
 
   props = sfcc_value_array_to_string_array(properties);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.instance = inst->inst;
+  args.flags = NUM2INT(flags);
+  args.props = props;
+  args.status = &status;
+  rb_thread_blocking_region((rb_blocking_function_t*)threaded_set_instance, &args, RUBY_UBF_IO, 0);
+#else
   status = client->ft->setInstance(client, rso->op, inst->inst, NUM2INT(flags), props);
+#endif
   free(props);
 
   sfcc_rb_raise_if_error(status, "Can't set instance");
@@ -274,11 +534,21 @@ static VALUE delete_instance(VALUE self, VALUE object_path)
   CIMCClient *client;
   CIMCString *ops;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.status = &status;
+  rb_thread_blocking_region((rb_blocking_function_t*)threaded_delete_instance, &args, RUBY_UBF_IO, 0);
+#else
   status = client->ft->deleteInstance(client, rso->op);
+#endif
   if (status.rc) {
     ops = rso->op->ft->toString(rso->op, NULL);
     sfcc_rb_raise_if_error(status, "Can't delete instance '%s'", ops->ft->getCharPtr(ops, NULL));
@@ -310,15 +580,27 @@ static VALUE query(VALUE self,
   CIMCClient *client;
   CIMCEnumeration *enm;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.query = to_charptr(query);
+  args.lang = to_charptr(lang);
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_exec_query, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->execQuery(client,
                               rso->op,
                               to_charptr(query),
                               to_charptr(lang),
                               &status);
+#endif
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, self);
   }
@@ -339,11 +621,21 @@ static VALUE instance_names(VALUE self, VALUE object_path)
   CIMCClient *client;
   CIMCEnumeration *enm;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_enum_instance_names, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->enumInstanceNames(client, rso->op, &status);
+#endif
 
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, self);
@@ -381,6 +673,9 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
   CIMCEnumeration *enm;
   rb_sfcc_object_path *rso;
   char **props;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "12", &object_path, &flags, &properties);
   if (NIL_P(flags)) flags = INT2NUM(0);
@@ -390,7 +685,16 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
 
   props = sfcc_value_array_to_string_array(properties);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.flags = NUM2INT(flags);
+  args.props = props;
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_enum_instances, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->enumInstances(client, rso->op, NUM2INT(flags), props, &status);
+#endif
 
   free(props);
 
@@ -462,6 +766,9 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
   CIMCEnumeration *enm;
   rb_sfcc_object_path *rso;
   char **props;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "16", &object_path,
                &assoc_class, &result_class,
@@ -473,6 +780,18 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
 
   props = sfcc_value_array_to_string_array(properties);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.assoc_class = to_charptr(assoc_class);
+  args.result_class = to_charptr(result_class);
+  args.role = to_charptr(role);
+  args.result_role = to_charptr(result_role);
+  args.flags = NUM2INT(flags);
+  args.props = props;
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_associators, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->associators(client,
                                 rso->op,
                                 to_charptr(assoc_class),
@@ -480,6 +799,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
                                 to_charptr(role),
                                 to_charptr(result_role),
                                 NUM2INT(flags), props, &status);
+#endif
   free(props);
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, self);
@@ -541,6 +861,9 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
   CIMCEnumeration *enm;
   CIMCString *ops;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "14", &object_path,
                &assoc_class, &result_class,
@@ -549,6 +872,16 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.assoc_class = to_charptr(assoc_class);
+  args.result_class = to_charptr(result_class);
+  args.role = to_charptr(role);
+  args.result_role = to_charptr(result_role);
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_associator_names, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->associatorNames(client,
                                     rso->op,
                                     to_charptr(assoc_class),
@@ -556,6 +889,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
                                     to_charptr(role),
                                     to_charptr(result_role),
                                     &status);
+#endif
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, self);
   }
@@ -608,6 +942,9 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
   CIMCEnumeration *enm;
   rb_sfcc_object_path *rso;
   char **props;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   rb_scan_args(argc, argv, "14", &object_path,
                &result_class, &role,
@@ -619,11 +956,22 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
 
   props = sfcc_value_array_to_string_array(properties);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.result_class = to_charptr(result_class);
+  args.role = to_charptr(role);
+  args.flags = NUM2INT(flags);
+  args.props = props;
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_references, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->references(client,
                                rso->op,
                                to_charptr(result_class),
                                to_charptr(role),
                                NUM2INT(flags), props, &status);
+#endif
   free(props);
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, self);
@@ -667,18 +1015,29 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   CIMCEnumeration *enm;
   CIMCString *ops;
   rb_sfcc_object_path *rso;
-
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
   rb_scan_args(argc, argv, "12", &object_path,
                &result_class, &role);
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.result_class = to_charptr(result_class);
+  args.role = to_charptr(role);
+  args.status = &status;
+  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_reference_names, &args, RUBY_UBF_IO, 0);
+#else
   enm = client->ft->referenceNames(client,
                                    rso->op,
                                    to_charptr(result_class),
                                    to_charptr(role),
                                    &status);
+#endif
   if (enm && !status.rc ) {
     return Sfcc_wrap_cim_enumeration(enm, self);
   }
@@ -713,6 +1072,9 @@ static VALUE invoke_method(VALUE self,
   const char *method_name_cstr;
   CIMCData ret;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   Check_Type(argin, T_HASH);
 
@@ -722,12 +1084,23 @@ static VALUE invoke_method(VALUE self,
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
   method_name_cstr = to_charptr(method_name);
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.name = method_name_cstr;
+  args.argsin = sfcc_hash_to_cimargs(argin);
+  args.argsout = cimcargsout;
+  args.status = &status;
+  args.data = &ret;
+  (void)rb_thread_blocking_region((rb_blocking_function_t*)threaded_invoke_method, &args, RUBY_UBF_IO, 0);
+#else
   ret = client->ft->invokeMethod(client,
                               rso->op,
                               method_name_cstr,
                               sfcc_hash_to_cimargs(argin),
                               cimcargsout,
                               &status);
+#endif
   if (!status.rc) {
     if (cimcargsout && ! NIL_P(argout)) {
       Check_Type(argout, T_HASH);
@@ -758,12 +1131,25 @@ static VALUE set_property(VALUE self,
   CIMCClient *client;
   CIMCData data;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
   data = sfcc_value_to_cimdata(value);
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.name = to_charptr(name);
+  args.value = &data.value;
+  args.type = data.type;
+  args.status = &status;
+  (void)rb_thread_blocking_region((rb_blocking_function_t*)threaded_set_property, &args, RUBY_UBF_IO, 0);
+#else
   status = client->ft->setProperty(client, rso->op, to_charptr(name), &data.value, data.type);
+#endif
 
   if ( !status.rc )
     return value;
@@ -787,11 +1173,23 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
   CIMCStatus status = {CIMC_RC_OK, NULL};
   CIMCData data;
   rb_sfcc_object_path *rso;
+#if THREAD_MIGHT_BLOCK
+  ruby_thread_args_t args;
+#endif
 
   Data_Get_Struct(self, CIMCClient, client);
   Data_Get_Struct(object_path, rb_sfcc_object_path, rso);
 
+#if THREAD_MIGHT_BLOCK
+  args.client = client;
+  args.op = rso->op;
+  args.name = to_charptr(name);
+  args.status = &status;
+  args.data = &data;
+  (void)rb_thread_blocking_region((rb_blocking_function_t*)threaded_get_property, &args, RUBY_UBF_IO, 0);
+#else
   data = client->ft->getProperty(client, rso->op, to_charptr(name), &status);
+#endif
   if ( !status.rc )
     return sfcc_cimdata_to_value(&data, self);
 
