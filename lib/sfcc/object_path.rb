@@ -33,7 +33,6 @@ module Sfcc
 	methods = MOF.class_eval "#{classname}::METHODS"
 	method = methods[name.to_s]
 	raise "Unknown method #{name} for #{classname}" unless method
-	type = method[:type]
 	parameters = method[:parameters] || {}
 	input = parameters[:in]
 	output = parameters[:out]
