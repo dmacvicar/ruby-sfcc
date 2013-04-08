@@ -1,3 +1,7 @@
+==
+
+* Support Ruby 1.9 thread unblocking in client calls
+
 == 0.6.0
 
 * Support native Ruby calls to CIM instance methods
