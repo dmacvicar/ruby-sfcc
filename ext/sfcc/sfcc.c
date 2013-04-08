@@ -132,7 +132,7 @@ static VALUE sfcc_status_exception(CIMCStatus status)
   }
 }
 
-#define MAX_ERROR_BUFFER 255
+#define MAX_ERROR_BUFFER 4096
 
 void sfcc_rb_raise_if_error(CIMCStatus status, const char *msg, ...)
 {
