@@ -27,12 +27,13 @@ module Sfcc
 	begin
 	  require s
 	rescue LoadError
+          # just warn, don't raise
 	  STDERR.puts "ruby-sfcc(invoke): Cannot load #{s} for type information"
 	  return
 	end
 	methods = MOF.class_eval "#{classname}::METHODS"
 	method = methods[name.to_s]
-	raise "Unknown method #{name} for #{classname}" unless method
+        raise ErrorMethodNotFound unless method
 	parameters = method[:parameters] || {}
 	input = parameters[:in]
 	output = parameters[:out]
@@ -41,7 +42,10 @@ module Sfcc
         if input
           while i < input.size
             value = args.shift
-            raise "Argument for #{input[i]} is nil, not allowed !" unless value
+            unless value
+              STDERR.puts "Argument for #{input[i]} is nil, not allowed !"
+              raise ArgumentError
+            end
             argsin[input[i]] = value
             # FIXME more typecheck of args ?
             i += 2
