@@ -7,11 +7,13 @@ end
 require 'sfcc'
 
 namespace = ARGV[0] || "root/cimv2"
+classname = ARGV[1] || nil
 
-client = Sfcc::Cim::Client.connect('http://root@localhost:5988')
+client = Sfcc::Cim::Client.connect(:uri => 'https://wsman:secret@localhost:5989', :verify=>false)
 
-op = Sfcc::Cim::ObjectPath.new(namespace, nil)
+op = Sfcc::Cim::ObjectPath.new(namespace, classname)
 
+#puts "Class names for #{op}"
 client.class_names(op).each do |name|
-  puts "#{namespace}:#{name}"
+  puts "  #{namespace}:#{name}"
 end
