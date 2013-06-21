@@ -13,6 +13,23 @@ module Sfcc
 	self.key(name)
       end
 
+      # ObjectPath comparison
+      # Compares key values
+      def <=> path
+        res = 0
+        self.each_key do |key|
+          v_self = self.key(key)
+          v_path = path.key(key)
+          if (v_self =~ /^[\d]+$/) && (v_path =~ /^[\d]+$/)
+            res = v_self.to_i <=> v_path.to_i
+          else
+            res = (v_self <=> v_path)
+          end
+          break if res != 0
+        end
+        res
+      end
+
       #
       # invoke name, *args
       # Class or instance method invocation
