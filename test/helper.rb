@@ -1,4 +1,5 @@
 require 'rubygems'
+require 'minitest' if RUBY_VERSION >= "2.1.0"
 require 'test/unit'
 require 'shoulda'
 require 'tempfile'
