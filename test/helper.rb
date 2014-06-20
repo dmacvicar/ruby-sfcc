@@ -1,7 +1,8 @@
 require 'rubygems'
-require 'minitest' if RUBY_VERSION >= "2.1.0"
+gem 'minitest' if RUBY_VERSION >= "2.1.0"
 require 'test/unit'
-require 'shoulda'
+gem 'shoulda'
+require 'shoulda/context'
 require 'tempfile'
 
 tmpdir = "../tmp/#{RUBY_PLATFORM}/sfcc/#{RUBY_VERSION}"
