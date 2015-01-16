@@ -8,13 +8,14 @@
 #include <cimc/cimcdt.h>
 #include <cimc/cimcft.h>
         
-#include "ruby.h"
-
 #include <ruby.h>
 #ifdef HAVE_RUBY_ST_H
 # include <ruby/st.h>
 #else
 # include <st.h>
+#endif
+#if HAVE_RUBY_THREAD_H /* New threading model */
+#include <ruby/thread.h>
 #endif
 
 #include <unistd.h>
