@@ -8,8 +8,14 @@ describe 'an object path for a namespace' do
     @op = Sfcc::Cim::ObjectPath.new('root/cimv2')
   end
 
-  it 'should have a nil class name' do
-    assert_nil @op.classname
+  it 'should raise on a nil class name' do
+    assert_raises ArgumentError do
+      Sfcc::Cim::ObjectPath.new("root/cimv2", nil)
+    end
+  end
+
+  it 'should have an empty class name' do
+    assert_equal "", @op.classname
   end
 end
 
