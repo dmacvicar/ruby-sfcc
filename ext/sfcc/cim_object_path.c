@@ -464,6 +464,7 @@ static VALUE to_s(VALUE self)
 /**
  * call-seq:
  *   new(namespace, classname) -> ObjectPath
+ *   new(namespace, classname, client) -> ObjectPath
  *
  * Creates an object path from +namespace+ and +classname+
  *
@@ -477,7 +478,12 @@ static VALUE new(int argc, VALUE *argv, VALUE self)
   CIMCStatus status = { 0, NULL };
   CIMCObjectPath *ptr;
 
-  rb_scan_args(argc, argv, "12", &namespace, &class_name, &client);
+  rb_scan_args(argc, argv, "21", &namespace, &class_name, &client);
+  if (NIL_P(class_name)) {
+    /* to_char(nil) will pass NULL as classname to cimcEnv->ft->newObjectPath below
+     * causing ObjectPath.to_s to sigsegv later */
+    rb_raise(rb_eArgError, "2nd arg (classname) must not be nil");
+  }
 
   ptr = cimcEnv->ft->newObjectPath(cimcEnv, to_charptr(namespace), to_charptr(class_name), &status);
 
