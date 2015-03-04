@@ -47,7 +47,11 @@ module Sfcc
           begin
             self.property name
           rescue Sfcc::Cim::ErrorNoSuchProperty
-            self.object_path.invoke name
+            begin
+              self.object_path.invoke name
+            rescue Sfcc::Cim::ErrorMethodNotFound
+              nil
+            end
           end
         else
           self.object_path.invoke name, *args
