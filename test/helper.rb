@@ -3,6 +3,10 @@ require 'minitest/autorun'
 require 'shoulda'
 require 'tempfile'
 
+%W(../lib ../tmp/#{RUBY_PLATFORM}/sfcc/#{RUBY_VERSION}).each do |path|
+  $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), path)))
+end
+
 require 'sfcc'
 
 # Util methods shared across specs
