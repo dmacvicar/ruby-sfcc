@@ -82,10 +82,11 @@ dealloc(rb_sfcc_data *rd)
 static void do_set_type(rb_sfcc_data *data, VALUE type)
 {
   char buf[100];
+  VALUE type_except;
   snprintf(buf, 100, "expected Type instance, Symbol,"
           " String or Fixnum, not: %s",
           to_charptr(rb_obj_class(type)));
-  VALUE type_except = rb_exc_new2(rb_eTypeError, buf);
+  type_except = rb_exc_new2(rb_eTypeError, buf);
 
   switch (TYPE(type)) {
     case T_STRING:
@@ -147,8 +148,9 @@ static void do_set_type(rb_sfcc_data *data, VALUE type)
 static void do_set_value(rb_sfcc_data *data, VALUE value)
 {
   // dealloc previously kept value
+  CIMCData *d;
   if (!data->reference) clear_cimdata(&data->data);
-  CIMCData *d = &data->data;
+  d = &data->data;
   data->reference = false;
   d->state = CIMC_goodValue;
 
@@ -468,8 +470,8 @@ static VALUE set_value(VALUE self, VALUE value)
  */
 static VALUE state_is(VALUE self, VALUE state)
 {
-  Check_Type(state, T_FIXNUM);
   rb_sfcc_data *data;
+  Check_Type(state, T_FIXNUM);
   Data_Get_Struct(self, rb_sfcc_data, data);
   if (data->data.state == FIX2INT(state))
     return Qtrue;

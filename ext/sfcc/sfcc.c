@@ -359,13 +359,13 @@ CIMCArray* sfcc_rubyarray_to_cimcarray(
     VALUE array,
     CIMCType *type)
 {
-  Check_Type(array, T_ARRAY); // raise exc. if not an array
-
   CIMCArray * cimcarr = NULL;
   CIMCCount i = 0;
   int len = RARRAY_LEN(array);
   VALUE array_value = Qnil;
   CIMCData array_data;
+
+  Check_Type(array, T_ARRAY); // raise exc. if not an array
 
   *type = CIMC_stringA; /* sfcc can't handle CIMC_null */
 
