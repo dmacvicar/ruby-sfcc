@@ -4,9 +4,18 @@
 #include "cim_class.h"
 #include "cim_instance.h"
 
+#if HAVE_RUBY_VERSION_H
+#include <ruby/version.h>
+#endif
+
 #ifdef RUBY_VM
 #ifdef HAVE_NATIVETHREAD
 #define THREAD_MIGHT_BLOCK 1
+#if RUBY_API_VERSION_MAJOR > 1 && RUBY_API_VERSION_MINOR > 0 /* New threading model */
+# define THREAD_CALL(function) rb_thread_call_without_gvl((void * (*)(void *))(function), &args, RUBY_UBF_IO, 0);
+#else
+# define THREAD_CALL(function) rb_thread_blocking_region((rb_blocking_function_t*)(function), &args, RUBY_UBF_IO, 0);
+#endif
 #else
 #define THREAD_MIGHT_BLOCK 0
 #endif
@@ -256,7 +265,7 @@ static VALUE get_class(int argc, VALUE *argv, VALUE self)
   args.flags = NUM2INT(flags);
   args.props = props;
   args.status = &status;
-  cimclass = (CIMCClass *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_get_class, &args, RUBY_UBF_IO, 0);
+  cimclass = (CIMCClass *)THREAD_CALL(threaded_get_class);
 #else
   cimclass = client->ft->getClass(client, rso->op, NUM2INT(flags), props, &status);
  #endif
@@ -303,7 +312,7 @@ static VALUE class_names(int argc, VALUE *argv, VALUE self)
   args.op = rso->op;
   args.flags = NUM2INT(flags);
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_enum_class_names, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_enum_class_names);
 #else
   enm = client->ft->enumClassNames(client, rso->op, NUM2INT(flags), &status);
 #endif
@@ -349,7 +358,7 @@ static VALUE classes(int argc, VALUE *argv, VALUE self)
   args.op = rso->op;
   args.flags = NUM2INT(flags);
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_enum_classes, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_enum_classes);
 #else
   enm = client->ft->enumClasses(client, rso->op, NUM2INT(flags), &status);
 #endif
@@ -407,7 +416,7 @@ static VALUE get_instance(int argc, VALUE *argv, VALUE self)
   args.flags = NUM2INT(flags);
   args.props = props;
   args.status = &status;
-  ciminstance = (CIMCInstance *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_get_instance, &args, RUBY_UBF_IO, 0);
+  ciminstance = (CIMCInstance *)THREAD_CALL(threaded_get_instance);
 #else
   ciminstance = client->ft->getInstance(client, rso->op, NUM2INT(flags), props, &status);
 #endif
@@ -452,7 +461,7 @@ static VALUE create_instance(VALUE self, VALUE object_path, VALUE instance)
   args.op = rso->op;
   args.instance = inst->inst;
   args.status = &status;
-  new_op = (CIMCObjectPath *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_create_instance, &args, RUBY_UBF_IO, 0);
+  new_op = (CIMCObjectPath *)THREAD_CALL(threaded_create_instance);
 #else
   new_op = client->ft->createInstance(client, rso->op, inst->inst, &status);
 #endif
@@ -511,7 +520,7 @@ static VALUE set_instance(int argc, VALUE *argv, VALUE self)
   args.flags = NUM2INT(flags);
   args.props = props;
   args.status = &status;
-  rb_thread_blocking_region((rb_blocking_function_t*)threaded_set_instance, &args, RUBY_UBF_IO, 0);
+  THREAD_CALL(threaded_set_instance);
 #else
   status = client->ft->setInstance(client, rso->op, inst->inst, NUM2INT(flags), props);
 #endif
@@ -545,7 +554,7 @@ static VALUE delete_instance(VALUE self, VALUE object_path)
   args.client = client;
   args.op = rso->op;
   args.status = &status;
-  rb_thread_blocking_region((rb_blocking_function_t*)threaded_delete_instance, &args, RUBY_UBF_IO, 0);
+  THREAD_CALL(threaded_delete_instance);
 #else
   status = client->ft->deleteInstance(client, rso->op);
 #endif
@@ -593,7 +602,7 @@ static VALUE query(VALUE self,
   args.query = to_charptr(query);
   args.lang = to_charptr(lang);
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_exec_query, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_exec_query);
 #else
   enm = client->ft->execQuery(client,
                               rso->op,
@@ -632,7 +641,7 @@ static VALUE instance_names(VALUE self, VALUE object_path)
   args.client = client;
   args.op = rso->op;
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_enum_instance_names, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_enum_instance_names);
 #else
   enm = client->ft->enumInstanceNames(client, rso->op, &status);
 #endif
@@ -691,7 +700,7 @@ static VALUE instances(int argc, VALUE *argv, VALUE self)
   args.flags = NUM2INT(flags);
   args.props = props;
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_enum_instances, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_enum_instances);
 #else
   enm = client->ft->enumInstances(client, rso->op, NUM2INT(flags), props, &status);
 #endif
@@ -790,7 +799,7 @@ static VALUE associators(int argc, VALUE *argv, VALUE self)
   args.flags = NUM2INT(flags);
   args.props = props;
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_associators, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_associators);
 #else
   enm = client->ft->associators(client,
                                 rso->op,
@@ -880,7 +889,7 @@ static VALUE associator_names(int argc, VALUE *argv, VALUE self)
   args.role = to_charptr(role);
   args.result_role = to_charptr(result_role);
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_associator_names, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_associator_names);
 #else
   enm = client->ft->associatorNames(client,
                                     rso->op,
@@ -964,7 +973,7 @@ static VALUE references(int argc, VALUE *argv, VALUE self)
   args.flags = NUM2INT(flags);
   args.props = props;
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_references, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_references);
 #else
   enm = client->ft->references(client,
                                rso->op,
@@ -1030,7 +1039,7 @@ static VALUE reference_names(int argc, VALUE *argv, VALUE self)
   args.result_class = to_charptr(result_class);
   args.role = to_charptr(role);
   args.status = &status;
-  enm = (CIMCEnumeration *)rb_thread_blocking_region((rb_blocking_function_t*)threaded_reference_names, &args, RUBY_UBF_IO, 0);
+  enm = (CIMCEnumeration *)THREAD_CALL(threaded_reference_names);
 #else
   enm = client->ft->referenceNames(client,
                                    rso->op,
@@ -1093,7 +1102,7 @@ static VALUE invoke_method(VALUE self,
   args.argsout = cimcargsout;
   args.status = &status;
   args.data = &ret;
-  (void)rb_thread_blocking_region((rb_blocking_function_t*)threaded_invoke_method, &args, RUBY_UBF_IO, 0);
+  (void)THREAD_CALL(threaded_invoke_method);
 #else
   ret = client->ft->invokeMethod(client,
                               rso->op,
@@ -1159,7 +1168,7 @@ static VALUE set_property(VALUE self,
   args.value = &data.value;
   args.type = data.type;
   args.status = &status;
-  (void)rb_thread_blocking_region((rb_blocking_function_t*)threaded_set_property, &args, RUBY_UBF_IO, 0);
+  (void)THREAD_CALL(threaded_set_property);
 #else
   status = client->ft->setProperty(client, rso->op, to_charptr(name), &data.value, data.type);
 #endif
@@ -1199,7 +1208,7 @@ static VALUE property(VALUE self, VALUE object_path, VALUE name)
   args.name = to_charptr(name);
   args.status = &status;
   args.data = &data;
-  (void)rb_thread_blocking_region((rb_blocking_function_t*)threaded_get_property, &args, RUBY_UBF_IO, 0);
+  (void)THREAD_CALL(threaded_get_property);
 #else
   data = client->ft->getProperty(client, rso->op, to_charptr(name), &status);
 #endif
