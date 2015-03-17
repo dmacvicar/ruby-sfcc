@@ -1,8 +1,6 @@
 require 'rubygems'
-gem 'minitest' if RUBY_VERSION >= "2.1.0"
-require 'test/unit'
-gem 'shoulda'
-require 'shoulda/context'
+require 'minitest/autorun'
+require 'shoulda'
 require 'tempfile'
 
 tmpdir = "../tmp/#{RUBY_PLATFORM}/sfcc/#{RUBY_VERSION}"
@@ -10,27 +8,30 @@ tmpdir = "../tmp/#{RUBY_PLATFORM}/sfcc/#{RUBY_VERSION}"
 %w(../lib tmpdir).each do |path|
   $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), path)))
 end
- 
+
 require 'rubygems'
 require 'sfcc'
- 
-class SfccTestCase < Test::Unit::TestCase
+
+# Util methods shared across specs
+module SfccTestUtils
   ASSETS = File.expand_path(File.join(File.dirname(__FILE__), 'assets'))
- 
-  unless RUBY_VERSION >= '1.9'
-    undef :default_test
-  end
+
+  undef :default_test unless RUBY_VERSION >= '1.9'
 
   def cimom_running?
     `ps -e`.each_line do |line|
       return true if line =~ /sfcbd/
     end
-    return false
+    false
   end
 
   def setup_cim_client
-    @client = Sfcc::Cim::Client.connect(:uri => 'https://wsman:secret@localhost:5989', :verify => false)
-    # @client = Sfcc::Cim::Client.connect(:host => 'localhost', :scheme => 'http', :user => 'root', :port => '5988')
+    @client = Sfcc::Cim::Client.connect(
+      uri: 'https://wsman:secret@localhost:5989', verify: false)
   end
-  
+end
+
+# Same for unit tests
+class SfccTestCase < MiniTest::Test
+  include SfccTestUtils
 end
