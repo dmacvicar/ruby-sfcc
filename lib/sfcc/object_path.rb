@@ -13,6 +13,23 @@ module Sfcc
 	self.key(name)
       end
 
+      # ObjectPath comparison
+      # Compares key values
+      def <=> path
+        res = 0
+        self.each_key do |key|
+          v_self = self.key(key)
+          v_path = path.key(key)
+          if (v_self =~ /^[\d]+$/) && (v_path =~ /^[\d]+$/)
+            res = v_self.to_i <=> v_path.to_i
+          else
+            res = (v_self <=> v_path)
+          end
+          break if res != 0
+        end
+        res
+      end
+
       #
       # invoke name, *args
       # Class or instance method invocation
@@ -27,13 +44,13 @@ module Sfcc
 	begin
 	  require s
 	rescue LoadError
+          # just warn, don't raise
 	  STDERR.puts "ruby-sfcc(invoke): Cannot load #{s} for type information"
 	  return
 	end
 	methods = MOF.class_eval "#{classname}::METHODS"
 	method = methods[name.to_s]
-	raise "Unknown method #{name} for #{classname}" unless method
-	type = method[:type]
+        raise ErrorMethodNotFound unless method
 	parameters = method[:parameters] || {}
 	input = parameters[:in]
 	output = parameters[:out]
@@ -42,7 +59,10 @@ module Sfcc
         if input
           while i < input.size
             value = args.shift
-            raise "Argument for #{input[i]} is nil, not allowed !" unless value
+            unless value
+              STDERR.puts "Argument for #{input[i]} is nil, not allowed !"
+              raise ArgumentError
+            end
             argsin[input[i]] = value
             # FIXME more typecheck of args ?
             i += 2
