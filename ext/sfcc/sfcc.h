@@ -59,6 +59,17 @@ inline CIMCArgs* sfcc_hash_to_cimargs(VALUE hash);
 inline VALUE sfcc_cimargs_to_hash(CIMCArgs *args, VALUE client);
 
 /**
+ * allocates a new cimcarray and fills it with converted values of ruby array
+ *
+ * all elements of array must have the same type,
+ *   otherwise TypeError is raised
+ * @param type will contain type of array
+ *
+ * @note nested arrays are not supported
+ */
+inline CIMCArray * sfcc_rubyarray_to_cimcarray(VALUE array, CIMCType *type);
+
+/**
  * converts CIMCData to ruby VALUE
  */
 inline VALUE sfcc_cimdata_to_value(CIMCData *data, VALUE client);
@@ -67,5 +78,11 @@ inline VALUE sfcc_cimdata_to_value(CIMCData *data, VALUE client);
  * convert ruby VALUE to CIMCData
  */
 inline CIMCData sfcc_value_to_cimdata(VALUE value);
+
+/**
+ * @param v, can be Fixnum, Bignum or Float
+ * @return ruby String created from ruby number
+ */
+inline VALUE sfcc_numeric_to_str(VALUE v);
 
 #endif
