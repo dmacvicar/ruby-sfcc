@@ -3,12 +3,6 @@ require 'minitest/autorun'
 require 'shoulda'
 require 'tempfile'
 
-tmpdir = "../tmp/#{RUBY_PLATFORM}/sfcc/#{RUBY_VERSION}"
-
-%w(../lib tmpdir).each do |path|
-  $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), path)))
-end
-
 require 'rubygems'
 require 'sfcc'
 
