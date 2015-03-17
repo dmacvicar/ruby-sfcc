@@ -246,19 +246,19 @@ static void do_set_value(rb_sfcc_data *data, VALUE value)
 
       // try to convert numbers to string
       }else if (d->type == CIMC_string) {
-        VALUE tmp = sfcc_numeric_to_str(value);
-        tmp = StringValuePtr(tmp);
+        VALUE num_s = sfcc_numeric_to_str(value);
+        char *str = StringValuePtr(num_s);
         d->value.string = cimcEnv->ft->newString(
-                                                 cimcEnv, tmp, NULL);
+                                                 cimcEnv, str, NULL);
       }else if (d->type == CIMC_chars) {
-        VALUE tmp = sfcc_numeric_to_str(value);
-        tmp = StringValuePtr(tmp);
-        d->value.chars = strdup(tmp);
+        VALUE num_s = sfcc_numeric_to_str(value);
+        char *str = StringValuePtr(num_s);
+        d->value.chars = strdup(str);
       }else if (d->type == CIMC_charsptr) {
-        VALUE tmp = (VALUE) sfcc_numeric_to_str(value);
-        tmp = StringValue(tmp);
-        d->value.dataPtr.ptr = strdup(RSTRING_PTR(tmp));
-        d->value.dataPtr.length = RSTRING_LEN(tmp);
+        VALUE num_s = sfcc_numeric_to_str(value);
+        VALUE str = StringValue(num_s);
+        d->value.dataPtr.ptr = strdup(RSTRING_PTR(str));
+        d->value.dataPtr.length = RSTRING_LEN(str);
       }else {
         d->state = CIMC_badValue;
         rb_raise(rb_eTypeError, "unsupported data type(%s) for value"
