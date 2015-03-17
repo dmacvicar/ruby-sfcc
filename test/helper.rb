@@ -1,6 +1,4 @@
-require 'rubygems'
 require 'minitest/autorun'
-require 'shoulda'
 require 'tempfile'
 
 %W(../lib ../tmp/#{RUBY_PLATFORM}/sfcc/#{RUBY_VERSION}).each do |path|
@@ -12,8 +10,6 @@ require 'sfcc'
 # Util methods shared across specs
 module SfccTestUtils
   ASSETS = File.expand_path(File.join(File.dirname(__FILE__), 'assets'))
-
-  undef :default_test unless RUBY_VERSION >= '1.9'
 
   def cimom_running?
     `ps -e`.each_line do |line|
