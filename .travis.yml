@@ -6,3 +6,7 @@ rvm:
   - 2.1.0
 before_install:
   - sudo apt-get install -y libcimcclient0-dev
+  - sudo apt-get install -y clang-3.5
+env:
+  - CC=clang
+  - CC=gcc
