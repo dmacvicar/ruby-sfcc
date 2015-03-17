@@ -89,7 +89,7 @@ static void do_set_type(rb_sfcc_data *data, VALUE type)
 
   switch (TYPE(type)) {
     case T_STRING:
-      type = rb_intern(STR2CSTR(type));
+      type = rb_intern(StringValuePtr(type));
     case T_SYMBOL:
       type = rb_const_get(cSfccCimType, type); break;
     case T_DATA:
@@ -187,11 +187,11 @@ static void do_set_value(rb_sfcc_data *data, VALUE value)
         }
       }else if (d->type == CIMC_string) {
         d->value.string = cimcEnv->ft->newString(
-                cimcEnv, STR2CSTR(value), NULL);
+                cimcEnv, StringValuePtr(value), NULL);
       }else if (d->type == CIMC_chars) {
-        d->value.chars = strdup(STR2CSTR(value));
+        d->value.chars = strdup(StringValuePtr(value));
       }else if (d->type == CIMC_charsptr) {
-        d->value.dataPtr.ptr = strdup(STR2CSTR(value));
+        d->value.dataPtr.ptr = strdup(StringValuePtr(value));
         d->value.dataPtr.length = rb_funcall(
                 value, rb_intern("length"), 0);
       }else {
@@ -244,15 +244,19 @@ static void do_set_value(rb_sfcc_data *data, VALUE value)
 
       // try to convert numbers to string
       }else if (d->type == CIMC_string) {
-        d->value.string = cimcEnv->ft->newString(
-                cimcEnv, STR2CSTR(sfcc_numeric_to_str(value)), NULL);
-      }else if (d->type == CIMC_chars) {
-        d->value.chars = strdup(STR2CSTR(sfcc_numeric_to_str(value)));
-      }else if (d->type == CIMC_charsptr) {
         VALUE tmp = sfcc_numeric_to_str(value);
-        d->value.dataPtr.ptr = strdup(STR2CSTR(tmp));
-        d->value.dataPtr.length = rb_funcall(
-                tmp, rb_intern("length"), 0);
+        tmp = StringValuePtr(tmp);
+        d->value.string = cimcEnv->ft->newString(
+                                                 cimcEnv, tmp, NULL);
+      }else if (d->type == CIMC_chars) {
+        VALUE tmp = sfcc_numeric_to_str(value);
+        tmp = StringValuePtr(tmp);
+        d->value.chars = strdup(tmp);
+      }else if (d->type == CIMC_charsptr) {
+        VALUE tmp = (VALUE) sfcc_numeric_to_str(value);
+        tmp = StringValue(tmp);
+        d->value.dataPtr.ptr = strdup(RSTRING_PTR(tmp));
+        d->value.dataPtr.length = RSTRING_LEN(tmp);
       }else {
         d->state = CIMC_badValue;
         rb_raise(rb_eTypeError, "unsupported data type(%s) for value"
