@@ -1,6 +1,15 @@
-==
+
+== 0.6.1
 
 * Support Ruby 1.9 thread unblocking in client calls
+* fixed memory leak in Class
+* added support for conversion of Cim::ObjectPath, Cim::Instance,
+  Cim::Enumeration and Cim::Class to CIMCData
+* supported instantiation of Cim::Data
+* fixed memory leak in client's invokeMethod
+* added support for Float and Bignum in Cim::Data creation
+* fixed accessing char array in CIMCValue
+* enabled compilation for older sblim-sfcc
 
 == 0.6.0
 
