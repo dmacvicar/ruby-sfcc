@@ -3,7 +3,6 @@ require 'minitest/autorun'
 require 'shoulda'
 require 'tempfile'
 
-require 'rubygems'
 require 'sfcc'
 
 # Util methods shared across specs
