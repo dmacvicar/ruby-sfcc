@@ -1084,6 +1084,7 @@ static VALUE invoke_method(VALUE self,
 #if THREAD_MIGHT_BLOCK
   ruby_thread_args_t args;
 #endif
+  CIMCStatus (*args_release) (CIMCArgs *);
 
   Check_Type(argin, T_HASH);
 
@@ -1116,8 +1117,7 @@ static VALUE invoke_method(VALUE self,
    * * https://sourceforge.net/tracker/?func=detail&aid=3555103&group_id=128809&atid=712784
    * release function has wrong declaration
    */
-  CIMCStatus (*args_release) (CIMCArgs *) =
-                (CIMCStatus (*) (CIMCArgs *)) cimcargsin->ft->release;
+  args_release = (CIMCStatus (*) (CIMCArgs *)) cimcargsin->ft->release;
   args_release(cimcargsin);
 
   if (!status.rc) {
